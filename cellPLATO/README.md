@@ -10,6 +10,12 @@ A Python data analysis package for time-lapse cell migration experiments. Used i
 4. Activate the environment: conda activate cellPLATO
 5. Install the rest of the packages: pip install -e .
 
+## How to use cellPLATO:
+
+cellPLATO is made to be used downstream of cell segmentation and tracking. We used cellpose and then bayesian tracker, with files organized as below in the 'file organization' section.
+
+With jupyter notebook installed, type jupyter notebook in the terminal to begin, and select one of the notebooks to begin running cellPLATO.
+
 ## Description: 
 
 A collection of Jupyter notebooks allows user to process through the analysis step by step, or using pre-assembled pipelines.
