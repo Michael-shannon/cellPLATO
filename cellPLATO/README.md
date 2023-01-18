@@ -2,6 +2,22 @@
 
 A Python data analysis package for time-lapse cell migration experiments. Used in conjunction with Bayesian Tracker for automated cell tracking and segmentation, cellPLATO adds additional layers of analysis and visualization. This tool allows users to pool/compare multiple replicates from multiple experimental conditions, perform dimensionality reduction, and explore cell behavioural trajectories through physical and low-dimensional space.
 
+## Installation instructions
+
+1. Using anaconda terminal, cd to a directory where you want to install the software
+2. Clone the repository onto your local machine: git clone 
+3. cd to the folder that contains 'environment.yml' and type: conda env create -f environment.yml
+4. Activate the environment: conda activate cellPLATO
+5. Install the rest of the packages: pip install -e .
+
+## How to use cellPLATO:
+
+cellPLATO is made to be used downstream of cell segmentation and tracking. We used cellpose and then bayesian tracker, with files organized as below in the 'file organization' section.
+
+With jupyter notebook installed, type jupyter notebook in the terminal to begin, and select one of the notebooks to begin running cellPLATO.
+
+## Description: 
+
 A collection of Jupyter notebooks allows user to process through the analysis step by step, or using pre-assembled pipelines.
 
 All experimental constants and filepaths are contained within the config.py file. This will inform the active Python kernel where to find the data files (.h5) files, where to export plots, and ey parameters to control the analysis. Each time the analysis is run, it generates a time-stamped analysis output folder, with a copy of the config file as a record for future verification.
