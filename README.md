@@ -1,13 +1,22 @@
 # cellPLATO: cell PLasticity Analysis TOol
- The 2023 version of cellPLATO
 
+A Python data analysis package for time-lapse cell migration experiments. Used in conjunction with Bayesian Tracker for automated cell tracking and segmentation, cellPLATO adds additional layers of analysis and visualization. This tool allows users to pool/compare multiple replicates from multiple experimental conditions, perform dimensionality reduction, and explore cell behavioural trajectories through physical and low-dimensional space.
 
-A python analysis package to allow morpho-kinetic analysis of thousands of cells through time.
+## Installation instructions
 
-Segmentation (Cellpose) >> tracking (Bayesian Tracker) >> data analysis (cellPLATO)
+1. Using anaconda terminal, cd to a directory where you want to install the software
+2. Clone the repository onto your local machine: git clone 
+3. cd to the folder that contains 'environment.yml' and type: conda env create -f environment.yml
+4. Activate the environment: conda activate cellPLATO
+5. Install the rest of the packages: pip install -e .
 
+## How to use cellPLATO:
 
-Used in conjunction with Bayesian Tracker for automated cell tracking and segmentation, cellPLATO adds additional layers of analysis and visualization. This tool allows users to pool/compare multiple replicates from multiple experimental conditions, perform dimensionality reduction, and explore cell behavioural trajectories through physical and low-dimensional space.
+cellPLATO is made to be used downstream of cell segmentation and tracking. We used cellpose and then bayesian tracker, with files organized as below in the 'file organization' section.
+
+With jupyter notebook installed, type jupyter notebook in the terminal to begin, and select one of the notebooks to begin running cellPLATO.
+
+## Description: 
 
 A collection of Jupyter notebooks allows user to process through the analysis step by step, or using pre-assembled pipelines.
 
@@ -45,7 +54,7 @@ The data_processing submodule is designed to sequentially process the cell track
 
 The functionality of the subsequent processing steps are defined below;
 
-Pre-preprocessed data is are combined into a single dataframe (comb_df), maininging labels for the Condition and replicate_ID. For plotting, optionally Condition_shortlabel is also used to have more succinct plot labels. The comb_df contains both cell shape and cell migration-related factors. 
+Pre-preprocessed data is are combined into a single dataframe (comb_df), maininging labels for the Condition and replicate_ID. For plotting, optionally Condition_shortlabel is also used to have more succinct plot labels. The comb_df both cell shape and cell migration-related factors. 
 
 At this stage, additional measurements are performed, such as the aspect ratio and Ripleys L and K. The factors are calibrated according to the micron_per_pixel ratio defined in the config.py file. Optionally, data are filtered upstream of dimensionality reduction. 
 
