@@ -675,7 +675,7 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
 
 #### New function 12-7-2022 ####
 
-def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
+def disambiguate_timepoint_deprecated(df, exemps, top_dictionary, XYRange=100,boxoff=True):
 
 
     for n in exemps.index:
@@ -700,6 +700,53 @@ def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
         f.savefig( CLUST_DISAMBIG_DIR + '\ClusterID__'+str(ClusterID)+'__disambiguated__R'+str(XYRange)+'_'+str(n)  ,dpi=300,bbox_inches="tight")
 
     return
+
+
+ ##### Using as of 1-18-2023 #####
+ # 
+def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
+
+
+    for n in exemps.index:
+
+        row=exemps.iloc[n] #extract an example exemplar row
+
+        # Use exemplar row to look up the corresponding cell TRACK from the cell_df
+        cell_df = df[(df['Condition']==row['Condition']) &
+                        (df['Replicate_ID']==row['Replicate_ID']) &
+                        (df['particle']==row['particle'])]
+        cell_df = cell_df.reset_index(drop=True)
+
+        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization
+        exemplarpoint = cell_df.index[(cell_df['area']==row['area']) &
+                        (cell_df['speed']==row['speed']) &
+                        (cell_df['frame']==row['frame']) &
+                        (cell_df['label']==row['label'])]
+        CLUSTERID = row['label']
+        # f=cp.plot_cell_metrics(cell_df, exemplarpoint[0]) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
+        f=plot_cell_metrics_timepoint(cell_df, exemplarpoint[0], XYRange, boxoff, top_dictionary, CLUSTERID) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
+
+        ######
+        f2,f3 = plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
+
+
+
+        # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
+            #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
+        f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
+
+        f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+
+        f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+
+        ######
+        print("Saving to" + CLUST_DISAMBIG_DIR + '\Disambiguated_ClusterID_'+str(CLUSTERID)+'_'+str(n))
+        # f.savefig( CLUST_DISAMBIG_DIR + '\ClusterID__'+str(ClusterID)+'__disambiguated__R'+str(XYRange)+'_'+str(n)  ,dpi=300,bbox_inches="tight")
+
+    return   
 
 def disambiguate_wholetrack_DEPRECATED(df, exemp_df, XYRange=100,boxoff=True): #separate function for disambiguating the tavg clusters
 
@@ -743,7 +790,7 @@ def disambiguate_wholetrack_DEPRECATED(df, exemp_df, XYRange=100,boxoff=True): #
 
 ####### new 1-18-2023 #######
 
-def plot_single_cell_factor(cell_df, top_dictionary, PLOT_PLASTICITY = True):
+def plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
     # labels=wholetrack_exemplar_df['label'].unique()
     # totaltime = totalframes*SAMPLING_INTERVAL
     import matplotlib.cm as cm
@@ -753,7 +800,11 @@ def plot_single_cell_factor(cell_df, top_dictionary, PLOT_PLASTICITY = True):
     df=cell_df
     # for the tavg version, work out the cluster ID from the tavg_label column
 
-    clusterID=cell_df['tavg_label'].unique()[0]
+    if thisistavg == True:
+        clusterID=cell_df['tavg_label'].unique()[0]
+    else:
+        clusterID=CLUSTERID
+
     factors = top_dictionary[clusterID]
     n=len(factors)
 
@@ -867,11 +918,12 @@ def disambiguate_tavg(df, exemp_df, top_dictionary, XYRange=100,boxoff=True): #s
         cell_array = cell_df.to_numpy()
         wholetrack_exemplararray=np.vstack((wholetrack_exemplararray, cell_array))
 
-
+    
         # print(top_dictionary)
+        CLUSTERID=1
         f=plot_cell_metrics_tavg(cell_df, XYRange, boxoff, row, top_dictionary) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
 
-        f2,f3 = plot_single_cell_factor(cell_df, top_dictionary, PLOT_PLASTICITY = True)
+        f2,f3 = plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True)
 
         print("Saving to" + CLUST_DISAMBIG_DIR_TAVG + '\Disambiguated_WHOLETRACK_Condition = ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
               '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n))
@@ -882,10 +934,10 @@ def disambiguate_tavg(df, exemp_df, top_dictionary, XYRange=100,boxoff=True): #s
             '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
 
         f2.write_image( CLUST_DISAMBIG_DIR_TAVG + '\Metrics__TAVG_CLUSID_' + str(cell_df['tavg_label'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 2) 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
         f3.write_image( CLUST_DISAMBIG_DIR_TAVG + '\Plasticity__TAVG_CLUSID_' + str(cell_df['tavg_label'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 2) 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
     wholetrack_exemplararray=np.delete(wholetrack_exemplararray, obj=0, axis=0) # delete the initialization row of ones
     colsare=df.columns.tolist()
