@@ -13,6 +13,7 @@ Z_SCALE = 1.00
 CALIBRATED_POS = False
 
 N_COMPONENTS = 3 #this is for UMAP!!!!
+
 UMAPS = ['UMAP1','UMAP2','UMAP3'] #this is for umap clustering and isnt used yet
 
 ##################

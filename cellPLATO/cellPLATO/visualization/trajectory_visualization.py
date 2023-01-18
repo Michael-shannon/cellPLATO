@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import os
 import imageio
+import plotly
 
 import matplotlib.pyplot as plt
 from matplotlib import cm
@@ -738,6 +739,116 @@ def disambiguate_wholetrack_DEPRECATED(df, exemp_df, XYRange=100,boxoff=True): #
 
     return(wholetrack_exemplar_df)
 
+
+
+####### new 1-18-2023 #######
+
+def plot_single_cell_factor(cell_df, top_dictionary, PLOT_PLASTICITY = True):
+    # labels=wholetrack_exemplar_df['label'].unique()
+    # totaltime = totalframes*SAMPLING_INTERVAL
+    import matplotlib.cm as cm
+    from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+    import plotly.express as px
+    df=cell_df
+    # for the tavg version, work out the cluster ID from the tavg_label column
+
+    clusterID=cell_df['tavg_label'].unique()[0]
+    factors = top_dictionary[clusterID]
+    n=len(factors)
+
+    # for the non-tavg version, work out the cluster ID from the label column
+    
+    
+    fig = make_subplots(rows=n, cols=1, shared_xaxes=False, subplot_titles=factors) 
+    # add a new column to the cell_df that is the frame * SAMPLING_INTERVAL
+    cell_df['time']=cell_df['frame']*SAMPLING_INTERVAL
+
+    for i in range(n):
+        factor=factors[i]
+        
+        df=df.sort_values(by='frame')
+
+        fig.add_trace(go.Scatter(x=df['time'], y=df[factor], mode='lines', name=factor), row=i+1, col=1)
+
+        # change font size of the trace names
+        fig.update_layout(font_size=30)
+        fig.update_annotations(font_size=30)
+
+        # make the range of the x axis the min and max of the time column
+        # fig.update_xaxes(range=[0, totaltime], row=i+1, col=1)
+        mintime=df['time'].min()
+        maxtime=df['time'].max()
+
+        # change the color of the grid lines to light grey  
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', title_text='time (mins)', nticks=10, range = [mintime-1, maxtime+1])
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey')
+        #change each y axis title to the factor name in the for loop
+        fig.update_yaxes(title_text=factor, row=i+1, col=1)
+
+    
+     # make sure the x axis has ranges from 0 to totalframes
+    # fig.update_xaxes(range=[0, totaltime])
+    # fig.update_xaxes(range=[0, totaltime])
+    # fig.update_layout(height=n*300, width=900, title_text='', font_size=24, plot_bgcolor='white', xaxis_showgrid=True, yaxis_showgrid=True, title_font_size=24, hovermode="closest")
+    fig.update_layout(height=n*450, width=900, font_size=30, plot_bgcolor='white', xaxis_showgrid=True, yaxis_showgrid=True, title_font_size=30, hovermode="x unified", colorway=px.colors.qualitative.Dark24)
+    # change the overall title to the label and condition
+    plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+    fig.update_layout(title_text=plottitle, title_font_size=30)
+    #remove the legend
+    fig.update_layout(showlegend=False)
+
+   
+    # fig.update_layout(legend=dict(
+    #     orientation="h",
+    #     yanchor="bottom",
+    #     y=1.02,
+    #     xanchor="right",
+    #     x=3))
+    
+
+    # fig.show()
+
+    #####
+    if PLOT_PLASTICITY == True:
+        plasticity_factors=['label', 'tavg_label','twind_n_changes','twind_n_labels', 'tavg_twind_n_changes','tavg_twind_n_labels']
+        n=len(plasticity_factors)
+        fig2 = make_subplots(rows=n, cols=1, shared_xaxes=False, subplot_titles=plasticity_factors) 
+
+        for i in range(n):
+            plasticity_factor=plasticity_factors[i]            
+            df=df.sort_values(by='frame')
+            fig2.add_trace(go.Scatter(x=df['time'], y=df[plasticity_factor], mode='lines', name=plasticity_factor), row=i+1, col=1)
+
+            # change font size of the trace names
+            fig2.update_layout(font_size=24)
+            fig2.update_annotations(font_size=24)
+
+            # make the range of the x axis the min and max of the time column
+            mintime=df['time'].min()
+            maxtime=df['time'].max()
+
+            # change the color of the grid lines to light grey  
+            fig2.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', title_text='time (mins)', nticks=10, range = [mintime-1, maxtime+1])
+            fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', nticks = 5)
+            #change each y axis title to the factor name in the for loop
+            fig2.update_yaxes(title_text=plasticity_factor, row=i+1, col=1)
+
+        fig2.update_layout(height=n*450, width=900, font_size=24, plot_bgcolor='white', xaxis_showgrid=True, yaxis_showgrid=True, title_font_size=24, hovermode="x unified", colorway=px.colors.qualitative.Dark24)
+    # change the overall title to the label and condition
+        plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+        fig2.update_layout(title_text=plottitle)
+        fig2.update_layout(yaxis_tickformat =',d', yaxis=dict(tickformat ='d'))
+        #remove the legend
+        fig2.update_layout(showlegend=False)    
+
+        # fig2.show()
+
+    ######
+
+    return fig, fig2
+
+
 def disambiguate_tavg(df, exemp_df, top_dictionary, XYRange=100,boxoff=True): #separate function for disambiguating the tavg clusters
 
     # This part extracts the whole cell tracks (from df) represented by single exemplars (from exemp_df)
@@ -760,13 +871,21 @@ def disambiguate_tavg(df, exemp_df, top_dictionary, XYRange=100,boxoff=True): #s
         # print(top_dictionary)
         f=plot_cell_metrics_tavg(cell_df, XYRange, boxoff, row, top_dictionary) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
 
-        print("Saving to" + CLUST_DISAMBIG_DIR_WHOLETRACK + '\Disambiguated_WHOLETRACK_Condition = ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
+        f2,f3 = plot_single_cell_factor(cell_df, top_dictionary, PLOT_PLASTICITY = True)
+
+        print("Saving to" + CLUST_DISAMBIG_DIR_TAVG + '\Disambiguated_WHOLETRACK_Condition = ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
               '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n))
 
-        f.savefig( CLUST_DISAMBIG_DIR_WHOLETRACK + '\WHOLETRACK_Condition = ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
-              '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
+        # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
+            #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
+        f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour__TAVG_CLUSID_' + str(cell_df['tavg_label'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
 
+        f2.write_image( CLUST_DISAMBIG_DIR_TAVG + '\Metrics__TAVG_CLUSID_' + str(cell_df['tavg_label'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 2) 
 
+        f3.write_image( CLUST_DISAMBIG_DIR_TAVG + '\Plasticity__TAVG_CLUSID_' + str(cell_df['tavg_label'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 2) 
 
     wholetrack_exemplararray=np.delete(wholetrack_exemplararray, obj=0, axis=0) # delete the initialization row of ones
     colsare=df.columns.tolist()
@@ -775,6 +894,15 @@ def disambiguate_tavg(df, exemp_df, top_dictionary, XYRange=100,boxoff=True): #s
 
 
     return(wholetrack_exemplar_df)
+
+
+
+
+
+
+#########
+
+
 
 def clustering_heatmap(df_in, dr_factors=DR_FACTORS): #New function 12-14-2022
 
