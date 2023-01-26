@@ -137,7 +137,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                     #
 
                     # Global turn for this frame
-                    glob_turn = np.arctan((yf - yi) / (xf - xi))
+                    glob_turn = np.arctan((yf - y0) / (xf - x0))# change from yi and xi
                     glob_turn_deg = np.degrees(glob_turn) #
                     dir_autocorr = np.cos(turn_list[int(t_window/2)-1] -
                                           turn_list[int(t_window/2)-2])

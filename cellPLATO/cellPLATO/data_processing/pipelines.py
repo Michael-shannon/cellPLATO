@@ -35,7 +35,7 @@ Any functions that mix these two submodules should be included here.
 '''
 
 
-def measurement_pipeline(comb_df, mixed=MIXED_SCALING):
+def measurement_pipeline(comb_df, mixed=MIXED_SCALING, factors_to_timeaverage = ALL_FACTORS):
 
     # Calculate the clusteredness in xy-space
     if (PERFORM_RIPLEYS):
@@ -57,18 +57,19 @@ def measurement_pipeline(comb_df, mixed=MIXED_SCALING):
         print('Self-standardizing factors: ',FACTORS_TO_STANDARDIZE)
         comb_df = standardize_factors_per_cell(comb_df,FACTORS_TO_STANDARDIZE)
 
-
-    if(FACTOR_TIMEAVERAGE):
+    add_fac_list = None
+    if(AVERAGE_TIME_WINDOWS): #this is averaging across time windows, but lets change name to factor time window or something. CHANGE NAME. FACTOR_TIMEAVERAGE AVERAGE_TIME_WINDOWS
 
         # Which factors should we calculate acorss the cells time window.
-        factors_to_timeaverage = DR_FACTORS
-        print('Time-averaging factors: ', factors_to_timeaverage)
-        comb_df, add_fac_list = t_window_metrics(std_comb_df,factor_list=factors_to_timeaverage)
+        # factors_to_timeaverage = DR_FACTORS
+        print('Time-averaging CHANGE THIS NAME factors: ', factors_to_timeaverage)
+        # comb_df, add_fac_list = t_window_metrics(std_comb_df,factor_list=factors_to_timeaverage)
+        comb_df, add_fac_list = t_window_metrics(comb_df,factor_list=factors_to_timeaverage)
 
     # Reset index since aspect calc may have dropped rows.
     comb_df.reset_index(inplace=True, drop=True)
 
-    return comb_df
+    return comb_df, add_fac_list #, add_fac_list to be output in order to integrate into dr downstream
 
 def dr_pipeline(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSNE_PERP,umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST):
 

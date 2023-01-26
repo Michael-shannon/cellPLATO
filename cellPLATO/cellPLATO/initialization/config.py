@@ -51,9 +51,10 @@ FRAME_START = 0 # Start frame for analysis
 FRAME_END = 180 # End frame for analysis
 
 MIXED_SCALING = False # Not used yet, for futureproofing
-SELF_STANDARDIZE = False
-FACTOR_TIMEAVERAGE = False
+SELF_STANDARDIZE = False #STANDARDIZES ACROSS factors within a cell df, not across the whole dataframe like the umap standardization. Experiment with it turned on and off for DR.
 
+AVERAGE_TIME_WINDOWS = True #This does two things. 1) provides a time window averaged value for every metric (_tmean). 
+#                                                     2)  gives also a ratio of the time window averaged value to the first timepoint in the time window (_tmean_ratio). 
 '''
 Non-experiment specific constants
 '''
@@ -62,7 +63,7 @@ MIG_T_WIND = 12#6 # in frames
 
 MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 
-OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_1-12-2023_OUTPUT/'
+OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_1-24-2023_AVERAGE_TIME_WINDOWS/'
 
 CLUSTER_CMAP = 'tab20'
 CONDITION_CMAP = 'dark'
@@ -178,36 +179,36 @@ FACTOR_PAIRS = [['tSNE1', 'tSNE2'],
                 ['euclidean_dist','speed'],
                 ['PC1', 'PC2']]
 
-# DR_FACTORS = REGIONPROPS_LIST + MIG_FACTORS + ADDITIONAL_FACTORS
+DR_FACTORS = REGIONPROPS_LIST + MIG_FACTORS + ADDITIONAL_FACTORS
 ALL_FACTORS = REGIONPROPS_LIST + MIG_FACTORS + ADDITIONAL_FACTORS
 
-DR_FACTORS = ['area',
+# DR_FACTORS = ['area',
 
-            # 'bbox_area',
-            'eccentricity',
-            'equivalent_diameter',
-            # 'extent',
-            # 'filled_area',
-            # 'major_axis_length',
-            # 'minor_axis_length',
-            # 'orientation',
-            'perimeter',
-            'solidity',
-            'cumulative_length',
-           # 'euclidean_dist',
-            'speed',
-            'orientedness',
-            'directedness',
-            # 'turn_angle',
-            'endpoint_dir_ratio',
-            'dir_autocorr',
-            'outreach_ratio',
-            'MSD',
-            'max_dist',
-            # 'glob_turn_deg',
-            'arrest_coefficient',
-            'aspect',
-            'rip_L']
+#             # 'bbox_area',
+#             'eccentricity',
+#             'equivalent_diameter',
+#             # 'extent',
+#             # 'filled_area',
+#             # 'major_axis_length',
+#             # 'minor_axis_length',
+#             # 'orientation',
+#             'perimeter',
+#             'solidity',
+#             'cumulative_length',
+#            # 'euclidean_dist',
+#             'speed',
+#             'orientedness',
+#             'directedness',
+#             # 'turn_angle',
+#             'endpoint_dir_ratio',
+#             'dir_autocorr',
+#             'outreach_ratio',
+#             'MSD',
+#             'max_dist',
+#             # 'glob_turn_deg',
+#             'arrest_coefficient',
+#             'aspect',
+#             'rip_L']
 
 DIS_REGIONPROPS_LIST = ['area',
             # 'bbox_area',
@@ -242,7 +243,7 @@ NUM_FACTORS = DR_FACTORS + ['tSNE1', 'tSNE2', 'PC1', 'PC2']
 
 # Optionally define your data filters here.
 DATA_FILTERS = {
-  "area": (10, 10000), # Warning: range will change if self-normalized
+  "area": (10, 10000), # Warning: range will change if self-normalized. Do we need an if statement? Or to standardscale the filter settings, by matching a row of the df?
   "ntpts": (12,1800)
 
 }

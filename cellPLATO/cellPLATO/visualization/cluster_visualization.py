@@ -307,6 +307,65 @@ def draw_cluster_hulls(df_in, cluster_by=CLUSTER_BY, min_pts=5, color_by='cluste
 
     return ax
 
+def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier=''): #new matplotlib version of scatter plot for umap 1-26-2023
+    import matplotlib.pyplot as plt
+    from numpy.random import random
+    from mpl_toolkits.mplot3d import Axes3D
+
+    font_size = 24
+    # df = lab_dr_df
+
+    fig = plt.figure(figsize=(15, 15))
+
+    if colorby == 'label':
+        coloredby = 'label'
+        colors = cm.tab20(np.linspace(0, 1, len(df['label'].unique())))  
+        df = df.sort_values(by=['label'])
+       
+    elif colorby == 'condition':
+        coloredby = 'Condition_shortlabel'
+        colors = cm.rainbow(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+
+    ax = plt.subplot(111, projection='3d')
+     
+    for colorselector in range(len(colors)): #you have to plot each label separately to get the legend to work
+        if colorby == 'label':
+            ax.scatter(df[df['label'] == df['label'].unique()[colorselector]][x], df[df['label'] == df['label'].unique()[colorselector]][y],
+             df[df['label'] == df['label'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['label'].unique()[colorselector], s=3)
+        elif colorby == 'condition':
+            ax.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x], df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+             df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=3)
+
+    plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=5)
+    
+    # plt.tight_layout()
+    
+    # Set the axis labels with or without ticks
+    if ticks == False:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+        ax.set_xlabel(x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel(y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel(z, fontsize=font_size, linespacing=3.2)
+    elif ticks == True:
+        # Set the axis labels
+        ax.set_xlabel('\n ' + x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel('\n ' + y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel('\n ' + z, fontsize=font_size, linespacing=3.2)
+        ax.tick_params(axis='both', which='major', labelsize=font_size)
+    
+    # set the axis limits to tight
+    ax.set_xlim3d(np.min(df[x]), np.max(df[x]))
+    ax.set_ylim3d(np.min(df[y]), np.max(df[y]))
+    ax.set_zlim3d(np.min(df[z]), np.max(df[z]))
+
+    plt.show()
+
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.png', dpi=300, bbox_inches='tight')
+
+    return ax    
+
 def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what = ''):
 
     import plotly.io as pio
@@ -346,7 +405,7 @@ def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what 
     fig.show()
     return
 
-def plot_plasticity_changes(df, identifier='\_allcells'):
+def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
 
     # f, axes = plt.subplots(1, 3, figsize=(15, 5)) #sharex=True
     # f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=True) #sharex=True
@@ -367,6 +426,19 @@ def plot_plasticity_changes(df, identifier='\_allcells'):
 
     # df=dfnumericals.join(extracted_col)
 
+    ##
+    if miny != None or maxy != None:
+        minimumy=miny
+        maximumy1=maxy
+        maximumy2=maxy
+        maximumy3=maxy
+    else:
+        minimumy=0
+        maximumy1=np.nanmax(df[whattoplot[0]])
+        maximumy2=np.nanmax(df[whattoplot[1]])
+        maximumy3=np.nanmax(df[whattoplot[2]])
+
+    ##
     import seaborn as sns
     sns.set_theme(style="ticks")
     sns.set_palette(CONDITION_CMAP)
@@ -413,9 +485,15 @@ def plot_plasticity_changes(df, identifier='\_allcells'):
     axes[1].set_xlabel("Time (min)", fontsize=36)
     axes[2].set_xlabel("Time (min)", fontsize=36)
 
-    axes[0].set_ylim(0, np.nanmax(df[whattoplot[0]]))
-    axes[1].set_ylim(0, np.nanmax(df[whattoplot[1]]))
-    axes[2].set_ylim(0, np.nanmax(df[whattoplot[2]]))
+    # axes[0].set_ylim(0, np.nanmax(df[whattoplot[0]]))
+    # axes[1].set_ylim(0, np.nanmax(df[whattoplot[1]]))
+    # axes[2].set_ylim(0, np.nanmax(df[whattoplot[2]]))
+    axes[0].set_ylim(0, maximumy1)
+    axes[1].set_ylim(0, maximumy2)
+    axes[2].set_ylim(0, maximumy3)
+
+
+    
 
     # ax.set_ylabel(y_lab, fontsize=36)
     axes[0].tick_params(axis='both', labelsize=36)
