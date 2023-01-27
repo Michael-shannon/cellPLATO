@@ -10,6 +10,16 @@ A Python data analysis package for time-lapse cell migration experiments. Used i
 4. Activate the environment: conda activate cellPLATO
 5. Install the rest of the packages: pip install -e .
 
+Known errors:
+
+If you get the ERROR: Could not build wheels for hdbscan, which is required to install pyproject.toml-based projects
+
+Please check 1) you have C++ installed, 2) install hdbscan using 'conda install -c conda-forge hdbscan'
+
+If matplotlib fails to install via pip for the same reason, please use:
+
+conda install -c conda-forge matplotlib
+
 ## How to use cellPLATO:
 
 cellPLATO is made to be used downstream of cell segmentation and tracking. We used cellpose and then bayesian tracker, with files organized as below in the 'file organization' section.
