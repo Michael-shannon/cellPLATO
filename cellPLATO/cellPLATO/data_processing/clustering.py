@@ -2028,11 +2028,7 @@ def dbscan(df_in, x_name, y_name, eps, cust_label = 'label'):
     return lab_df
 
 
-
-
-
 def get_label_counts(df, per_rep=False):
-
 
     '''
     Takes a DBscan labelled dataframe as input, and computes the number of cells that has each of the labels,
@@ -2056,10 +2052,10 @@ def get_label_counts(df, per_rep=False):
 
     assert 'label' in df.columns, 'No label in dataframe'
     labels = df['label'].unique() #IMportantly computed for the whole set.
-    label_counts_df = pd.DataFrame(columns=['Condition', 'Replicate_ID', 'label', 'count'])
+    label_counts_df = pd.DataFrame(columns=['Condition', 'Replicate_ID', 'label', 'count', 'percent'])
 
     # Per condition OR per replicate
-    cond_list = df['Condition'].unique()
+    cond_list = df['Condition_shortlabel'].unique()
     rep_list = df['Replicate_ID'].unique()
 
     i=0
@@ -2086,27 +2082,28 @@ def get_label_counts(df, per_rep=False):
 
         for cond in cond_list:
 
-            this_cond_df = df[df['Condition'] == cond]
-
+            this_cond_df = df[df['Condition_shortlabel'] == cond]
+            totalforthiscondition=len(this_cond_df.index)
+            # print(totalforthiscondition)
 
             # Count how many rows for each label
             for label in labels:
 
                  # Keep this dataframe being made for when we want to look at distributions
-                this_lab_df = this_cond_df[this_cond_df['label'] == label]
-
-                label_counts_df.loc[i] = [cond, 'NA', label, len(this_lab_df.index) ]
+                this_lab_df = this_cond_df[this_cond_df['label'] == label]                
+                fraction_in_label = len(this_lab_df.index)/totalforthiscondition
+                percent_in_label = fraction_in_label*100
+                label_counts_df.loc[i] = [cond, 'NA', label, len(this_lab_df.index), percent_in_label]
                 i+=1
-
-
-
-    return label_counts_df
+    # label_counts_df
+    return label_counts_df        
 
 def plot_label_counts(df_in):
     x_label = 'label'
     y_label='count'
+    y_label2='percent'
 
-    fig, ax = plt.subplots(figsize=[20,10])
+    fig, ax = plt.subplots(figsize=[10,10])
     sns.barplot(x = x_label,
                 y = y_label,
                 hue = 'Condition',
@@ -2130,4 +2127,132 @@ def plot_label_counts(df_in):
     # Show the plot
     plt.show()
 
-    return
+    fig2, ax2 = plt.subplots(figsize=[10,10])
+    sns.barplot(x = x_label,
+                y = y_label2,
+                hue = 'Condition',
+                palette = 'dark',
+                data = df_in, ax=ax2
+               )
+    ax2.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    # ax.legend(fontsize=24)
+    ax2.xaxis.grid(True)
+    # ax.set(ylabel=y)
+    ax2.set_title("", fontsize=36)
+    ax2.set_xlabel('Cluster label', fontsize=36)
+    ax2.set_ylabel('Percent per Cluster', fontsize=36)
+    ax2.tick_params(axis='both', labelsize=36)
+    # sns.despine(left=True)
+
+    # ax.set_yticklabels(['eNK','eNK+CytoD'])
+    fig2.tight_layout()
+    # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
+    fig2.savefig(CLUST_DISAMBIG_DIR+'\cluster_label_percents.png', dpi=300)#plt.
+    # Show the plot
+    plt.show()
+
+
+
+    return   
+
+
+# def get_label_counts(df, per_rep=False): #deprecated 2-2023
+
+
+#     '''
+#     Takes a DBscan labelled dataframe as input, and computes the number of cells that has each of the labels,
+#     separated by condition or replicate.
+
+#     input:
+#         df: dataframe that must contain a 'label' column (i.e. output from  dbscan_clustering())
+
+#         per_rep: Boolean, if True - each row in the summary dataframe corresponds to an individual replicate,
+#             otherwise defaults to one row per conditon.
+
+#     returns:
+#         label_counts_df: dataframe with the columns: Condition, Replicate_ID, label, count
+
+
+#     Note: Output easily visualized by plotly express stripplot.
+#         fig = px.strip(lab_count_df, x="label", y="count", color="Condition")
+
+#     '''
+
+
+#     assert 'label' in df.columns, 'No label in dataframe'
+#     labels = df['label'].unique() #IMportantly computed for the whole set.
+#     label_counts_df = pd.DataFrame(columns=['Condition', 'Replicate_ID', 'label', 'count'])
+
+#     # Per condition OR per replicate
+#     cond_list = df['Condition'].unique()
+#     rep_list = df['Replicate_ID'].unique()
+
+#     i=0
+
+#     if(per_rep):
+
+
+#         for this_rep in rep_list:
+
+#             this_rep_df = df[df['Replicate_ID'] == this_rep]
+
+#             assert len(this_rep_df['Condition'].unique()) == 1, 'Condition not unique in rep_df'
+
+#             # Count how many rows for each label
+#             for label in labels:
+
+#                  # Keep this dataframe being made for when we want to look at distributions
+#                 this_lab_df = this_rep_df[this_rep_df['label'] == label]
+
+#                 label_counts_df.loc[i] = [this_rep_df['Condition'].unique()[0], this_rep, label, len(this_lab_df.index) ]
+#                 i+=1
+
+#     else:
+
+#         for cond in cond_list:
+
+#             this_cond_df = df[df['Condition'] == cond]
+
+
+#             # Count how many rows for each label
+#             for label in labels:
+
+#                  # Keep this dataframe being made for when we want to look at distributions
+#                 this_lab_df = this_cond_df[this_cond_df['label'] == label]
+
+#                 label_counts_df.loc[i] = [cond, 'NA', label, len(this_lab_df.index) ]
+#                 i+=1
+
+
+
+#     return label_counts_df
+
+# def plot_label_counts(df_in): #deprecated 2-2023
+#     x_label = 'label'
+#     y_label='count'
+
+#     fig, ax = plt.subplots(figsize=[20,10])
+#     sns.barplot(x = x_label,
+#                 y = y_label,
+#                 hue = 'Condition',
+#                 palette = CONDITION_CMAP,
+#                 data = df_in, ax=ax
+#                )
+#     ax.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     # ax.legend(fontsize=24)
+#     ax.xaxis.grid(True)
+#     # ax.set(ylabel=y)
+#     ax.set_title("", fontsize=36)
+#     ax.set_xlabel('Cluster label', fontsize=36)
+#     ax.set_ylabel('Total count', fontsize=36)
+#     ax.tick_params(axis='both', labelsize=36)
+#     # sns.despine(left=True)
+
+#     # ax.set_yticklabels(['eNK','eNK+CytoD'])
+#     fig.tight_layout()
+#     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
+#     fig.savefig(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png', dpi=300)#plt.
+#     # Show the plot
+#     plt.show()
+
+#     return
