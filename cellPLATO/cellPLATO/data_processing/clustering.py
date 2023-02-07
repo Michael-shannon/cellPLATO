@@ -577,7 +577,7 @@ def dbscan_clustering(df_in, eps=EPS, min_samples=MIN_SAMPLES,cluster_by='tsne',
 #
 #     return lab_dr_df, exemplar_df
 ### USE THIS ONE AS OF 12-20-2022 ##### old name hdbscan_clustering__DEV_DEV_SPEEDUP
-def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUST_DEV_DIR, n_components=N_COMPONENTS):
+def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUST_DEV_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
 
     print('hdbscan_clustering() with min_cluster_size = ', min_cluster_size)
     from sklearn.preprocessing import MinMaxScaler
@@ -629,10 +629,53 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
     # X = sub_set.values
     Z = sub_set.values
     #####
-    X = StandardScaler().fit_transform(Z)
+
+    if scalingmethod == 'minmax': #log2minmax minmax powertransformer
+        X = MinMaxScaler().fit_transform(Z)
+        correctcolumns = CLUSTERON
+    elif scalingmethod == 'log2minmax':
+
+        negative_FACTORS = []
+        positive_FACTORS = []
+        for factor in DR_FACTORS:
+            if np.min(df_in[factor]) < 0:
+                print('factor ' + factor + ' has negative values')
+                negative_FACTORS.append(factor)
+                
+            else:
+                print('factor ' + factor + ' has no negative values')
+                positive_FACTORS.append(factor)
+        
+        
+        pos_df = df_in[positive_FACTORS]
+        pos_x = pos_df.values
+        neg_df = df_in[negative_FACTORS]
+        neg_x = neg_df.values
+        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        pos_x_constant = pos_x + 0.000001
+        pos_x_log = np.log2(pos_x + pos_x_constant)
+        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+        X = np.concatenate((pos_x_, neg_x_), axis=1)
+        correctcolumns=positive_FACTORS + negative_FACTORS
+
+    elif scalingmethod == 'powertransformer':    
+        
+        pt = PowerTransformer(method='yeo-johnson')
+        X = pt.fit_transform(x)
+        correctcolumns = CLUSTERON
+
+        #########
+    elif scalingmethod == None:
+        X = Z
+        correctcolumns = CLUSTERON
+
+
+    # X = StandardScaler().fit_transform(Z)
+    # X=Z
+    # X = np.arcsinh(Z)
     # X = MinMaxScaler().fit_transform(Z)
     ######
-    print(X)
+    # print(X)
 
     # Z = StandardScaler().fit_transform(sub_set)
     # X = MinMaxScaler().fit_transform(Z)
@@ -645,14 +688,14 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
     # summarize
 
-    scaled_subset_df=pd.DataFrame(data=X,columns=CLUSTERON)
+    scaled_subset_df=pd.DataFrame(data=X,columns=correctcolumns)
     print(scaled_subset_df.describe())
     # histograms of the variables
     # sub_set.hist(figsize=(20, 10))
     # plt.tight_layout()
     # plt.show()
 
-    scaled_subset_df.hist(figsize=(20, 10),color = "black", ec="black")
+    scaled_subset_df.hist(figsize=(20, 10), bins=160, color = "black", ec="black")
     plt.tight_layout()
     plt.show()
     plt.savefig(savedir+'scaledHISTOGRAMS'+'.png')

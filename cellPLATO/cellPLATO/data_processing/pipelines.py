@@ -196,10 +196,11 @@ def dr_pipeline_dev(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSN
 
     return dr_df
 
-def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS):
+def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD):
 
     component_list=np.arange(1, n_components+1,1).tolist()
-    from sklearn.preprocessing import RobustScaler
+    from sklearn.preprocessing import PowerTransformer
+    savedir = CLUST_DEV_DIR
 
     umap_components=([f'UMAP{i}' for i in component_list])
     # tsne_components=([f'tSNE{i}' for i in component_list])
@@ -217,8 +218,58 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     # rs = RobustScaler(quantile_range=(0,95)) #Check usage of this scalar
     ## THIS IS WHAT YOU HAD ##
     # g = StandardScaler().fit_transform(x)
-    x_ = MinMaxScaler().fit_transform(x)
+    if scalingmethod == 'minmax': #log2minmax minmax powertransformer
+        x_ = MinMaxScaler().fit_transform(x)
+    elif scalingmethod == 'log2minmax':
+
+        negative_FACTORS = []
+        positive_FACTORS = []
+        for factor in dr_factors:
+            if np.min(df[factor]) < 0:
+                print('factor ' + factor + ' has negative values')
+                negative_FACTORS.append(factor)
+                
+            else:
+                print('factor ' + factor + ' has no negative values')
+                positive_FACTORS.append(factor)
+        
+        
+        pos_df = df[positive_FACTORS]
+        pos_x = pos_df.values
+        neg_df = df[negative_FACTORS]
+        neg_x = neg_df.values
+        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        pos_x_constant = pos_x + 0.000001
+        pos_x_log = np.log2(pos_x + pos_x_constant)
+        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+        x_ = np.concatenate((pos_x_, neg_x_), axis=1)
+        newcols=positive_FACTORS + negative_FACTORS
+
+        scaled_df_here = pd.DataFrame(x_, columns = newcols)
+        print("THIS IS THE " + str(scalingmethod) + " TRANSFORMED DATA ")
+        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        plt.tight_layout()
+        plt.show()
+        plt.savefig(savedir+ str(scalingmethod) +'.png')
+
+    elif scalingmethod == 'powertransformer':    
+        
+        pt = PowerTransformer(method='yeo-johnson')
+        x_ = pt.fit_transform(x)
+        scaled_df_here = pd.DataFrame(x_, columns = sub_df.columns)
+        print("THIS IS THE " + str(scalingmethod) + " DATA ")
+        scaled_df_here.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        plt.tight_layout()
+        plt.show()
+        plt.savefig(savedir+ str(scalingmethod) +'.png')
+
+
+        ########
+
+    # x_ = MinMaxScaler().fit_transform(x)
     # Principal component analysis ?? Not needed here right now.
+
+
     pca_df, _, _ = do_pca(x_)
 
     print('Using standardized factors for dimensionality reduction, matrix shape: ', x_.shape)
@@ -243,6 +294,251 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 
     return dr_df
 
+# def dr_pipeline_multiUMAPandTSNE_DEV(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod='arcsinh', positive_FACTORS=DR_FACTORS, negative_FACTORS=DR_FACTORS ):
+
+#     component_list=np.arange(1, n_components+1,1).tolist()
+#     from sklearn.preprocessing import RobustScaler
+#     from sklearn.preprocessing import MaxAbsScaler
+#     from sklearn.preprocessing import PowerTransformer
+#     savedir = CLUST_DEV_DIR
+
+#     umap_components=([f'UMAP{i}' for i in component_list])
+#     # tsne_components=([f'tSNE{i}' for i in component_list])
+
+#     print('Running dr_pipeline for multi dimension UMAP and tSNE...')
+#     print('tSNE perplexity = ',tsne_perp)
+#     print('UMAP nearest neighbors = ', umap_nn, ' min distance = ',min_dist)
+#     print('Number of UMAP components = ', n_components)
+
+#     # Prepare data for dimensionality reduction by extracting the factors of interest from the DR_FACTORS list.
+#     # x = get_data_matrix(df,dr_factors)
+#     print("DR factors used were" + str(dr_factors))
+#     sub_df = df[dr_factors]
+#     print("THIS IS THE non TRANSFORMED DATA")
+#     sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+#     plt.tight_layout()
+#     plt.show()
+#     plt.savefig(savedir+'NOTTRANSFORMED'+'.png')
+
+#     x= sub_df.values
+#     # rs = RobustScaler(quantile_range=(0,95)) #Check usage of this scalar
+#     ## THIS IS WHAT YOU HAD ##
+#     # g = StandardScaler().fit_transform(x)
+
+#     # This is what WAS there
+#     # x_ = MinMaxScaler().fit_transform(x)
+
+#     if scalingmethod == 'arcsinh':
+#         x_ = np.arcsinh(x)
+#     elif scalingmethod == 'minmax':
+#         x_ = MinMaxScaler().fit_transform(x)
+#     elif scalingmethod == 'standard':
+#         x_ = StandardScaler().fit_transform(x)    
+#     elif scalingmethod == 'arcsinhminmax':
+#         x_ = np.arcsinh(x)
+#         x_ = MinMaxScaler().fit_transform(x_)
+#     elif scalingmethod == 'minmaxarcsinh':
+#         x_ = MinMaxScaler().fit_transform(x)
+#         x_ = np.arcsinh(x_)
+#     elif scalingmethod == 'arcsinhstandard':
+#         x_ = np.arcsinh(x)
+#         x_ = StandardScaler().fit_transform(x_)
+#     elif scalingmethod =='robust':
+#         x_ = RobustScaler().fit_transform(x)
+#     elif scalingmethod =='robustarcsinh':
+#         x_ = RobustScaler().fit_transform(x)
+#         # x_ = np.arcsinh(x_)
+#     elif scalingmethod == 'log2':
+#         # factorswithnonegatives = 
+#         # sub_df = df[dr_factors]
+#         # x= sub_df.values
+#         print('number of nan values is ' + str(sub_df.isnull().sum()))
+        
+        
+#         count = -np.isinf(sub_df).values.sum()
+#         print("DF contains " + str(count) + " infinite values")
+#         x=sub_df.values
+#         count2=-np.isinf(x).sum()
+#         print("x contains " + str(count2) + " infinite values")
+
+#         zerocount = (sub_df == 0).sum(axis=0)
+#         print('Count of zeros is as follows')
+#         display(zerocount)
+
+#         sub_df_onlyfinites=sub_df[np.isfinite(sub_df)]
+#         count = -np.isinf(sub_df_onlyfinites).values.sum()
+#         print("sub_df_onlyfinites contains " + str(count) + " infinite values")
+#         # x2=sub_df_onlyfinites.values
+#         # count3=np.sum(-np.isinf(x2))
+#         # print("x2 from the non finite contains " + str(count3) + " infinite values")
+
+
+#         # x_ = np.log2(x - (np.min(x) - 1))
+#         x_ = np.log2(x+0.00001)
+#     elif scalingmethod == 'log2minmax':
+#         xplusconstant = x + 0.00001
+#         log2xplusconstant = np.log2(xplusconstant)
+#         x_ = MinMaxScaler().fit_transform(log2xplusconstant)
+
+
+#         print("x contains " + str(-np.isinf(x).sum()) + " negative infinite values")
+#         print("xplusconstant contains " + str(-np.isinf(xplusconstant).sum()) + " negative infinite values")
+#         print("log2xplusconstant contains " + str(-np.isinf(log2xplusconstant).sum()) + " negative infinite values")
+#         print("MinMaxScaledlog2xplusconstant data contains " + str(-np.isinf(x_).sum()) + " negative infinite values")
+
+#         print("x contains " + str(np.isnan(x).sum()) + " NaN values")
+#         print("xplusconstant contains " + str(np.isnan(xplusconstant).sum()) + " NaN values")
+#         print("log2xplusconstant contains " + str(np.isnan(log2xplusconstant).sum()) + " NaN values")
+#         print("MinMaxScaledlog2xplusconstant data contains " + str(np.isnan(x_).sum()) + " NaN values")
+
+#     elif scalingmethod =='minmaxlog2':
+#         # xplusconstant = x + 0.00001
+#         minmaxscaled = MinMaxScaler().fit_transform(x)
+#         minmaxscaledplusconstant = minmaxscaled + 0.00001
+#         x_ = np.log2(minmaxscaledplusconstant)
+        
+#         print("x contains " + str(-np.isinf(x).sum()) + " negative infinite values")
+#         print("minmaxscaled contains " + str(-np.isinf(minmaxscaled).sum()) + " negative infinite values")
+#         print("minmaxscaledplusconstant contains " + str(-np.isinf(minmaxscaledplusconstant).sum()) + " negative infinite values")
+#         print("MinMaxScaledlog2xplusconstant data contains " + str(-np.isinf(x_).sum()) + " negative infinite values")
+
+#         print("x contains " + str(np.isnan(x).sum()) + " NaN values")
+#         print("minmaxscaled contains " + str(np.isnan(minmaxscaled).sum()) + " NaN values")
+#         print("minmaxscaledplusconstant contains " + str(np.isnan(minmaxscaledplusconstant).sum()) + " NaN values")
+#         print("MinMaxScaledlog2xplusconstant data contains " + str(np.isnan(x_).sum()) + " NaN values")
+
+#         print('x contains  ' + str(np.count_nonzero(x==0)) + ' zero values')
+#         print('minmaxscaled contains  ' + str(np.count_nonzero(minmaxscaled==0)) + ' zero values')
+#         print('minmaxscaledplusconstant contains  ' + str(np.count_nonzero(minmaxscaledplusconstant==0)) + ' zero values')
+#         print('MinMaxScaledlog2xplusconstant contains  ' + str(np.count_nonzero(x_==0)) + ' zero values')
+
+
+#     elif scalingmethod == 'maxabs':
+#         x_ = MaxAbsScaler().fit_transform(x)
+
+#     elif scalingmethod == 'log2minmaxorjustminmax':
+#         negative_FACTORS = []
+#         positive_FACTORS = []
+#         for factor in dr_factors:
+#             if np.min(df[factor]) < 0:
+#                 print('factor ' + factor + ' has negative values')
+#                 negative_FACTORS.append(factor)
+                
+#             else:
+#                 print('factor ' + factor + ' has no negative values')
+#                 positive_FACTORS.append(factor)
+        
+#         display(positive_FACTORS)
+#         display(negative_FACTORS)
+#         pos_df = df[positive_FACTORS]
+#         pos_x = pos_df.values
+#         print("pos_x contains " + str(-np.isinf(pos_x).sum()) + " negative infinite values")
+#         print("pos_x contains " + str(np.isnan(pos_x).sum()) + " NaN values")
+#         print('pos_x contains  ' + str(np.count_nonzero(pos_x==0)) + ' zero values')
+
+        
+#         neg_df = df[negative_FACTORS]
+#         neg_x = neg_df.values
+#         print("neg_x contains " + str(-np.isinf(neg_x).sum()) + " negative infinite values")
+#         print("neg_x contains " + str(np.isnan(neg_x).sum()) + " NaN values")
+#         print('neg_x contains  ' + str(np.count_nonzero(neg_x==0)) + ' zero values')
+#         neg_x_ = MinMaxScaler().fit_transform(neg_x)
+
+
+#         pos_x_constant = pos_x + 0.000001
+#         pos_x_log = np.log2(pos_x + pos_x_constant)
+#         pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+
+        
+
+#         # notransform_df = df[notransform_FACTORS]
+#         # notransform_x = notransform_df.values
+#         # print("notransform_x contains " + str(-np.isinf(notransform_x).sum()) + " negative infinite values")
+#         # print("notransform_x contains " + str(np.isnan(notransform_x).sum()) + " NaN values")
+#         # print('notransform_x contains  ' + str(np.count_nonzero(notransform_x==0)) + ' zero values')
+
+
+#         x_ = np.concatenate((pos_x_, neg_x_), axis=1)
+#         newcols=positive_FACTORS + negative_FACTORS
+
+#         scaled_df_here = pd.DataFrame(x_, columns = newcols)
+#         print("THIS IS THE " + str(scalingmethod) + " DATA ACTUALLY")
+#         scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
+#         plt.tight_layout()
+#         plt.show()
+#         plt.savefig(savedir+ str(scalingmethod) +'.png')
+
+#     elif scalingmethod == 'powertransformer':    
+        
+#         pt = PowerTransformer(method='yeo-johnson')
+#         x_ = pt.fit_transform(x)
+
+
+
+#         scaled_df_here = pd.DataFrame(x_, columns = sub_df.columns)
+#         print("THIS IS THE " + str(scalingmethod) + " DATA ")
+#         scaled_df_here.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+#         plt.tight_layout()
+#         plt.show()
+#         plt.savefig(savedir+ str(scalingmethod) +'.png')
+        
+    
+
+#     # minmaxscaled = MinMaxScaler().fit_transform(x)
+
+#     # print("THIS IS THE " + str(scalingmethod) + " DATA")
+#     # minmaxscaled_df = pd.DataFrame(x_, columns = sub_df.columns)
+#     # minmaxscaled_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+#     # plt.tight_layout()
+#     # plt.show()
+#     # plt.savefig(savedir+ str(scalingmethod) +'.png')
+
+#     # Perform arcsinh transformation on the data
+#     # x_ = np.arcsinh(x)
+
+#     # if dominmax == True:
+#     #     x_ = MinMaxScaler().fit_transform(x_)
+
+
+#     # print("THIS IS THE TRANSFORMED DATA")
+#     # scaled_subset_df = pd.DataFrame(x_, columns = sub_df.columns)
+#     # scaled_subset_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+#     # plt.tight_layout()
+#     # plt.show()
+#     # plt.savefig(savedir+'ArcSinhTransformed'+'.png')
+
+#     ##
+#     # Principal component analysis ?? Not needed here right now.
+#     pca_df, _, _ = do_pca(x_)
+
+#     print('Using standardized factors for dimensionality reduction, matrix shape: ', x_.shape)
+
+# #     elif dr_input == 'PCs':
+
+# #         x_ = pca_df.values
+# #         print('Using Principal Components for dimensionality reduction, matrix shape: ', x_.shape)
+
+
+
+#     # Do UMAP and insert into dataframe:
+#     umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=N_COMPONENTS)
+#     umap_df = pd.DataFrame(data = umap_x, columns = umap_components)
+
+#     # Do tSNE and insert into dataframe:
+#     if do_tsne == True:
+#         tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
+#         tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
+
+#     # tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
+#     # tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
+
+#     # Create Dimension-reduced dataframe by adding PCA and tSNE columns.
+#     # dr_df = pd.concat([df, pca_df, tsne_df, umap_df], axis=1)
+#     dr_df = pd.concat([df, umap_df], axis=1)
+
+#     assert list(df.index) == list(dr_df.index), 'dr_df should be the same length as input dataframe. Check indexing of input dataframe.'
+
+#     return dr_df
 
 
 

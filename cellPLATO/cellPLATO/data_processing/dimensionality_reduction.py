@@ -41,16 +41,26 @@ import plotly.graph_objects as go
 UMAP functions
 '''
 
-def do_umap(x, n_neighbors=15, min_dist=0.0, n_components=3, metric='euclidean', plot=False):
+def do_umap(datax, n_neighbors=15, min_dist=0.0, n_components=3, metric='euclidean', plot=False): #changed variable name to datax
 
     reducer = umap.UMAP(n_neighbors=n_neighbors,
                         min_dist=min_dist,
                         random_state=42,
                         n_components=n_components)
+    # print("UMAP input data contains " + str(-np.isinf(datax).sum()) + " negative infinite values")
+    # print("UMAP input data contains " + str(np.isinf(datax).sum()) + " positive infinite values")
+    # print("UMAP input data contains " + str(np.isnan(datax).sum()) + " NaN values")
+    
 
-    reducer.fit(x)
+    max = datax.max(axis=0, keepdims=True)
+    min = datax.min(axis=0, keepdims=True)
+    print('max:', max)
+    print('min:', min)
+    # reducer.fit(datax)
 
-    embedding = reducer.transform(x)
+    # embedding = reducer.transform(datax)
+    embedding = reducer.fit_transform(datax)
+    print("UMAP output data contains " + str(-np.isinf(embedding).sum()) + " negative infinite values")
     assert(np.all(embedding == reducer.embedding_))
     print('Embedding shape: ',embedding.shape)
 
@@ -58,7 +68,7 @@ def do_umap(x, n_neighbors=15, min_dist=0.0, n_components=3, metric='euclidean',
         plt.scatter(embedding[:, 0], embedding[:, 1],s=2)#, cmap='Spectral', s=5)
         plt.gca().set_aspect('equal', 'datalim')
         plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-        plt.title('UMAP projection', fontsize=24);
+        plt.title('UMAP projection', fontsize=24)
         plt.show()
 
     return embedding
@@ -125,27 +135,27 @@ def umap_sweep(x, n_neighbors_list=[10,15,20], min_dist_list=[0.1,0.25,0.5,0.8,0
             plt.title('UMAP n_neighbors: '+ str(n_neighbors), fontsize=12)
             plt.show()
 
-def do_umap(x, n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', plot=False):
+# def do_umap(x, n_neighbors=15, min_dist=0.1, n_components=2, metric='euclidean', plot=False): #Duplicate function - removed 2/2023
 
-    reducer = umap.UMAP(n_neighbors=n_neighbors,
-                        min_dist=min_dist,
-                        random_state=42,
-                        n_components=n_components)
+#     reducer = umap.UMAP(n_neighbors=n_neighbors,
+#                         min_dist=min_dist,
+#                         random_state=42,
+#                         n_components=n_components)
 
-    reducer.fit(x)
+#     reducer.fit(x)
 
-    embedding = reducer.transform(x)
-    assert(np.all(embedding == reducer.embedding_))
-    print('Embedding shape: ',embedding.shape)
+#     embedding = reducer.transform(x)
+#     assert(np.all(embedding == reducer.embedding_))
+#     print('Embedding shape: ',embedding.shape)
 
-    if plot:
-        plt.scatter(embedding[:, 0], embedding[:, 1],s=2)#, cmap='Spectral', s=5)
-        plt.gca().set_aspect('equal', 'datalim')
-        plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
-        plt.title('UMAP projection', fontsize=24);
-        plt.show()
+#     if plot:
+#         plt.scatter(embedding[:, 0], embedding[:, 1],s=2)#, cmap='Spectral', s=5)
+#         plt.gca().set_aspect('equal', 'datalim')
+#         plt.colorbar(boundaries=np.arange(11)-0.5).set_ticks(np.arange(10))
+#         plt.title('UMAP projection', fontsize=24);
+#         plt.show()
 
-    return embedding
+#     return embedding
 
 def umap_array(df_in, fac1, fac2, fac3,main_title=' UMAP matrix', tag='umap_sweep_'):
 
@@ -259,7 +269,7 @@ def do_pca(x,n_comp=10):
     '''
 
     # Standardizing the features
-    x = StandardScaler().fit_transform(x)
+    # x = StandardScaler().fit_transform(x) # This is done upstream of PCA 2023 in the multiumap function.
 
     pca = PCA(n_components=n_comp)
 

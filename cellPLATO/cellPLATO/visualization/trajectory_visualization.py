@@ -635,8 +635,21 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
     display_factors = top_dictionary[ClusterID]
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
 
-        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), fac +': '+ format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
+        # ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), fac +': '+ format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
+        #         color='tab:blue', fontsize=30,size = 36, fontdict = None) ORIGINAL
+        
+        thisnumber= row.loc[fac]
+        print(thisnumber)
+        print(type(thisnumber))
+        thisnumberstring = str(thisnumber)
+        print(thisnumberstring)
+        print(type(thisnumberstring))
+
+        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), fac +': '
+                + format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
                 color='tab:blue', fontsize=30,size = 36, fontdict = None)
+
+                # + format(cell_df.iloc[i_step][fac], '.1f')
 
     # for n, fac in enumerate(mig_display_factors): #Positioning is currently relative to data. Can it be relative to plot?
     #
@@ -1113,7 +1126,7 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
     # Part 8: exports a df that can be used to select what metrics you want to show?
     return(variance_df)
 
-def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6): #New function 21-14-2022
+def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, scalingmethod = SCALING_METHOD): #New function 21-14-2022
 
     ### 12-12-2022 ##### DEV THIS ONE
 
@@ -1136,9 +1149,48 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
 
     # Part 1: take the metrics and center scales them, then puts them back into a DF
     sub_set = df_in[CLUSTERON]
-    X = MinMaxScaler().fit_transform(sub_set)
+    Z = sub_set.values
+    if scalingmethod == 'minmax': #log2minmax minmax powertransformer
+        X = MinMaxScaler().fit_transform(Z)
+        correctcolumns = CLUSTERON
+    elif scalingmethod == 'log2minmax':
+        negative_FACTORS = []
+        positive_FACTORS = []
+        for factor in dr_factors:
+            if np.min(df_in[factor]) < 0:
+                print('factor ' + factor + ' has negative values')
+                negative_FACTORS.append(factor)
+                
+            else:
+                print('factor ' + factor + ' has no negative values')
+                positive_FACTORS.append(factor)
+        
+        
+        pos_df = df_in[positive_FACTORS]
+        pos_x = pos_df.values
+        neg_df = df_in[negative_FACTORS]
+        neg_x = neg_df.values
+        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        pos_x_constant = pos_x + 0.000001
+        pos_x_log = np.log2(pos_x + pos_x_constant)
+        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+        X = np.concatenate((pos_x_, neg_x_), axis=1)
+        correctcolumns=positive_FACTORS + negative_FACTORS
+
+    elif scalingmethod == 'powertransformer':    
+        
+        pt = PowerTransformer(method='yeo-johnson')
+        X = pt.fit_transform(x)
+        correctcolumns=CLUSTERON
+
+        #########
+    elif scalingmethod == None:
+        X = Z
+        correctcolumns=CLUSTERON
+
+    # X = MinMaxScaler().fit_transform(sub_set)
     thelabels = df_in['label']
-    scaled_df_in = pd.DataFrame(data=X, columns = CLUSTERON)
+    scaled_df_in = pd.DataFrame(data=X, columns = correctcolumns)
     df_out = pd.concat([scaled_df_in,thelabels], axis=1)#Put this back into a DF, with the col names and labels.
     # df_out
 
@@ -1226,7 +1278,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 7: print a boolean_df?
 
     # Part 8: exports a df that can be used to select what metrics you want to show?
-    return(top_dictionary)
+    return(top_dictionary, clusteraverage_df)
 
 
 

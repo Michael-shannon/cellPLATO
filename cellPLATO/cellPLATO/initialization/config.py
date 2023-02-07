@@ -53,7 +53,7 @@ FRAME_END = 180 # End frame for analysis
 MIXED_SCALING = False # Not used yet, for futureproofing
 SELF_STANDARDIZE = False #STANDARDIZES ACROSS factors within a cell df, not across the whole dataframe like the umap standardization. Experiment with it turned on and off for DR.
 
-AVERAGE_TIME_WINDOWS = True #This does two things. 1) provides a time window averaged value for every metric (_tmean). 
+AVERAGE_TIME_WINDOWS = False #This does two things. 1) provides a time window averaged value for every metric (_tmean). 
 #                                                     2)  gives also a ratio of the time window averaged value to the first timepoint in the time window (_tmean_ratio). 
 '''
 Non-experiment specific constants
@@ -63,7 +63,7 @@ MIG_T_WIND = 12#6 # in frames
 
 MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 
-OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_1-24-2023_AVERAGE_TIME_WINDOWS/'
+OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_1-27-2023_NOT_AVERAGE_TIME_WINDOWS/'
 
 CLUSTER_CMAP = 'tab20'
 CONDITION_CMAP = 'dark'
@@ -79,6 +79,7 @@ ANIMATE_TRAJECTORIES = True
 DEBUG = False
 
 #tSNE parameters and embedding:
+SCALING_METHOD = 'powertransformer' # minmax powertransformer log2minmax
 TSNE_PERP = 185#230 # Perplexity
 TSNE_R_S = 11 # Random seed
 USE_SAVED_EMBEDDING = False#True
