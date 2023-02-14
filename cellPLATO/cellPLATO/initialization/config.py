@@ -79,7 +79,7 @@ ANIMATE_TRAJECTORIES = True
 DEBUG = False
 
 #tSNE parameters and embedding:
-SCALING_METHOD = 'powertransformer' # minmax powertransformer log2minmax
+SCALING_METHOD = 'log2minmax' # minmax powertransformer log2minmax
 TSNE_PERP = 185#230 # Perplexity
 TSNE_R_S = 11 # Random seed
 USE_SAVED_EMBEDDING = False#True

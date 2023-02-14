@@ -1142,6 +1142,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # from sklearn.feature_selection import VarianceThreshold
     from sklearn.preprocessing import MinMaxScaler
     from sklearn.preprocessing import StandardScaler
+    from sklearn.preprocessing import PowerTransformer
 
     # df_in = tptlabel_dr_df
     # threshold_value = 0.0001
@@ -1180,7 +1181,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     elif scalingmethod == 'powertransformer':    
         
         pt = PowerTransformer(method='yeo-johnson')
-        X = pt.fit_transform(x)
+        X = pt.fit_transform(Z)
         correctcolumns=CLUSTERON
 
         #########

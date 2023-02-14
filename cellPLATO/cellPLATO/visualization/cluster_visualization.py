@@ -510,6 +510,94 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
 
     return
 
+
+def plot_UMAP_subplots_coloredbymetrics(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='log2minmax', identifier='', colormap='viridis'): #new matplotlib version of scatter plot for umap 1-26-2023
+    import matplotlib.pyplot as plt
+    from numpy.random import random
+    from mpl_toolkits.mplot3d import Axes3D
+    from sklearn import preprocessing
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.preprocessing import PowerTransformer
+    from matplotlib.gridspec import GridSpec
+
+    font_size = 20
+   
+    # Scale the data
+    sub_set = df_in[metrics]
+    Z = sub_set.values
+
+    if scalingmethod == 'minmax':
+        x_=MinMaxScaler().fit_transform(Z)
+        scaled_df = pd.DataFrame(data=x_, columns = metrics) 
+        df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+        # fresh_df = pd.concat([df,lab_list_tpt_df['tavg_label']], axis=1)
+        
+    elif scalingmethod == 'log2minmax':
+        
+        negative_FACTORS = []
+        positive_FACTORS = []
+        for factor in metrics:
+            if np.min(df_in[factor]) < 0:
+                print('factor ' + factor + ' has quite a few negative values')
+                negative_FACTORS.append(factor)
+                    
+            else:
+                print('factor ' + factor + ' has no negative values')
+                positive_FACTORS.append(factor)
+            
+            
+        pos_df = df_in[positive_FACTORS]
+        pos_x = pos_df.values
+        neg_df = df_in[negative_FACTORS]
+        neg_x = neg_df.values
+
+        if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
+            print('No negative factors at all!')
+            neg_x_ = neg_x
+        else:
+            neg_x_ = MinMaxScaler().fit_transform(neg_x) 
+
+        pos_x_constant = pos_x + 0.000001
+        pos_x_log = np.log2(pos_x + pos_x_constant)
+        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+        x_ = np.concatenate((pos_x_, neg_x_), axis=1)
+        newcols=positive_FACTORS + negative_FACTORS
+
+        scaled_df = pd.DataFrame(x_, columns = newcols)
+        df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+
+
+    elif scalingmethod == 'powertransformer':    
+        
+        pt = PowerTransformer(method='yeo-johnson')
+        x_ = pt.fit_transform(Z)
+        scaled_df = pd.DataFrame(data=x_, columns = metrics) 
+        df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+
+    # do not forget constrained_layout=True to have some space between axes
+    fig = plt.figure(constrained_layout=True, figsize=(20, 20))
+    # Define the grid of subplots - you can change the number of columns and this changes the rows accordingly
+    n_metrics = len(metrics)
+    n_rows = int(np.ceil(n_metrics / n_cols))
+    print('Length of metrics is ', n_metrics)
+
+    gs = GridSpec(n_rows, n_cols, figure=fig)
+
+    df_out = df_out.reset_index(drop=True)
+    # define the axes in a for loop according to the grid
+    for number, metric in enumerate(metrics):
+        ax = fig.add_subplot(gs[number], projection='3d') # Initializes each plot
+        g = ax.scatter(df_out[x], df_out[y], df_out[z], '.', c=df_out[metric], cmap=colormap, s=0.5, alpha = 0.5) # Makes each plot
+        metric_name = metric.replace('_', ' ') #removes the underscore from the metric name
+        ax.set_title(metric_name, fontsize=font_size)
+
+    fig.colorbar(g, shrink=0.5)
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'UMAP_subplots.png', dpi=300, bbox_inches='tight')
+    
+    plt.show()
+    return     
+
 def plot_plasticity_countplots(df, identifier='\_allcells'):
 
     import matplotlib.pyplot as plt

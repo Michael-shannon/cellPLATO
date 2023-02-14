@@ -2103,14 +2103,14 @@ def plot_label_counts(df_in):
     y_label='count'
     y_label2='percent'
 
-    fig, ax = plt.subplots(figsize=[10,10])
+    fig, ax = plt.subplots(figsize=[15,10])
     sns.barplot(x = x_label,
                 y = y_label,
                 hue = 'Condition',
                 palette = CONDITION_CMAP,
                 data = df_in, ax=ax
                )
-    ax.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    ax.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=30,markerscale=20,fancybox=True)
     # ax.legend(fontsize=24)
     ax.xaxis.grid(True)
     # ax.set(ylabel=y)
@@ -2127,14 +2127,14 @@ def plot_label_counts(df_in):
     # Show the plot
     plt.show()
 
-    fig2, ax2 = plt.subplots(figsize=[10,10])
+    fig2, ax2 = plt.subplots(figsize=[15,10])
     sns.barplot(x = x_label,
                 y = y_label2,
                 hue = 'Condition',
                 palette = 'dark',
                 data = df_in, ax=ax2
                )
-    ax2.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    ax2.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=30,markerscale=20,fancybox=True)
     # ax.legend(fontsize=24)
     ax2.xaxis.grid(True)
     # ax.set(ylabel=y)
