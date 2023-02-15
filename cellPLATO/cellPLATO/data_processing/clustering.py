@@ -651,7 +651,13 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
         pos_x = pos_df.values
         neg_df = df_in[negative_FACTORS]
         neg_x = neg_df.values
-        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        # neg_x_ = MinMaxScaler().fit_transform(neg_x)
+
+        if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
+            print('No negative factors at all!')
+            neg_x_ = neg_x
+        else:
+            neg_x_ = MinMaxScaler().fit_transform(neg_x) 
         pos_x_constant = pos_x + 0.000001
         pos_x_log = np.log2(pos_x + pos_x_constant)
         pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
@@ -765,6 +771,212 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
     # print('HDBscan Clustering generated: '+str(len(lab_dr_df['label'].unique())) + ' subgoups.')
 
     return lab_dr_df, exemplar_df
+
+# def hdbscan_clustering_debug(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUST_DEV_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
+
+#     print('hdbscan_clustering() with min_cluster_size = ', min_cluster_size)
+#     from sklearn.preprocessing import MinMaxScaler
+#     from pandas.plotting import scatter_matrix
+#     from numpy import inf
+
+#     component_list=np.arange(1, n_components+1,1).tolist()
+#     umap_components=([f'UMAP{i}' for i in component_list])
+#     print('the umap components are')
+#     print(umap_components)
+#     # from matplotlib import pyplot
+#     # Determine how to cluster
+#     x_name,y_name = ' ', ' '
+#     # UMAPS = ['UMAP1','UMAP2','UMAP3','UMAP4','UMAP5']
+
+#     if cluster_by == 'xy':
+#         x_name = 'x'
+#         y_name = 'y'
+#         # save_path = CLUST_XY_DIR # Keep in root along with cluster_counts
+#         print('DBScan clustering by x,y position...')
+
+#     elif (cluster_by == 'pca' or cluster_by == 'PCA' or cluster_by == 'PCs'):
+#         x_name = 'PC1'
+#         y_name = 'PC2'
+#         # save_path = CLUST_PCA_DIR
+#         CLUSTERON=[x_name, y_name]
+#         print('DBScan clustering by principal components...')
+
+#     elif (cluster_by == 'tsne' or cluster_by == 'tSNE'):
+#         x_name = 'tSNE1'
+#         y_name = 'tSNE2'
+#         # save_path = CLUST_TSNE_DIR
+#         CLUSTERON=[x_name, y_name]
+#         print('DBScan clustering by tSNE...')
+
+#     elif (cluster_by == 'umap' or cluster_by == 'UMAP'):
+#         x_name = 'UMAP1'
+#         y_name = 'UMAP2'
+#         CLUSTERON=[x_name, y_name]
+#         # save_path = CLUST_TSNE_DIR
+#         print('DBScan clustering by UMAP...')
+#     elif (cluster_by == 'NDIM' or cluster_by == 'ndim'):
+#         CLUSTERON = DR_FACTORS
+#     elif (cluster_by == 'UMAPNDIM' or cluster_by == 'umapndim'):
+#         CLUSTERON = umap_components
+
+
+
+#     sub_set = df_in[CLUSTERON] # self.df #here, you don't do 'values' function. Therefore this is a df
+#     # X = sub_set.values
+#     Z = sub_set.values
+#     X = Z
+#     correctcolumns = CLUSTERON
+#     print('these are the correct columns')
+#     print(correctcolumns)
+#     altcols = sub_set.columns
+#     print('these are the altcols')
+#     print(altcols)
+
+
+#     #####
+
+#     # if scalingmethod == 'minmax': #log2minmax minmax powertransformer
+#     #     X = MinMaxScaler().fit_transform(Z)
+#     #     correctcolumns = CLUSTERON
+#     # elif scalingmethod == 'log2minmax':
+
+#     #     negative_FACTORS = []
+#     #     positive_FACTORS = []
+#     #     for factor in DR_FACTORS:
+#     #         if np.min(df_in[factor]) < 0:
+#     #             print('factor ' + factor + ' has negative values')
+#     #             negative_FACTORS.append(factor)
+                
+#     #         else:
+#     #             print('factor ' + factor + ' has no negative values')
+#     #             positive_FACTORS.append(factor)
+        
+        
+#     #     pos_df = df_in[positive_FACTORS]
+#     #     pos_x = pos_df.values
+#     #     neg_df = df_in[negative_FACTORS]
+#     #     neg_x = neg_df.values
+#     #     # neg_x_ = MinMaxScaler().fit_transform(neg_x)
+
+#     #     if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
+#     #         print('No negative factors at all!')
+#     #         neg_x_ = neg_x
+#     #     else:
+#     #         neg_x_ = MinMaxScaler().fit_transform(neg_x) 
+#     #     pos_x_constant = pos_x + 0.000001
+#     #     pos_x_log = np.log2(pos_x + pos_x_constant)
+#     #     pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+#     #     X = np.concatenate((pos_x_, neg_x_), axis=1)
+#     #     correctcolumns=positive_FACTORS + negative_FACTORS
+
+#     # elif scalingmethod == 'powertransformer':    
+        
+#     #     pt = PowerTransformer(method='yeo-johnson')
+#     #     X = pt.fit_transform(x)
+#     #     correctcolumns = CLUSTERON
+
+#     #     #########
+#     # elif scalingmethod == None:
+#     #     X = Z
+#     #     correctcolumns = CLUSTERON
+   
+
+#     # X = StandardScaler().fit_transform(Z)
+#     # X=Z
+#     # X = np.arcsinh(Z)
+#     # X = MinMaxScaler().fit_transform(Z)
+#     ######
+#     # print(X)
+
+#     # Z = StandardScaler().fit_transform(sub_set)
+#     # X = MinMaxScaler().fit_transform(Z)
+#     clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,min_samples=min_samples,metric=metric)
+#     labels = clusterer.fit_predict(X)
+#     print('It worked and did the clustering')
+#     # Assemble a dataframe from the results
+#     lab_df = pd.DataFrame(data = labels, columns = ['label'])
+#     lab_dr_df = pd.concat([df_in,lab_df], axis=1)
+#     print('It worked and made the labelled dataframe')
+#     # summarize
+
+#     scaled_subset_df=pd.DataFrame(data=X,columns=correctcolumns)
+#     print(scaled_subset_df.describe())
+#     # histograms of the variables
+#     # sub_set.hist(figsize=(20, 10))
+#     # plt.tight_layout()
+#     # plt.show()
+
+#     scaled_subset_df.hist(figsize=(20, 10), bins=160, color = "black", ec="black")
+#     plt.tight_layout()
+#     plt.show()
+#     plt.savefig(savedir+'scaledHISTOGRAMS'+'.png')
+
+
+
+
+#     # Exemplars
+#     if clusterer._prediction_data is None:
+#         clusterer.generate_prediction_data()
+
+#     selected_clusters = clusterer.condensed_tree_._select_clusters()
+#     raw_condensed_tree = clusterer.condensed_tree_._raw_tree
+
+#     exemplars = []
+#     for cluster in selected_clusters:
+
+#         cluster_exemplars = np.array([], dtype=np.int64)
+#         for leaf in clusterer._prediction_data._recurse_leaf_dfs(cluster):
+#             leaf_max_lambda = raw_condensed_tree['lambda_val'][
+#                 raw_condensed_tree['parent'] == leaf].max()
+#             points = raw_condensed_tree['child'][
+#                 (raw_condensed_tree['parent'] == leaf) &
+#                 (raw_condensed_tree['lambda_val'] == leaf_max_lambda)]
+#             cluster_exemplars = np.hstack([cluster_exemplars, points])
+#         exemplars.append(cluster_exemplars)
+
+
+#     exemplararray = []
+#     print('It finished the first exemplar loop')
+#     # exemplar_df = pd.DataFrame()
+#     lengthlistexemplar=np.arange(0, (len(exemplars)), 1).tolist()
+#     for exemp in lengthlistexemplar:
+#         cluster1_rows=exemplars[exemp]
+#         cluster1_rows=cluster1_rows.tolist()
+#         iterablelist2=np.arange(0, (len(cluster1_rows)), 1).tolist()
+#         for preciseexemp in iterablelist2:
+#             preciserowID=cluster1_rows[preciseexemp]
+#             row_from_df=lab_dr_df.iloc[[preciserowID]].to_numpy()
+#             exemplararray.append(row_from_df)
+#     squeezed_exemplararray = np.squeeze(exemplararray)
+
+#     colsare = lab_dr_df.columns.tolist()
+#     exemplar_df = pd.DataFrame(squeezed_exemplararray, columns=colsare)
+
+
+#                 # exemplar_df = pd.concat([exemplar_df, row_from_df], axis=0)
+
+
+#     if(plot):
+#         CLUSTER_CMAP = 'tab20'
+#         clusterer.condensed_tree_.plot(select_clusters=True, selection_palette=sns.color_palette())
+#         # import seaborn as sns
+#         # import matplotlib.pyplot as plt
+
+#         ''' Eventually this plotting function should probably be in another script.'''
+#         scatter_fig = sns.jointplot(data=lab_dr_df[lab_dr_df['label']!=-1],x=x_name, y=y_name, hue="label",
+#                           kind='scatter',
+#                           palette=CLUSTER_CMAP,
+#                           joint_kws={'alpha': 0.4,'s': 5}, height=10, legend=False)
+#         if STATIC_PLOTS:
+#             # plt.savefig(CLUST_PARAMS_DIR+cluster_by+'_sweep_eps_'+str(eps)+'.png', dpi=300)
+#             plt.savefig(save_path+'cluster_scatter_'+cluster_by+'.png')
+#         if PLOTS_IN_BROWSER:
+#             plt.show()
+
+
+#     # print('HDBscan Clustering generated: '+str(len(lab_dr_df['label'].unique())) + ' subgoups.')
+
+#     return lab_dr_df, exemplar_df    
 
 # def hdbscan_clustering__DEV_DEV_NOSCALING(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUST_DEV_DIR, umaps=UMAPS):
 #

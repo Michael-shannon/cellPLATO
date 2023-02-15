@@ -37,11 +37,11 @@ def ripley_K(X,r):
             Xd = np.delete(Xd, (i), axis=0) # Delete self.
 
             # Count the number of points within radius
-            n = len(X)
-            A = np.pi * r ** 2
-            p = sum(Xd < r)
-            K = p * A / n
-            L = (K / np.pi) ** 0.5
+            n = len(X) # Number of points total
+            A = np.pi * r ** 2 # Area of circle with radius r
+            p = sum(Xd < r) # Number of points within radius r
+            K = p * A / n # Ripley's K - number of points within radius r per unit area
+            L = (K / np.pi) ** 0.5 # Ripley's L - radius of circle with same density as K
 
             rip.append([p,K,L]) # Append tuple containing count, Ripley's K and L
 

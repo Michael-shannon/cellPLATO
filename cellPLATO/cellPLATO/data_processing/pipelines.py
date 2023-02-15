@@ -238,7 +238,12 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         pos_x = pos_df.values
         neg_df = df[negative_FACTORS]
         neg_x = neg_df.values
-        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        # neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
+            print('No negative factors at all!')
+            neg_x_ = neg_x
+        else:
+            neg_x_ = MinMaxScaler().fit_transform(neg_x) 
         pos_x_constant = pos_x + 0.000001
         pos_x_log = np.log2(pos_x + pos_x_constant)
         pos_x_ = MinMaxScaler().fit_transform(pos_x_log)

@@ -423,9 +423,9 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
     # IN this case, the cluster in question is the one at iloc[i_step]
 
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
-
-        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), fac +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
-                color='tab:blue', fontsize=30,size = 30, fontdict = None)
+        facwithoutunderscores = fac.replace('_',' ')
+        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
+                color='k', fontsize=30,size = 30, fontdict = None)
 
 
     # for n, fac in enumerate(shape_display_factors):
@@ -644,10 +644,10 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
         thisnumberstring = str(thisnumber)
         print(thisnumberstring)
         print(type(thisnumberstring))
-
-        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), fac +': '
+        factorwithoutunderscores = fac.replace("_", " ")
+        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), factorwithoutunderscores +': '
                 + format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
-                color='tab:blue', fontsize=30,size = 36, fontdict = None)
+                color='k', fontsize=30,size = 36, fontdict = None)
 
                 # + format(cell_df.iloc[i_step][fac], '.1f')
 
@@ -1279,7 +1279,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 7: print a boolean_df?
 
     # Part 8: exports a df that can be used to select what metrics you want to show?
-    return(top_dictionary, clusteraverage_df)
+    return top_dictionary, clusteraverage_df
 
 
 
@@ -1690,3 +1690,11 @@ def trajectory_cluster_vis(traj_clust_df,traj_factor, scatter=False):
         plt.savefig(CLUST_DIR + 'trajectory_clusters.png', format='png', dpi=600)
 
     # return fig
+
+
+
+
+
+
+##### DEBUGGING ######
+

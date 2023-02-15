@@ -20,7 +20,7 @@ UMAPS = ['UMAP1','UMAP2','UMAP3'] #this is for umap clustering and isnt used yet
 # Small test set of Btracker data
 #################
 
-DATA_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped/'
+DATA_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_1/ThreeConditions_Go_Stopping_Stopped/'
 CTL_LABEL = 'Condition_Migrating'
 CONDITIONS_TO_INCLUDE = ['Condition_Migrating', 'Condition_Slowing','Condition_Stopped'] #'Condition_Stopped_artificial'
 
@@ -28,7 +28,7 @@ CONDITION_SHORTLABELS = ['Untreated', 'CytoD 0.5 uM','CytoD 2 uM']
 
 USE_SHORTLABELS = True
 PERFORM_RIPLEYS = True
-DATASET_SHORTNAME = 'ThreeConditions_Go_Stopping_Stopped_1-12-2023'
+DATASET_SHORTNAME = 'Figure_1_ThreeConditions_Go_Stopping_Stopped_2-14-2023'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod1'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod2'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod3'
@@ -63,7 +63,7 @@ MIG_T_WIND = 12#6 # in frames
 
 MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 
-OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_1-27-2023_NOT_AVERAGE_TIME_WINDOWS/'
+OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_1/ThreeConditions_Go_Stopping_Stopped_OUTPUT/'
 
 CLUSTER_CMAP = 'tab20'
 CONDITION_CMAP = 'dark'
