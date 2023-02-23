@@ -424,7 +424,7 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
 
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
         facwithoutunderscores = fac.replace('_',' ')
-        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
+        ax.text(text_x + 0.6*XYRange,text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
                 color='k', fontsize=30,size = 30, fontdict = None)
 
 
@@ -627,6 +627,8 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
 
     text_x = xmid
     text_y = ymid
+    print('ATTENTION, this is text y:')
+    print(text_y)
     # You would have to import the 'row' you got from the tavg_exemplar_df here
     # Here, you can do something with top_dictionary
     # display(row)
@@ -645,7 +647,7 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
         print(thisnumberstring)
         print(type(thisnumberstring))
         factorwithoutunderscores = fac.replace("_", " ")
-        ax.text(text_x + 0.6*XYRange,text_y + (0.08*XYRange) + (n*(0.08*XYRange)), factorwithoutunderscores +': '
+        ax.text(text_x + 0.6*XYRange, text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), factorwithoutunderscores +': '
                 + format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
                 color='k', fontsize=30,size = 36, fontdict = None)
 

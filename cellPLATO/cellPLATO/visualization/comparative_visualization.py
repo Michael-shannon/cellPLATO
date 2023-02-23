@@ -428,5 +428,7 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
         plt.setp(ax.patches, linewidth=3, edgecolor='k')
     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
         f.savefig(save_path+str(whattoplot[factor])+'_gray_barplot.png', dpi=300)#plt.
+    if PLOTS_IN_BROWSER:
+        f.show()
 
     return

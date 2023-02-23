@@ -200,7 +200,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 
     component_list=np.arange(1, n_components+1,1).tolist()
     from sklearn.preprocessing import PowerTransformer
-    savedir = CLUST_DEV_DIR
+    savedir = CLUST_DISAMBIG_DIR
 
     umap_components=([f'UMAP{i}' for i in component_list])
     # tsne_components=([f'tSNE{i}' for i in component_list])

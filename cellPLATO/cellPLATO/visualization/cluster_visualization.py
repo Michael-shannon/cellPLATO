@@ -307,7 +307,7 @@ def draw_cluster_hulls(df_in, cluster_by=CLUSTER_BY, min_pts=5, color_by='cluste
 
     return ax
 
-def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier=''): #new matplotlib version of scatter plot for umap 1-26-2023
+def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
     import matplotlib.pyplot as plt
     from numpy.random import random
     from mpl_toolkits.mplot3d import Axes3D
@@ -319,24 +319,26 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier=''): #new matp
 
     if colorby == 'label':
         coloredby = 'label'
-        colors = cm.tab20(np.linspace(0, 1, len(df['label'].unique())))  
+        colors = cm.Dark2(np.linspace(0, 1, len(df['label'].unique())))  
         df = df.sort_values(by=['label'])
-       
+          
     elif colorby == 'condition':
         coloredby = 'Condition_shortlabel'
-        colors = cm.rainbow(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+        colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
 
     ax = plt.subplot(111, projection='3d')
      
     for colorselector in range(len(colors)): #you have to plot each label separately to get the legend to work
         if colorby == 'label':
             ax.scatter(df[df['label'] == df['label'].unique()[colorselector]][x], df[df['label'] == df['label'].unique()[colorselector]][y],
-             df[df['label'] == df['label'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['label'].unique()[colorselector], s=3)
+             df[df['label'] == df['label'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['label'].unique()[colorselector], s=dotsize, alpha = alpha)
         elif colorby == 'condition':
             ax.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x], df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
-             df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=3)
+             df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
 
-    plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=5)
+    leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
+    for lh in leg.legendHandles: 
+        lh.set_alpha(1)
     
     # plt.tight_layout()
     
@@ -414,7 +416,7 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
     whattoplot=['label','twind_n_changes', 'twind_n_labels']
 
     CLUSTER_CMAP = 'tab20'
-    CONDITION_CMAP = 'dark'
+    # CONDITION_CMAP = 'dark'
 
     time = df['frame']
     # SAMPLING_INTERVAL=10/60 #This shouldn't be hardcoded!
@@ -442,29 +444,59 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
     import seaborn as sns
     sns.set_theme(style="ticks")
     sns.set_palette(CONDITION_CMAP)
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+
     # display(df)
     df=df.dropna(how='any')
     # display(df)
     # Plot the responses for different events and regions
     sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
                  hue="Condition_shortlabel",
-                 data=df)
+                 data=df, palette=colors)
 
     sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
                  hue="Condition_shortlabel",
-                 data=df)
+                 data=df, palette=colors)
 
     sns.lineplot(ax=axes[2], x=timeminutes, y=whattoplot[2], #n_labels #n_changes #label
                  hue="Condition_shortlabel",
-                 data=df)
+                 data=df, palette=colors)
 
     timewindowmins = MIG_T_WIND*SAMPLING_INTERVAL
-    text1 = "Cluster ID per frame"
-    text2 = "Distinct changes per " + str(timewindowmins) + " min time window"
-    text3 = "New cluster changes per " + str(timewindowmins) + " min time window"
+    text1 = "Cluster ID"
+    text2 = "Cluster switches (per " + str(timewindowmins) + " min)"
+    text3 = "Unseen cluster switches (per " + str(timewindowmins) + " min)"
 
     x_lab = "Distinct Behaviors"
     plottitle = ""
+
+    the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), 1)
+    the_yticks = [int(x) for x in the_yticks]
+    axes[0].set_yticks(the_yticks) # set new tick positions
+    axes[0].margins(y=0) # set tight margins
+    the_yticks = np.arange(0, len(df[whattoplot[1]].unique()), 1)
+    the_yticks = [int(x) for x in the_yticks]
+    axes[1].set_yticks(the_yticks) # set new tick positions
+    axes[1].margins(y=0) # set tight margins
+    the_yticks = np.arange(0, len(df[whattoplot[2]].unique()), 1)
+    the_yticks = [int(x) for x in the_yticks]
+    axes[2].set_yticks(the_yticks) # set new tick positions
+    axes[2].margins(y=0) # set tight margins
+
+    # the_xticks = np.arange(0, len(timeminutes), 1)
+    # the_xticks = [int(x) for x in the_xticks]
+    # axes[0].set_xticks(the_xticks) # set new tick positions
+    # axes[0].margins(x=0) # set tight margins
+    # axes[1].set_xticks(the_xticks) # set new tick positions
+    # axes[1].margins(x=0) # set tight margins
+    # axes[2].set_xticks(the_xticks) # set new tick positions
+    # axes[2].margins(x=0) # set tight margins
+
+
     # Tweak the visual presentation
     axes[0].xaxis.grid(True)
     axes[1].xaxis.grid(True)
@@ -598,7 +630,7 @@ def plot_UMAP_subplots_coloredbymetrics(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP
     plt.show()
     return     
 
-def plot_plasticity_countplots(df, identifier='\_allcells'):
+def plot_plasticity_countplots_deprecated(df, identifier='\_allcells'):
 
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -610,8 +642,8 @@ def plot_plasticity_countplots(df, identifier='\_allcells'):
 
     # whattoplot=['n_changes', 'n_labels'] #'twind_n_changes', 'twind_n_labels'
     whattoplot=['twind_n_changes', 'twind_n_labels']
-    CLUSTER_CMAP = 'tab20'
-    CONDITION_CMAP = 'dark'
+    # CLUSTER_CMAP = 'tab20'
+    # CONDITION_CMAP = 'dark'
 
     sns.set_theme(style="ticks")
     sns.set_palette(CONDITION_CMAP)
@@ -659,6 +691,87 @@ def plot_plasticity_countplots(df, identifier='\_allcells'):
     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
     f.savefig(CLUST_DISAMBIG_DIR+identifier+'plasticity_sum_of_cluster_changes.png', dpi=300)#plt.
     return
+
+
+##################################
+##################################
+
+
+def plot_plasticity_countplots(df, identifier='\_allcells'):
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    font_size = 36
+    i=0
+    labelchanges = df['twind_n_changes'].unique() #IMportantly computed for the whole set.
+    label_counts_df = pd.DataFrame(columns=['Condition', 'Replicate_ID', 'twind_n_changes', 'count', 'percent'])
+    cond_list = df['Condition_shortlabel'].unique()
+
+    for cond in cond_list:
+            this_cond_df = df[df['Condition_shortlabel'] == cond]
+            totalforthiscondition=len(this_cond_df.index)
+            for labelchange in labelchanges:
+                 # Keep this dataframe being made for when we want to look at distributions
+                this_lab_df = this_cond_df[this_cond_df['twind_n_changes'] == labelchange]                
+                fraction_in_label = len(this_lab_df.index)/totalforthiscondition
+                percent_in_label = fraction_in_label*100
+                label_counts_df.loc[i] = [cond, 'NA', labelchange, len(this_lab_df.index), percent_in_label]
+                i+=1
+    label_counts_df.dropna(inplace=True)
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+
+    sub_df = df[['Condition_shortlabel', 'twind_n_changes', 'twind_n_labels']]    
+    
+    fig = plt.figure(figsize=(22, 10))
+    fig.suptitle("Cluster switching", fontsize=font_size)
+
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1= sns.histplot(data=sub_df, x='twind_n_changes', hue='Condition_shortlabel',
+     multiple='dodge', palette=colors, shrink=.8, stat='percent', common_norm=False, 
+     discrete=True, binwidth=1,
+      element='bars', legend=True)
+    the_xticks = np.arange(0, len(df['twind_n_changes'].unique())-1, 1)
+    xticks = the_xticks
+    ax1.set_xticks(xticks) # set new tick positions
+    # ax1.tick_params(axis='x', rotation=30) # set tick rotation
+    ax1.margins(x=0) # set tight margins
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2= sns.histplot(data=sub_df, x='twind_n_labels', hue='Condition_shortlabel',
+        multiple='dodge', palette=colors, shrink=.8, stat='percent', common_norm=False, 
+        discrete=True, binwidth=1,
+        element='bars', legend=True)
+    the_xticks = np.arange(0, len(df['twind_n_labels'].unique())-1, 1)
+    xticks = the_xticks
+    ax2.set_xticks(xticks) # set new tick positions
+    # ax1.tick_params(axis='x', rotation=30) # set tick rotation
+    ax2.margins(x=0) # set tight margins    
+
+    timewindowmins = MIG_T_WIND*SAMPLING_INTERVAL
+
+    text1 = "Cluster switches (per " + str(int(timewindowmins)) + " min)"
+    text2 = "Unseen cluster switches (per " + str(int(timewindowmins)) + " min)"
+
+    ax1.xaxis.grid(True)
+    ax2.xaxis.grid(True)
+    ax1.set_ylabel("Percent cells",fontsize=font_size)
+    ax2.set_ylabel("Percent cells",fontsize=font_size)
+    ax1.set_xlabel(text1, fontsize=font_size)
+    ax2.set_xlabel(text2, fontsize=font_size)
+    ax1.set_title("", fontsize=font_size)
+    ax1.tick_params(axis='both', labelsize=font_size)
+    ax2.tick_params(axis='both', labelsize=font_size)
+    # f.tight_layout()
+    # # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'plasticity_sum_of_cluster_changes.png', dpi=300)#plt.
+    return label_counts_df
+
+##################################
+##################################
 
 
 def purity_plots(lab_dr_df, clust_sum_df,traj_clust_df,trajclust_sum_df,cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
@@ -818,6 +931,255 @@ def purity_plots(lab_dr_df, clust_sum_df,traj_clust_df,trajclust_sum_df,cluster_
 
     for ticklabel, tickcolor in zip(ax4.get_xticklabels(), cluster_colors):
         ticklabel.set_color(tickcolor)
+
+    if STATIC_PLOTS:
+        plt.savefig(save_path+'purity_plots'+cluster_by+'.png')
+    if PLOTS_IN_BROWSER:
+        plt.show()
+
+
+
+    return fig
+
+
+######################################################
+
+def draw_cluster_hulls_dev(df_in, cluster_by='umap', min_pts=5, color_by='cluster',cluster_label='label',ax=None,draw_pts=False,save_path=CLUST_DIR, legend=False):
+
+    df = df_in.copy()
+
+    if cluster_by == 'xy':
+        x_name = 'x'
+        y_name = 'y'
+
+    elif cluster_by == 'pca':
+        x_name = 'PC1'
+        y_name = 'PC2'
+
+    elif (cluster_by == 'tsne' or cluster_by == 'tSNE'):
+
+        x_name = 'tSNE1'
+        y_name = 'tSNE2'
+
+    elif (cluster_by == 'umap' or cluster_by == 'UMAP'):
+
+        x_name = 'UMAP1'
+        y_name = 'UMAP2'
+        z_name = 'UMAP3'
+
+    labels = list(set(df[cluster_label].unique()))
+
+    # conditions = df['Cond_label'].unique()
+    # colors = np.asarray(sns.color_palette(PALETTE, n_colors=len(conditions)))
+    # print(conditions, colors)
+
+    catcol = 'Cond_label'
+    categories = np.unique(df[catcol])
+    colors = np.linspace(0, 1, len(categories))
+    colordict = dict(zip(categories, colors))
+    df["Color"] = df[catcol].apply(lambda x: colordict[x])
+
+    # Define a list of cluster colors to be consistent across the module
+
+    cluster_colors = []
+    cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
+    for i in range(cmap.N):
+        cluster_colors.append(cmap(i))
+
+
+    # # If no axis is supplied, then createa simple fig, ax and default to drawing the points.
+    # if ax is None:
+
+    #     fig, ax = plt.subplots()
+    #     ax.set_xlabel(x_name)
+    #     ax.set_ylabel(y_name)
+
+    #     all_pts = df[[x_name, y_name]].values
+    #     draw_pts = True
+    #     ax.scatter(x=all_pts[:,0], y=all_pts[:,1], s=0.1, c='grey')
+
+    # if(color_by=='condition' and draw_pts):
+    #     # Draw the scatter points for the current cluster
+    #     # ax = plt.subplot(111, projection='3d')
+    #     scatter = ax.scatter(x=df[x_name], y=df[y_name], s=0.3, c=df['Color'],cmap=CONDITION_CMAP)
+    #     # scatter = ax.scatter(x=df[x_name], y=df[y_name], s=0.3, c=df['Condition_shortlabel'].values,cmap=CONDITION_CMAP)
+
+    #     if(DEBUG):
+    #         print(list(df['Condition_shortlabel'].unique()))
+    #         print(scatter.legend_elements())
+    #         print(list(df['Color'].unique()))
+    #         print(categories)
+
+    #     ''' Note: for some reason we cant get the conditions labels correctly on the legend.'''
+    #     legend1 = ax.legend(*scatter.legend_elements(),labels=list(df['Condition_shortlabel'].unique()),
+    #                         loc="upper right", title="Condition")
+
+
+    #     ax.add_artist(legend1)
+
+    # elif(color_by=='PCs' and draw_pts):
+    #     pc_colors = colormap_pcs(df, cmap='rgb')
+    #     # pc_colors = np.asarray(df[['PC1','PC2','PC3']])
+    #     # scaler = MinMaxScaler()
+    #     # scaler.fit(pc_colors)
+    #     # pc_colors= scaler.transform(pc_colors)
+
+    #     # Color code the scatter points by their respective PC 1-3 values
+    #     ax.scatter(x=df[x_name], y=df[y_name], s=0.5, c=pc_colors)
+
+    for i_lab,curr_label in enumerate(labels[:-2]):
+
+
+        curr_lab_df = df[df[cluster_label] == curr_label]
+        curr_lab_pts = curr_lab_df[[x_name, y_name, z_name]].values
+
+        if curr_lab_pts.shape[0] > min_pts:
+
+            x=curr_lab_pts[:,0]
+            y=curr_lab_pts[:,1]
+            z=curr_lab_pts[:,2]
+
+            if(color_by=='cluster' and draw_pts):
+                '''
+                Having this color_by block within the cluster loop makes sure that the
+                points within the cluster have the same default color order as the cluster hulls
+                drawn below in the same loop.
+
+                Ideally it would be possible to apply a custom colormap to the clusters, apply them to
+                the scatter plots, and use them in other plots to make the link.
+                '''
+
+                # Draw the scatter points for the current cluster
+                # ax = plt.subplot(111, projection='3d')
+                ax.scatter(x=x, y=y,z=z, s=0.3, color=cluster_colors[i_lab], )
+
+            # Catch cases where we can't draw the hull because the interpolation fails.
+            try:
+                X_hull  = calculate_hull(
+                    curr_lab_pts,
+                    scale=1.0,
+                    padding="scale",
+                    n_interpolate=100,
+                    interpolation="quadratic_periodic")
+
+                ax.plot(X_hull[:,0], X_hull[:,1],c=cluster_colors[i_lab], label=curr_label)
+                if(legend):
+                    ax.legend()
+            except:
+                print('Failed to draw cluster, failed to draw cluster: ',curr_label, ' with shape: ', curr_lab_pts.shape)
+
+
+    if STATIC_PLOTS:
+        plt.savefig(save_path+'clusterhull_scatter_'+cluster_by+'.png')
+    if PLOTS_IN_BROWSER:
+        plt.show()
+
+
+    return ax
+
+def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
+
+
+    if(cluster_by == 'tsne' or cluster_by == 'tSNE'):
+
+        x_name = 'tSNE1'
+        y_name = 'tSNE2'
+
+
+    elif cluster_by == 'umap':
+
+        x_name = 'UMAP1'
+        y_name = 'UMAP2'
+        z_name = 'UMAP3'
+    fontsize = 24
+    # Create a Subplot figure that shows the effect of clustering between conditions
+
+    fig = plt.figure(figsize=(20, 10))
+    fig.suptitle("Low dimensional cluster analysis and purity", fontsize=fontsize)
+
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+    df=lab_dr_df
+    x = 'UMAP1'
+    y = 'UMAP2'
+    z = 'UMAP3'
+    dotsize = 0.1
+    alpha = 0.5
+    markerscale = 5
+    # colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+   
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(lab_dr_df['Condition_shortlabel'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+
+    # ax1.set_title('Low-dimensional scatter with cluster outlines', fontsize=fontsize)
+    # ax1.scatter(x=lab_dr_df['tSNE1'], y=lab_dr_df['tSNE2'], c='grey', s=0.1)
+    # ax1.scatter(x=lab_dr_df[x], y=lab_dr_df[y], z=lab_dr_df[z] , c='grey', s=0.1)
+    for colorselector in range(len(colors)):
+        ax1.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x],
+                     df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+                     df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z],
+                       '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
+        
+    # ax1.set_xlabel('\n ' + x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+    # ax1.set_ylabel('\n ' + y, fontsize=fontsize, linespacing=3.2)
+    # ax1.set_zlabel('\n ' + z, fontsize=fontsize, linespacing=3.2)
+    # ax1.tick_params(axis='both', which='major', labelsize=fontsize)    
+
+    ax1.set_xticklabels([])
+    ax1.set_yticklabels([])
+    ax1.set_zticklabels([])
+    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+    ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+                  
+
+    # draw_cluster_hulls_dev(lab_dr_df,cluster_by='UMAP', color_by='cluster',ax=ax1, draw_pts=True,legend=True) #This won't work right now, because the plots are 3D and the hulls are 2D
+
+    # Define a custom colormap for the clusters (To match what's done in draw_cluster_hulls())
+    cluster_colors = []
+    labels = list(set(lab_dr_df['label'].unique()))
+    cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
+    for i in range(cmap.N):
+        cluster_colors.append(cmap(i))
+
+    #
+    # Second subplot: stacked bar plots of cluster purity
+    #
+    ax2 = fig.add_subplot(1, 2, 2)
+
+    # ax2.set_title('Low-dimension cluster purity', fontsize=fontsize)
+
+    for i, cond in enumerate(lab_dr_df['Condition_shortlabel'].unique()):
+        '''
+        Assumes that the conditions are already in the correct order in the dataframe.
+        '''
+        if(i==0):
+            ax2.bar(clust_sum_df['cluster_id'], clust_sum_df[cond+'_ncells_%'], label=cond,color=colors[i])
+            prev_bottom = clust_sum_df[cond+'_ncells_%']
+        else:
+            ax2.bar(clust_sum_df['cluster_id'], clust_sum_df[cond+'_ncells_%'], bottom=prev_bottom, label=cond,color=colors[i])
+
+    ax2.set_xticks(clust_sum_df['cluster_id'])
+    ax2.set_ylabel('% of cells per cluster', fontsize = fontsize)
+
+    # leg=plt.legend(loc='upper right', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
+    # for lh in leg.legendHandles: 
+    #     lh.set_alpha(1)
+    ax2.legend(loc='upper right', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.6, 1.00), markerscale=markerscale)
+
+
+    for ticklabel, tickcolor in zip(ax2.get_xticklabels(), cluster_colors):
+        ticklabel.set_color(tickcolor)
+    # change the xticklabel fontsize to fontsize variable
+
+    ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+
+    # plt.savefig(save_path+'purity_plots'+cluster_by+'.png')
+
+    fig.savefig(CLUST_DISAMBIG_DIR+'PurityPlot.png', dpi=300, bbox_inches='tight')
 
     if STATIC_PLOTS:
         plt.savefig(save_path+'purity_plots'+cluster_by+'.png')

@@ -577,7 +577,7 @@ def dbscan_clustering(df_in, eps=EPS, min_samples=MIN_SAMPLES,cluster_by='tsne',
 #
 #     return lab_dr_df, exemplar_df
 ### USE THIS ONE AS OF 12-20-2022 ##### old name hdbscan_clustering__DEV_DEV_SPEEDUP
-def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUST_DEV_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
+def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUSTERING_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
 
     print('hdbscan_clustering() with min_cluster_size = ', min_cluster_size)
     from sklearn.preprocessing import MinMaxScaler
@@ -2310,7 +2310,7 @@ def get_label_counts(df, per_rep=False):
     # label_counts_df
     return label_counts_df        
 
-def plot_label_counts(df_in):
+def plot_label_counts(df_in, colors=CONDITION_CMAP):
     x_label = 'label'
     y_label='count'
     y_label2='percent'
@@ -2319,7 +2319,7 @@ def plot_label_counts(df_in):
     sns.barplot(x = x_label,
                 y = y_label,
                 hue = 'Condition',
-                palette = CONDITION_CMAP,
+                palette = colors,
                 data = df_in, ax=ax
                )
     ax.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=30,markerscale=20,fancybox=True)
@@ -2328,7 +2328,7 @@ def plot_label_counts(df_in):
     # ax.set(ylabel=y)
     ax.set_title("", fontsize=36)
     ax.set_xlabel('Cluster label', fontsize=36)
-    ax.set_ylabel('Total count', fontsize=36)
+    ax.set_ylabel('Absolute frequency', fontsize=36)
     ax.tick_params(axis='both', labelsize=36)
     # sns.despine(left=True)
 
@@ -2343,7 +2343,7 @@ def plot_label_counts(df_in):
     sns.barplot(x = x_label,
                 y = y_label2,
                 hue = 'Condition',
-                palette = 'dark',
+                palette = colors,
                 data = df_in, ax=ax2
                )
     ax2.legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=30,markerscale=20,fancybox=True)
@@ -2352,7 +2352,7 @@ def plot_label_counts(df_in):
     # ax.set(ylabel=y)
     ax2.set_title("", fontsize=36)
     ax2.set_xlabel('Cluster label', fontsize=36)
-    ax2.set_ylabel('Percent per Cluster', fontsize=36)
+    ax2.set_ylabel('Percent frequency', fontsize=36)
     ax2.tick_params(axis='both', labelsize=36)
     # sns.despine(left=True)
 

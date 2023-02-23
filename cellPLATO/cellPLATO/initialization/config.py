@@ -66,7 +66,7 @@ MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_1/ThreeConditions_Go_Stopping_Stopped_OUTPUT/'
 
 CLUSTER_CMAP = 'tab20'
-CONDITION_CMAP = 'dark'
+CONDITION_CMAP = 'Dark2' #dark
 CLUSTER_BY = 'umap' # TEMP - already in config
 # STATIC_PLOTS
 PALETTE = 'colorblind'
