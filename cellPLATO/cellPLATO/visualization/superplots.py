@@ -198,7 +198,7 @@ def superplots_plotly(df_in, factor, t=FRAME_END, grid=False, save_path=SUPERPLO
                       title_text="Superplots: "+factor,
                       font=dict(
                           #family="Courier New, monospace",
-                          size=28, #CHANGED BY MJS
+                          size=PLOT_TEXT_SIZE, #CHANGED BY MJS
                           # size=PLOT_TEXT_SIZE,
                           color="Black"))
 
@@ -342,7 +342,7 @@ def superplots_plotly_grays(df_in, factor, t=FRAME_END, grid=False, save_path=SU
                       title_text="Superplots: "+factor,
                       font=dict(
                           #family="Courier New, monospace",
-                          size=28, #CHANGED BY MJS
+                          size=PLOT_TEXT_SIZE, #CHANGED BY MJS
                           # size=PLOT_TEXT_SIZE,
                           color="Black"))
 

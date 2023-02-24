@@ -214,6 +214,13 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     # x = get_data_matrix(df,dr_factors)
     print("DR factors used were" + str(dr_factors))
     sub_df = df[dr_factors]
+
+    print("THIS IS THE UNTRANSFORMED DATA ")
+    sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(savedir+ 'UntransformedData.png')
+
     x= sub_df.values
     # rs = RobustScaler(quantile_range=(0,95)) #Check usage of this scalar
     ## THIS IS WHAT YOU HAD ##
@@ -254,7 +261,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         print("THIS IS THE " + str(scalingmethod) + " TRANSFORMED DATA ")
         scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.savefig(savedir+ str(scalingmethod) +'.png')
 
     elif scalingmethod == 'powertransformer':    
@@ -646,6 +653,7 @@ def comparative_visualization_pipeline(df, num_factors=NUM_FACTORS, factor_pairs
 
         if DRAW_BARPLOTS:
             print('Exporting Comparative bar charts... ')
+            
             cond_stats = average_per_condition(tavg_df, avg_per_rep=False)
             comparative_bar(cond_stats, x='Condition', y=factor, to_plot='avg',title='_per_condition_')
 

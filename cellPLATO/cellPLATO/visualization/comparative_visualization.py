@@ -308,6 +308,12 @@ def marginal_xy(df, pair, plot_type='scatter', renderer='plotly', save_path=MARG
 
 
 def comparative_bar(df_tup, x, y, title='',  height=400, to_plot='avg',error='SEM', save_path=BAR_DIR): #color='Condition'
+    # print('THIS IS THE INPUT DF')
+    # display(df_tup)
+    # print(df_tup.columns)
+
+    widthmultiplier = len(df_tup)
+    print("widthmultiplier: ", widthmultiplier)
 
     '''
     Simple bar plot conveneince function that allows plotting of color-coded conditions either on a per-conditions
@@ -379,6 +385,27 @@ def comparative_bar(df_tup, x, y, title='',  height=400, to_plot='avg',error='SE
                      # color_discrete_sequence=eval(PX_COLORS),
                      color_discrete_sequence=cmap,
                      labels = dict(y="Number of cells"))
+    
+    widthofplot = 220* widthmultiplier
+    #change the font size of the axis labels
+    fig.update_layout(showlegend=False,
+                    # plot_bgcolor = 'white',  
+                    autosize=False,
+                    width = widthofplot,
+                    height = 650,                  
+                    font=dict(
+                        #family="Courier New, monospace",
+                        size=PLOT_TEXT_SIZE,
+                        color="Black"))  
+    # fig.update_xaxes(tickangle=90)
+    # Remove the x axis label
+    fig.update_xaxes(title_text='', tickangle=45)
+
+ 
+    # change the font size of the y and x axis tick labels
+
+        
+
 
     if STATIC_PLOTS:
         fig.write_image(save_path+y+'_'+to_plot+'_'+title + '.png')
@@ -419,11 +446,11 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
 
         ax.xaxis.grid(True)
         ax.set(xlabel="")
-        ax.set_ylabel(whattoplot[factor], fontsize=36)
-        ax.set_title("", fontsize=36)
+        ax.set_ylabel(whattoplot[factor], fontsize=PLOT_TEXT_SIZE)
+        ax.set_title("", fontsize=PLOT_TEXT_SIZE)
         # ax.tick_params(axis='both', labelsize=36)
-        ax.tick_params(axis='y', labelsize=36)
-        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
+        ax.tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
         # f.tight_layout()
         plt.setp(ax.patches, linewidth=3, edgecolor='k')
     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')

@@ -17,6 +17,7 @@ import plotly
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import plotly.express as px
+from matplotlib import cm
 
 
 def plots_of_differences_plotly(df_in,factor='Value', ctl_label=CTL_LABEL,plot_type=DIFF_PLOT_TYPE,cust_txt='', save_path=DIFFPLOT_DIR):
@@ -275,7 +276,7 @@ def plots_of_differences_plotly(df_in,factor='Value', ctl_label=CTL_LABEL,plot_t
 
 
 
-def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt='', save_path=DIFFPLOT_DIR):
+def plots_of_differences_sns_saved(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt='', save_path=DIFFPLOT_DIR):
 
     '''
     A function to create the plots of differences plots with bootstrapping CIs on sample data.
@@ -321,6 +322,11 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
 
 
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(lab_dr_df['Condition_shortlabel'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
+
     #
     # Left subplot: horizontal scatter
     #
@@ -329,7 +335,7 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     sns.stripplot(ax=axes[0], x=factor, y="Condition",size=pt_size,jitter=0.25, data=df)
 
     # Draw confidence intervalswith point plot onto scatter plot
-    sns.pointplot(ax=axes[0], x=factor, y="Condition",kind="swarm", data=df,color='black', ci = 95, join=False, errwidth=10.0)
+    sns.pointplot(ax=axes[0], x=factor, y="Condition", data=df,color='black', ci = 95, join=False, errwidth=10.0) #calamansi kind="swarm",
 
     #
     # Right subplot: differences
@@ -346,6 +352,111 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
 
 
     fig.savefig(save_path+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
+
+    # fig.savefig(PLOT_OUTPUT+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
+
+    return fig
+
+
+################################################################################
+
+################################################################################
+
+################################################################################
+
+
+def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt='', save_path=DIFFPLOT_DIR):
+
+    '''
+    A function to create the plots of differences plots with bootstrapping CIs on sample data.
+    Based on the method and code from Joachim Goedhart doi: https://doi.org/10.1101/578575
+        https://www.biorxiv.org/content/10.1101/578575v1.full.pdf+html
+        and related coe in R:
+        https://github.com/JoachimGoedhart/PlotsOfDifferences/blob/master/app.R
+
+    **NOT Adapted to allow comparisons between tSNE-derived subgroups**
+
+    '''
+
+
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    plt.rcParams.update({'font.size': PLOT_TEXT_SIZE})
+    plt.clf()
+
+    assert ctl_label in df_in['Condition'].values, ctl_label + ' is not in the list of conditions'
+    assert ctl_label != -1, 'Not yet adapted to compare between cluster groups, use plots_of_differences_plotly() instead'
+
+    df = df_in.copy()
+
+    # Sort values according to custom order for drawing plots onto graph
+    df['Condition'] = pd.Categorical(df['Condition'], CONDITIONS_TO_INCLUDE)
+    df.sort_values(by='Condition', inplace=True, ascending=True)
+
+    # Use Matplotlib to create subplot and set some properties
+    fig_width = 15#11 # Inches
+    aspect = 2
+
+    fig, axes = plt.subplots(1, 2, figsize=(fig_width,fig_width/aspect))
+#     plt.rcParams['savefig.facecolor'] = 'w'
+    # Remove the underscore from factor
+    factor_ = factor.replace('_',' ')
+    fig.suptitle('Plots of data and effect size: '+ factor_, fontsize= PLOT_TEXT_SIZE)
+
+    # Resize points based on number of samples to reduce overplotting.
+    if(len(df) > 1000):
+        pt_size = 3
+    else:
+        pt_size = 6
+
+    # Get the bootstrapped sample as a dataframe
+    bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
+
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+
+    #
+    # Left subplot: horizontal scatter
+    #
+
+    #sns.swarmplot(ax=axes[0], x=factor, y="Condition",size=2, data=df)#, ax=g.ax) # Built with sns.swarmplot (no ci arg.)
+    sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df)
+
+    # Draw confidence intervalswith point plot onto scatter plot
+    sns.pointplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df,color='black', ci = 95, join=False, errwidth=10.0) #calamansi kind="swarm",
+
+    #
+    # Right subplot: differences
+    #
+
+    sns.violinplot(ax=axes[1], x="Difference", y="Condition",kind="violin", palette=colors, inner='box', data=bootstrap_diff_df, split=True, ci = 'sd',linewidth=2)
+    axes[1].axvline(0, ls='-', color='black')
+    axes[1].set(ylabel=None)
+    axes[1].set(yticklabels=[])
+    # axes[0].set(yticklabels=[])
+    axes[0].set(ylabel=None)
+
+    # set the font size of the y ticks
+    axes[1].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
+    axes[0].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
+    axes[1].tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
+    axes[0].tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
+
+    # Invert both y axis to be consistent with original plots of difference
+    axes[0].invert_yaxis()
+    axes[1].invert_yaxis() #scallywag
+
+    # set the font size for the xticks
+
+    
+
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(save_path+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
+    # make it tight
+    
 
     # fig.savefig(PLOT_OUTPUT+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
 
