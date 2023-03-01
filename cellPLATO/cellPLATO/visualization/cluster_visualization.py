@@ -1189,3 +1189,178 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
 
 
     return fig
+
+
+def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='log2minmax', identifier='',
+                                                    colormap='viridis', coloredbycondition = False, samplethedf = True): #new matplotlib version of scatter plot for umap 1-26-2023
+    import matplotlib.pyplot as plt
+    from numpy.random import random
+    from mpl_toolkits.mplot3d import Axes3D
+    from sklearn import preprocessing
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.preprocessing import PowerTransformer
+    from matplotlib.gridspec import GridSpec
+
+    font_size = 20
+   
+    # Scale the data
+    sub_set = df_in[metrics]
+    Z = sub_set.values
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+
+    ############################   
+
+    if coloredbycondition == True:
+
+        print('Coloring each UMAP by each condition')
+        conds = df_in['Condition_shortlabel'].unique().tolist()
+        print(conds)
+        n_conds = len(conds)
+        n_rows = int(np.ceil(n_conds / n_cols))
+        print('Number of conditions/plots is ', n_conds)
+        print('Number of columns is ', n_cols)
+        print('Number of rows is ', n_rows)
+        
+        figsizerows = n_rows*4
+        figsizeconds= n_cols*4
+
+        fig = plt.figure(constrained_layout=True, figsize=(figsizeconds,figsizerows))
+        # Define the grid of subplots - you can change the number of columns and this changes the rows accordingly
+        
+
+
+        gs = GridSpec(n_rows, n_cols, figure=fig)
+
+        df_out = df_in[['UMAP1', 'UMAP2', 'UMAP3', 'Condition_shortlabel']]
+        # display(df_out)
+        df_out = df_out.reset_index(drop=True)
+        fraction_to_sample = 0.1
+        
+        main_df_valuecount = len(df_out)
+        sample_of_cells = fraction_to_sample*main_df_valuecount
+        sample_of_cells = int(sample_of_cells)
+        print('Main df has ', main_df_valuecount, ' cells. Sampling ', sample_of_cells, ' cells.')
+        main_df_sampled = df_out.sample(sample_of_cells)
+
+        # Loop through each condition and make a 3D scatter plot of the UMAPs in grey, and then overlay the condition of interest in orange
+
+        for number, cond in enumerate(conds):
+
+            ax = fig.add_subplot(gs[number], projection='3d') # Initializes each plot
+            chosencolor=colors[number]
+            chosencolor=np.array(chosencolor).reshape(1, -1)
+            sub_df = df_out[df_out['Condition_shortlabel'] == cond]
+
+            if samplethedf == True:
+                # Sample the df with only 10 % of the cells
+                
+
+                sub_df_valuecount = len(sub_df)
+                sample_of_cells = fraction_to_sample*sub_df_valuecount
+                sample_of_cells = int(sample_of_cells)
+                print(cond, ' has ', sub_df_valuecount, ' cells. Sampling ', sample_of_cells, ' cells.')
+                sub_df = sub_df.sample(sample_of_cells)
+
+                ax.scatter(main_df_sampled[x], main_df_sampled[y], main_df_sampled[z], '.', c='gainsboro',  cmap=colormap, s=0.1, alpha = 0.02) # Makes each plot # c=df_out[cond], cmap=colormap,
+
+            else:
+                print('Not sampling the df')
+                ax.scatter(df_out[x], df_out[y], df_out[z], '.', c='gainsboro',  cmap=colormap, s=0.1, alpha = 0.02) # Makes each plot # c=df_out[cond], cmap=colormap,
+            ax.scatter(sub_df[x], sub_df[y], sub_df[z], '.', c=chosencolor, cmap=colormap, s=5, alpha = 0.9) # , edgecolors='Black' # Makes each plot # c=df_out[cond], cmap=colormap,
+            # ax.plot_trisurf(sub_df[x], sub_df[y], sub_df[z],  cmap='white', edgecolor='Black')
+            # ax.plot_trisurf(Xs-Xs.mean(), Ys-Ys.mean(), Zs, cmap=cm.jet, linewidth=0)
+            # ax.plot_trisurf(sub_df[x]-sub_df[x].mean(), sub_df[y]-sub_df[y].mean(), sub_df[z], linewidth=0, shade=False, facecolor=None,  edgecolor='Black', antialiased=False)
+            ax.set_title(cond, fontsize=font_size)
+
+    else:
+        print('Coloring each UMAP by normalized metric values')
+
+        # do not forget constrained_layout=True to have some space between axes
+                
+        n_metrics = len(metrics)
+        n_rows = int(np.ceil(n_metrics / n_cols))
+        print('Length of metrics is ', n_metrics)    
+        figsizerows = n_rows*4
+        figsizeconds= n_cols*4    
+        fig = plt.figure(constrained_layout=True, figsize=(figsizeconds, figsizerows))
+        # Define the grid of subplots - you can change the number of columns and this changes the rows accordingly
+        gs = GridSpec(n_rows, n_cols, figure=fig)
+
+        if scalingmethod == 'minmax':
+            x_=MinMaxScaler().fit_transform(Z)
+            scaled_df = pd.DataFrame(data=x_, columns = metrics) 
+            df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+            # fresh_df = pd.concat([df,lab_list_tpt_df['tavg_label']], axis=1)
+            
+        elif scalingmethod == 'log2minmax':
+            
+            negative_FACTORS = []
+            positive_FACTORS = []
+            for factor in metrics:
+                if np.min(df_in[factor]) < 0:
+                    print('factor ' + factor + ' has quite a few negative values')
+                    negative_FACTORS.append(factor)
+                        
+                else:
+                    print('factor ' + factor + ' has no negative values')
+                    positive_FACTORS.append(factor)
+                
+                
+            pos_df = df_in[positive_FACTORS]
+            pos_x = pos_df.values
+            neg_df = df_in[negative_FACTORS]
+            neg_x = neg_df.values
+
+            if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
+                print('No negative factors at all!')
+                neg_x_ = neg_x
+            else:
+                neg_x_ = MinMaxScaler().fit_transform(neg_x) 
+
+            pos_x_constant = pos_x + 0.000001
+            pos_x_log = np.log2(pos_x + pos_x_constant)
+            pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+            x_ = np.concatenate((pos_x_, neg_x_), axis=1)
+            newcols=positive_FACTORS + negative_FACTORS
+
+            scaled_df = pd.DataFrame(x_, columns = newcols)
+            df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+
+
+        elif scalingmethod == 'powertransformer':    
+            
+            pt = PowerTransformer(method='yeo-johnson')
+            x_ = pt.fit_transform(Z)
+            scaled_df = pd.DataFrame(data=x_, columns = metrics) 
+            df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
+
+    ############################    
+
+
+
+
+
+    if coloredbycondition == True:
+
+        fig.savefig(CLUST_DISAMBIG_DIR+identifier+'UMAP_subplots_coloredbyconditions.png', dpi=300, bbox_inches='tight')
+
+
+    else:
+
+        df_out = df_out.reset_index(drop=True)
+    # define the axes in a for loop according to the grid
+        for number, metric in enumerate(metrics):
+            ax = fig.add_subplot(gs[number], projection='3d') # Initializes each plot
+            g = ax.scatter(df_out[x], df_out[y], df_out[z], '.', c=df_out[metric], cmap=colormap, s=0.5, alpha = 0.5) # Makes each plot
+            metric_name = metric.replace('_', ' ') #removes the underscore from the metric name
+            ax.set_title(metric_name, fontsize=font_size)
+        fig.colorbar(g, shrink=0.5)
+        fig.savefig(CLUST_DISAMBIG_DIR+identifier+'UMAP_subplots.png', dpi=300, bbox_inches='tight')
+    
+    plt.show()
+    return     

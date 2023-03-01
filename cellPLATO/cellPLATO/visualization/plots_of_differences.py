@@ -439,6 +439,12 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     # axes[0].set(yticklabels=[])
     axes[0].set(ylabel=None)
 
+    axes[1].set(xlabel='Effect size (difference from '+ctl_label+')')
+
+    # change the font size of the x label on axes[1]
+    axes[1].xaxis.label.set_size(PLOT_TEXT_SIZE)
+    axes[0].xaxis.label.set_size(PLOT_TEXT_SIZE)
+
     # set the font size of the y ticks
     axes[1].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
     axes[0].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)

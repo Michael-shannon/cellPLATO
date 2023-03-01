@@ -419,7 +419,7 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
     import seaborn as sns
     whattoplot=ALL_FACTORS
     CLUSTER_CMAP = 'tab20'
-    CONDITION_CMAP = 'dark'
+    # CONDITION_CMAP = 'dark'
 
     colors = np.asarray(sns.color_palette('Greys', n_colors=6))
     timestorepeat_in=(len(df['Condition'].unique()))/2
@@ -450,7 +450,7 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
         ax.set_title("", fontsize=PLOT_TEXT_SIZE)
         # ax.tick_params(axis='both', labelsize=36)
         ax.tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
-        ax.tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
+        ax.tick_params(axis='x', labelsize=PLOT_TEXT_SIZE, rotation = 45)
         # f.tight_layout()
         plt.setp(ax.patches, linewidth=3, edgecolor='k')
     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
