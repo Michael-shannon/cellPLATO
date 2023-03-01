@@ -307,7 +307,7 @@ def draw_cluster_hulls(df_in, cluster_by=CLUSTER_BY, min_pts=5, color_by='cluste
 
     return ax
 
-def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
+def plot_3D_scatter_deprecated(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
     import matplotlib.pyplot as plt
     from numpy.random import random
     from mpl_toolkits.mplot3d import Axes3D
@@ -325,6 +325,80 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
     elif colorby == 'condition':
         coloredby = 'Condition_shortlabel'
         colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+
+    ax = plt.subplot(111, projection='3d')
+     
+    for colorselector in range(len(colors)): #you have to plot each label separately to get the legend to work
+        if colorby == 'label':
+            ax.scatter(df[df['label'] == df['label'].unique()[colorselector]][x], df[df['label'] == df['label'].unique()[colorselector]][y],
+             df[df['label'] == df['label'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['label'].unique()[colorselector], s=dotsize, alpha = alpha)
+        elif colorby == 'condition':
+            ax.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x], df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+             df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
+
+    leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
+    for lh in leg.legendHandles: 
+        lh.set_alpha(1)
+    
+    # plt.tight_layout()
+    
+    # Set the axis labels with or without ticks
+    if ticks == False:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+        ax.set_xlabel(x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel(y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel(z, fontsize=font_size, linespacing=3.2)
+    elif ticks == True:
+        # Set the axis labels
+        ax.set_xlabel('\n ' + x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel('\n ' + y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel('\n ' + z, fontsize=font_size, linespacing=3.2)
+        ax.tick_params(axis='both', which='major', labelsize=font_size)
+    
+    # set the axis limits to tight
+    ax.set_xlim3d(np.min(df[x]), np.max(df[x]))
+    ax.set_ylim3d(np.min(df[y]), np.max(df[y]))
+    ax.set_zlim3d(np.min(df[z]), np.max(df[z]))
+
+    plt.show()
+
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.png', dpi=300, bbox_inches='tight')
+
+    return ax    
+
+def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
+    import matplotlib.pyplot as plt
+    from numpy.random import random
+    from mpl_toolkits.mplot3d import Axes3D
+
+    font_size = 24
+    # df = lab_dr_df
+
+    fig = plt.figure(figsize=(15, 15))
+
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
+
+    if colorby == 'label':
+        coloredby = 'label'
+        # colors = cm.Dark2(np.linspace(0, 1, len(df['label'].unique())))  
+        cmap = cm.get_cmap(CLUSTER_CMAP, len(df['label'].unique()))
+        colors=[]
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+        df = df.sort_values(by=['label'])
+          
+    elif colorby == 'condition':
+        coloredby = 'Condition_shortlabel'
+        # colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        colors=[]
+        for i in range(cmap.N):
+            colors.append(cmap(i))
 
     ax = plt.subplot(111, projection='3d')
      
@@ -1277,6 +1351,18 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             # ax.plot_trisurf(sub_df[x]-sub_df[x].mean(), sub_df[y]-sub_df[y].mean(), sub_df[z], linewidth=0, shade=False, facecolor=None,  edgecolor='Black', antialiased=False)
             ax.set_title(cond, fontsize=font_size)
 
+        # Set the axis labels with or without ticks
+            if ticks == False:
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_zticklabels([])
+
+            elif ticks == True:
+                # Set the axis labels
+
+                ax.tick_params(axis='both', which='major', labelsize=font_size)
+            
+
     else:
         print('Coloring each UMAP by normalized metric values')
 
@@ -1341,10 +1427,6 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
 
     ############################    
 
-
-
-
-
     if coloredbycondition == True:
 
         fig.savefig(CLUST_DISAMBIG_DIR+identifier+'UMAP_subplots_coloredbyconditions.png', dpi=300, bbox_inches='tight')
@@ -1359,6 +1441,12 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             g = ax.scatter(df_out[x], df_out[y], df_out[z], '.', c=df_out[metric], cmap=colormap, s=0.5, alpha = 0.5) # Makes each plot
             metric_name = metric.replace('_', ' ') #removes the underscore from the metric name
             ax.set_title(metric_name, fontsize=font_size)
+            if ticks == False:
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_zticklabels([])
+            elif ticks == True:
+                ax.tick_params(axis='both', which='major', labelsize=font_size)
         fig.colorbar(g, shrink=0.5)
         fig.savefig(CLUST_DISAMBIG_DIR+identifier+'UMAP_subplots.png', dpi=300, bbox_inches='tight')
     

@@ -84,7 +84,7 @@ MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 
 OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_2_eNKsOnARangeofIntegrinLigands_IL15_SORTED/eNKs_integrinligands_IL15_version2_reordered_OUTPUT/'
 
-CLUSTER_CMAP = 'tab20'
+CLUSTER_CMAP = 'Dark2'
 CONDITION_CMAP = 'tab20' #'Dark2 is good for 7 conditions, tab20 is good for 20 conditions. Paired might be good for when you have conditions that are paired one after another.
 CLUSTER_BY = 'umap' # TEMP - already in config
 # STATIC_PLOTS
