@@ -401,6 +401,10 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
 #     plt.rcParams['savefig.facecolor'] = 'w'
     # Remove the underscore from factor
     factor_ = factor.replace('_',' ')
+    if factor == 'rip_L': # SPIDERMAN #
+        rip_r_microns= RIP_R*MICRONS_PER_PIXEL
+        factor_ = factor + '(' + str(rip_r_microns) + ')' # Add the value of the rip to the label
+        factor_ = factor_.replace('_',' ')
     fig.suptitle('Plots of data and effect size: '+ factor_, fontsize= PLOT_TEXT_SIZE)
 
     # Resize points based on number of samples to reduce overplotting.
@@ -439,7 +443,8 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     # axes[0].set(yticklabels=[])
     axes[0].set(ylabel=None)
 
-    axes[1].set(xlabel='Effect size (difference from '+ctl_label+')')
+    axes[1].set(xlabel='Effect size')
+    axes[0].set(xlabel=factor_) # SPIDERMAN #
 
     # change the font size of the x label on axes[1]
     axes[1].xaxis.label.set_size(PLOT_TEXT_SIZE)

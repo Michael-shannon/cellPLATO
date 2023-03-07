@@ -577,7 +577,7 @@ def dbscan_clustering(df_in, eps=EPS, min_samples=MIN_SAMPLES,cluster_by='tsne',
 #
 #     return lab_dr_df, exemplar_df
 ### USE THIS ONE AS OF 12-20-2022 ##### old name hdbscan_clustering__DEV_DEV_SPEEDUP
-def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', plot=False, savedir = CLUSTERING_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
+def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', doeps = True, epsilon=0.5,plot=False, savedir = CLUSTERING_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
 
     print('hdbscan_clustering() with min_cluster_size = ', min_cluster_size)
     from sklearn.preprocessing import MinMaxScaler
@@ -685,7 +685,11 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
     # Z = StandardScaler().fit_transform(sub_set)
     # X = MinMaxScaler().fit_transform(Z)
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,min_samples=min_samples,metric=metric)
+    # clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,min_samples=min_samples,metric=metric) ### SPIDERMAN ###
+    if doeps == True:
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,min_samples=min_samples,metric=metric, cluster_selection_epsilon=epsilon, cluster_selection_method = 'eom')
+    else:
+        clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size,min_samples=min_samples,metric=metric)
     labels = clusterer.fit_predict(X)
 
     # Assemble a dataframe from the results

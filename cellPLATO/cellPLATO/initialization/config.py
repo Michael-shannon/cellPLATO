@@ -7,7 +7,7 @@ Experiment-specific constants
 
 INPUT_FMT = 'btrack' # 'usiigaci'#btrack
 MICRONS_PER_PIXEL = 0.537
-SAMPLING_INTERVAL = 40/60 # time between frames in minutes
+SAMPLING_INTERVAL = 10/60 # time between frames in minutes
 TRACK_FILENAME = '.h5'
 Z_SCALE = 1.00
 CALIBRATED_POS = False
@@ -20,30 +20,15 @@ UMAPS = ['UMAP1','UMAP2','UMAP3'] #this is for umap clustering and isnt used yet
 # Small test set of Btracker data
 #################
 
-DATA_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_2_eNKsOnARangeofIntegrinLigands_IL15_SORTED/eNKs_integrinligands_IL15/'
-CTL_LABEL = 'Condition_ICAM_nochemokine_day1_cp_masks'
-# CONDITIONS_TO_INCLUDE = ['Condition_ICAM_nochemokine_day1_cp_masks', 'Condition_ICAM_nochemokine_day2_cp_masks','Condition_VCAM_nochemokine_day1_cp_masks', 'Condition_VCAM_nochemokine_day2_cp_masks',
-#                          'Condition_Fibronectin_nochemokine_day1_cp_masks', 'Condition_Fibronectin_nochemokine_day2_cp_masks','Condition_CollagenIV_nochemokine_day1_cp_masks', 'Condition_CollagenIV_nochemokine_day2_cp_masks',
-#                          'Condition_madCAM_nochemokine_day1_cp_masks', 'Condition_madCAM_nochemokine_day2_cp_masks','Condition_NCAM_nochemokine_day1_cp_masks', 'Condition_NCAM_nochemokine_day2_cp_masks',
-#                          ] #'Condition_Stopped_artificial'
-CONDITIONS_TO_INCLUDE = ['Condition_ICAM_nochemokine_day1_cp_masks', 'Condition_VCAM_nochemokine_day1_cp_masks', 'Condition_Fibronectin_nochemokine_day1_cp_masks',
-                         'Condition_CollagenIV_nochemokine_day1_cp_masks','Condition_madCAM_nochemokine_day1_cp_masks', 'Condition_NCAM_nochemokine_day1_cp_masks',
-                         'Condition_ICAM_nochemokine_day2_cp_masks','Condition_VCAM_nochemokine_day2_cp_masks','Condition_Fibronectin_nochemokine_day2_cp_masks',
-                         'Condition_CollagenIV_nochemokine_day2_cp_masks','Condition_madCAM_nochemokine_day2_cp_masks','Condition_NCAM_nochemokine_day2_cp_masks',
-                         ] #'Condition_Stopped_artificial'
+DATA_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_1/ThreeConditions_Go_Stopping_Stopped/'
+CTL_LABEL = 'Condition_Migrating'
+CONDITIONS_TO_INCLUDE = ['Condition_Migrating', 'Condition_Slowing','Condition_Stopped'] #'Condition_Stopped_artificial'
 
- 
-
-
-CONDITION_SHORTLABELS = ['ICAM', 'VCAM','Fn',
-                         'ColIV','mCAM', 'NCAM',
-                          'ICAM+IL15','VCAM+IL15','Fn+IL15',
-                           'ColIV+IL15','mCAM+IL15','NCAM+IL15',
-                             ]
+CONDITION_SHORTLABELS = ['Untreated', 'CytoD 0.5 uM','CytoD 2 uM']
 
 USE_SHORTLABELS = True
 PERFORM_RIPLEYS = True
-DATASET_SHORTNAME = 'Figure_2_version2_reordered_eNKsOnARangeofIntegrinLigands_IL15'
+DATASET_SHORTNAME = 'Figure_1_ThreeConditions_Go_Stopping_Stopped_2-14-2023'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod1'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod2'
 # ATASET_SHORTNAME = 'CellPlatoFigure_20x100x_July20_mod3'
@@ -56,13 +41,9 @@ USE_INPUT_REGIONPROPS = True
 CALCULATE_REGIONPROPS = False
 
 
-MICRONS_PER_PIXEL_LIST = [0.537,0.537,0.537, 0.537,
-                          0.537,0.537,0.537, 0.537,
-                          0.537,0.537,0.537, 0.537]
+MICRONS_PER_PIXEL_LIST = [0.537,0.537,0.537]
 MICRONS_PER_PIXEL = MICRONS_PER_PIXEL_LIST[0] # Default value
-SAMPLING_INTERVAL_LIST= [40/60,40/60,40/60,40/60,
-                         40/60,40/60,40/60,40/60,
-                         40/60,40/60,40/60,40/60,]#[1,1, 1/60,1/60]
+SAMPLING_INTERVAL_LIST= [10/60,10/60,10/60]#[1,1, 1/60,1/60]
 SAMPLING_INTERVAL = SAMPLING_INTERVAL_LIST[0] # Default value
 
 # Timecourse analysis parameters
@@ -77,15 +58,15 @@ AVERAGE_TIME_WINDOWS = False #This does two things. 1) provides a time window av
 '''
 Non-experiment specific constants
 '''
-MIG_T_WIND = 3 # for this dataset, 6 time points of 40 seconds each = 4 minutes
+MIG_T_WIND = 12#6 # in frames
 # MIG_T_WIND = ?? * SAMPLING_INTERVAL ''' To convert into seconds'''
 
 MIN_CELLS_PER_TPT = 1 # used in: average_per_timepoint()
 
-OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_2_eNKsOnARangeofIntegrinLigands_IL15_SORTED/eNKs_integrinligands_IL15_version2_reordered_OUTPUT/'
+OUTPUT_PATH = 'D:/Michael_Shannon/CELLPLATO_MASTER/FIGURE_1/ThreeConditions_Go_Stopping_Stopped_OUTPUT/'
 
-CLUSTER_CMAP = 'Dark2'
-CONDITION_CMAP = 'tab20' #'Dark2 is good for 7 conditions, tab20 is good for 20 conditions. Paired might be good for when you have conditions that are paired one after another.
+CLUSTER_CMAP = 'tab20'
+CONDITION_CMAP = 'Dark2' #dark
 CLUSTER_BY = 'umap' # TEMP - already in config
 # STATIC_PLOTS
 PALETTE = 'colorblind'
@@ -264,7 +245,7 @@ NUM_FACTORS = DR_FACTORS + ['tSNE1', 'tSNE2', 'PC1', 'PC2']
 # Optionally define your data filters here.
 DATA_FILTERS = {
   "area": (10, 10000), # Warning: range will change if self-normalized. Do we need an if statement? Or to standardscale the filter settings, by matching a row of the df?
-  "ntpts": (3,1800)
+  "ntpts": (12,1800)
 
 }
 
@@ -357,13 +338,13 @@ T_WIND_DR_FACTORS = ['MSD',
 
 
 # Booleans to draw or not specific plots.
-DRAW_SUPERPLOTS = True
+DRAW_SUPERPLOTS = False
 DRAW_DIFFPLOTS = True
-DRAW_MARGSCAT = True
-DRAW_TIMEPLOTS = True
-DRAW_BARPLOTS = True
-DRAW_SUPERPLOTS_grays = True
-DRAW_SNS_BARPLOTS = True
+DRAW_MARGSCAT = False
+DRAW_TIMEPLOTS = False
+DRAW_BARPLOTS = False
+DRAW_SUPERPLOTS_grays = False
+DRAW_SNS_BARPLOTS = False
 
 # Booleans for Analysis components:
 '''(Only run pipelines if true)'''

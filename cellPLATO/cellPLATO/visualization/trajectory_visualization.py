@@ -425,7 +425,7 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
         facwithoutunderscores = fac.replace('_',' ')
         ax.text(text_x + 0.6*XYRange,text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
-                color='k', fontsize=30,size = 30, fontdict = None)
+                color='k', fontsize=30, fontdict = None) #spidermoose )
 
 
     # for n, fac in enumerate(shape_display_factors):
@@ -1200,6 +1200,10 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 2: Find the median value per cluster for each metric using groupby
     clusteraverage_df = df_out.groupby('label').median()#.reset_index(drop=True)
 
+    
+
+    ###
+
     # Part 3: Makes some iterables for the parts below.
     numberofclusters=len(clusteraverage_df.axes[0])
     iterable_clusters=np.arange(len(clusteraverage_df.axes[0])) # Iterable across rows
@@ -1283,6 +1287,53 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 8: exports a df that can be used to select what metrics you want to show?
     return top_dictionary, clusteraverage_df
 
+def plot_cluster_averages(top_dictionary, df): # New 3-7-2023
+    num_plots = len(top_dictionary)
+    
+    ### Make a totally non-normalized version of the clusteraverage_df
+    cluster_average_df = df.groupby('label').median()#.reset_index(drop=True)
+
+    # Create a grid of subplots with one row and num_plots columns
+    fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(10*num_plots,10))
+    
+    # Loop over the cluster IDs and corresponding values in the dictionary
+    for i, (cluster_id, value) in enumerate(top_dictionary.items()):
+        # Get the row in the dataframe that corresponds to the current cluster ID
+        cluster_row = cluster_average_df.loc[cluster_id]
+        
+        # Loop over the column names for the current key and create a text string
+        text_str = ""
+        for column_name in value:
+            # Get the value in the specified column for the current cluster
+            column_value = round(cluster_row[column_name], 4)
+            
+            # Add the string and the corresponding value to the text string
+            text_str += f"{column_name.title()}: {column_value}\n"
+            text_str = text_str.replace('_',' ')
+        
+        # Plot the text string as text in the current subplot
+        axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
+        
+        # Set the title of the current subplot to the current cluster ID
+        axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
+
+        axs[i].set_xticks([])
+        axs[i].set_yticks([])
+        # Remove the lines around the subplot
+        axs[i].spines['top'].set_visible(False)
+        axs[i].spines['right'].set_visible(False)
+        axs[i].spines['bottom'].set_visible(False)
+        axs[i].spines['left'].set_visible(False)
+    
+    
+    # Add an overall title to the figure
+    fig.suptitle("Average of top contributors per cluster ID", fontsize=36)
+    # Save figure as a png
+    # plt.savefig("cluster_average.png")
+    fig.savefig( CLUST_DISAMBIG_DIR + '\cluster_average.png',dpi=300,bbox_inches="tight") 
+ 
+    
+    plt.show()
 
 
 #####
