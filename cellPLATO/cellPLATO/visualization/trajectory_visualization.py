@@ -31,9 +31,9 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
     For a selected cell, at a selected step of its trajectory, make a plot
     '''
     # Using the same sample cell trajectory, print out some measurements
-    fig, (ax) = plt.subplots(1,1)
+    fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
     # print(top_dictionary)
-
+    
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = ['Arial'] + plt.rcParams['font.serif'] #Times New Roman
     plt.rcParams['mathtext.default'] = 'regular'
@@ -108,8 +108,18 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
 
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
         facwithoutunderscores = fac.replace('_',' ')
-        ax.text(text_x + 0.6*XYRange,text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
-                color='k', fontsize=30, fontdict = None) #spidermoose )
+        text_str = facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f')
+        ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str, #These weird numbers were worked out manually
+                color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
+
+        ################################
+        #Original line#
+        
+        # ax.text(text_x + 0.6*XYRange, text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
+        #         color='k', fontsize=30, fontdict = None) #spidermoose )
+
+        ################################
 
 
     # for n, fac in enumerate(shape_display_factors):
@@ -119,10 +129,10 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
 
     # General plot improvements
     plottitle="Cluster ID: " + str(cell_df['label'].iloc[i_step]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
-    ax.set_title(plottitle, fontname="Arial",fontsize=30)
-    ax.set_xlabel('x (px)', fontname="Arial",fontsize=30)
-    ax.set_ylabel("y (px)", fontname="Arial",fontsize=30)
-    ax.tick_params(axis='both', labelsize=30)
+    ax.set_title(plottitle, fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.set_ylabel("y (px)", fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.tick_params(axis='both', labelsize=PLOT_TEXT_SIZE)
     ax.set_aspect('equal')
     ax.set_adjustable("datalim")
     ax.set_xlim(xmin, xmax)
@@ -143,7 +153,7 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
     For a selected cell, at a selected step of its trajectory, make a plot
     '''
     # Using the same sample cell trajectory, print out some measurements
-    fig, (ax) = plt.subplots(1,1)
+    fig, (ax) = plt.subplots(1,1, figsize = (0.08*XYRange,0.08*XYRange))
 
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = ['Arial'] + plt.rcParams['font.serif'] #Times New Roman
@@ -226,10 +236,20 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
         thisnumberstring = str(thisnumber)
         print(thisnumberstring)
         print(type(thisnumberstring))
-        factorwithoutunderscores = fac.replace("_", " ")
-        ax.text(text_x + 0.6*XYRange, text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), factorwithoutunderscores +': '
-                + format(row.loc[fac], '.1f'), #These weird numbers were worked out manually
-                color='k', fontsize=30,size = 36, fontdict = None)
+        # factorwithoutunderscores = fac.replace("_", " ")
+
+        #####
+        facwithoutunderscores = fac.replace('_',' ')
+        text_str = facwithoutunderscores +': ' + format(row.loc[fac], '.1f')
+        ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str, #These weird numbers were worked out manually
+                color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
+
+        #####
+
+
+        # ax.text(text_x + 0.6*XYRange, text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), text_str, #These weird numbers were worked out manually
+        #         color='k', fontsize=30,size = 36, fontdict = None)
 
                 # + format(cell_df.iloc[i_step][fac], '.1f')
 
