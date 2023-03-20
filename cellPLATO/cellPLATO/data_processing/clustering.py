@@ -17,6 +17,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import OPTICS
 import hdbscan
+from matplotlib import cm
 
 '''
 K. Chaudhuri and S. Dasgupta. “Rates of convergence for the cluster tree.”
@@ -2140,6 +2141,8 @@ def count_time_in_label(df):
 
     from collections import Counter
 
+    
+
     timinglist=[]
     timinglistmaster=[]
     # df=tptlabel_dr_df
@@ -2178,8 +2181,8 @@ def count_time_in_label(df):
     df=timinglist_df
     import seaborn as sns
     import matplotlib.pyplot as plt
-    CONDITION_CMAP='viridis'
-    # cmap = cm.get_cmap(CONDITION_CMAP, len(sum_labels['Condition'].unique()))
+    # CONDITION_CMAP='viridis'
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(sum_labels['Condition'].unique())) #wally
     sns.set_theme(style="ticks")
     f, ax = plt.subplots(figsize=(15, 10))
     # ax.set_xscale("log")
@@ -2189,10 +2192,29 @@ def count_time_in_label(df):
     x_lab = "label"
     y_lab = "time_in_label"
     plottitle = ""
-    ax= sns.boxplot(x=x_lab, y=timeminutes, data=df,
-                whis=[0, 100], width=.6, hue='Condition')
+    # ax= sns.boxplot(x=x_lab, y=timeminutes, data=df,
+    #             whis=[25, 75], width=.6, hue='Condition', ax=ax, palette=CONDITION_CMAP)
+    # sns.stripplot(x= x_lab, y= timeminutes, data=df,
+    #               size=4, hue='Condition', dodge=True, ax=ax, palette=CONDITION_CMAP,ec='k', linewidth=1, alpha=.5)
+
+    # ax = sns.boxenplot(x=x_lab, y=timeminutes, data=df, hue='Condition',ax=ax, palette=CONDITION_CMAP) #bw=.2, orient = 'v'
+    # sns.stripplot(x= x_lab, y= timeminutes, data=df,
+    #               size=4, hue='Condition', dodge=True, ax=ax, palette=CONDITION_CMAP, ec='k', linewidth=1, alpha=.5) 
+   
+    
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition'].unique()))
+    for i in range(cmap.N):
+        colors.append(cmap(i))
+        
+
+    ax = sns.barplot(x=x_lab, y=timeminutes, data=df, hue='Condition',ax=ax, palette=colors, estimator='median', errorbar=('ci', 95), capsize=.1, errwidth=2, edgecolor='k', linewidth=2, alpha=0.9) #bw=.2, orient = 'v'
     sns.stripplot(x= x_lab, y= timeminutes, data=df,
-                  size=4, hue='Condition', dodge=True, ax=ax, ec='k', linewidth=1, alpha=.5)
+                  size=4, hue='Condition', dodge=True, ax=ax, palette=colors,ec='k', linewidth=1, alpha=.5)
+    
+    # ax= sns.violinplot(x=x_lab, y=timeminutes, data=df, hue='Condition',ax=ax, palette=CONDITION_CMAP,  cut=1, linewidth=2, inner='quartile', scale = 'count') #bw=.2, orient = 'v'
+    #inner{“box”, “quartile”, “point”, “stick”, None}, optional
+    #scale{“area”, “count”, “width”}, optional
     # Tweak the visual presentation
     ax.xaxis.grid(True)
     ax.set(ylabel="")
@@ -2201,7 +2223,7 @@ def count_time_in_label(df):
     ax.set_ylabel("Time in cluster (min)", fontsize=36)
     ax.tick_params(axis='both', labelsize=36)
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[:3], labels[:3], title='Condition', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    ax.legend(handles[:3], labels[:3], title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=5,fancybox=True)
     f.tight_layout()
     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
     f.savefig(CLUST_DISAMBIG_DIR+'\TIMEINCLUSTERS.png', dpi=300)#plt.

@@ -1151,7 +1151,17 @@ def draw_cluster_hulls_dev(df_in, cluster_by='umap', min_pts=5, color_by='cluste
 
     return ax
 
-def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
+def plotlytomatplotlibcolors():
+    import plotly.express as px
+    import matplotlib.colors
+    color_discrete_sequence=px.colors.qualitative.Dark24
+    freshcolors=[]
+    for i in range(len(color_discrete_sequence)):
+        freshcolortriplet=matplotlib.colors.to_rgb(color_discrete_sequence[i])
+        freshcolors.append(freshcolortriplet)
+    return freshcolors
+
+def purity_plots_dev(df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
 
 
     if(cluster_by == 'tsne' or cluster_by == 'tSNE'):
@@ -1173,7 +1183,7 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
 
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
 
-    df=lab_dr_df
+    # df=lab_dr_df
     x = 'UMAP1'
     y = 'UMAP2'
     z = 'UMAP3'
@@ -1184,9 +1194,43 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
    
 
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(lab_dr_df['Condition_shortlabel'].unique()))
-    for i in range(cmap.N):
-        colors.append(cmap(i))
+    if CONDITION_CMAP != 'Dark24':
+
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+    ######
+
+    # if CONDITION_CMAP == 'Dark24':
+    #     colors = plotlytomatplotlibcolors()
+    #     colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+
+    
+    # ######
+    # coop = 'Dark24'
+    # import plotly.express as px
+    # import matplotlib.colors
+    # color_discrete_sequence=px.colors.qualitative.Dark24
+    # # replace the final bit of px.colors.qualitative.Dark24 with the name of the plotly colormap you want to use which is defined as coop above
+
+
+    # color_discrete_sequence=color_discrete_sequence[:len(df['Condition_shortlabel'].unique())]
+    # freshcolors=[]
+    # for i in range(len(color_discrete_sequence)):
+    #     freshcolortriplet=matplotlib.colors.to_rgb(color_discrete_sequence[i])
+    #     freshcolors.append(freshcolortriplet)
+    # # freshcolors=matplotlib.colors.to_rgb(color_discrete_sequence)
+    # print('These are the fresh colors:')
+    # print(freshcolors)
+    # colors=freshcolors
+
+ 
+
 
     # ax1.set_title('Low-dimensional scatter with cluster outlines', fontsize=fontsize)
     # ax1.scatter(x=lab_dr_df['tSNE1'], y=lab_dr_df['tSNE2'], c='grey', s=0.1)
@@ -1214,10 +1258,15 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
 
     # Define a custom colormap for the clusters (To match what's done in draw_cluster_hulls())
     cluster_colors = []
-    labels = list(set(lab_dr_df['label'].unique()))
+    labels = list(set(df['label'].unique()))
     cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
     for i in range(cmap.N):
         cluster_colors.append(cmap(i))
+
+    # print("Cluster colors are: ", cluster_colors)  
+    # Drop the first element of the cluster_colors list, which is the color for the 'unclustered' points
+    cluster_colors = cluster_colors[1:]
+    # print("Cluster colors without the unclustered portion are: ", cluster_colors)  
 
     #
     # Second subplot: stacked bar plots of cluster purity
@@ -1226,18 +1275,24 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
 
     # ax2.set_title('Low-dimension cluster purity', fontsize=fontsize)
 
-    for i, cond in enumerate(lab_dr_df['Condition_shortlabel'].unique()):
+    for i, cond in enumerate(df['Condition_shortlabel'].unique()):
         '''
         Assumes that the conditions are already in the correct order in the dataframe.
         '''
+        print(df['Condition_shortlabel'].unique())
+
         if(i==0):
             ax2.bar(clust_sum_df['cluster_id'], clust_sum_df[cond+'_ncells_%'], label=cond,color=colors[i])
             prev_bottom = clust_sum_df[cond+'_ncells_%']
+
         else:
             ax2.bar(clust_sum_df['cluster_id'], clust_sum_df[cond+'_ncells_%'], bottom=prev_bottom, label=cond,color=colors[i])
+            prev_bottom = clust_sum_df[cond+'_ncells_%'] + prev_bottom
+            
 
     ax2.set_xticks(clust_sum_df['cluster_id'])
     ax2.set_ylabel('% of cells per cluster', fontsize = fontsize)
+    ax2.set_xlabel('Cluster ID', fontsize = fontsize)
 
     # leg=plt.legend(loc='upper right', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
     # for lh in leg.legendHandles: 
@@ -1255,10 +1310,10 @@ def purity_plots_dev(lab_dr_df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=C
 
     fig.savefig(CLUST_DISAMBIG_DIR+'PurityPlot.png', dpi=300, bbox_inches='tight')
 
-    if STATIC_PLOTS:
-        plt.savefig(save_path+'purity_plots'+cluster_by+'.png')
-    if PLOTS_IN_BROWSER:
-        plt.show()
+    # if STATIC_PLOTS:
+    #     plt.savefig(save_path+'purity_plots'+cluster_by+'.png')
+    # if PLOTS_IN_BROWSER:
+    #     plt.show()
 
 
 
