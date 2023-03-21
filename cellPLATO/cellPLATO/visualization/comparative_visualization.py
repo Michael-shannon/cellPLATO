@@ -459,3 +459,11 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
         f.show()
 
     return
+
+def getaveragevalues(df_in, factorstoinclude, savepath = SAVED_DATA_PATH):
+    cols = factorstoinclude + ['Condition_shortlabel']
+    df_in=df_in[cols] 
+    df_averaged = df_in.groupby('Condition_shortlabel').median().reset_index()
+    # display(df_averaged)
+    df_averaged.to_csv(savepath + 'Average_Values_per_condition.csv', index=False)
+    return df_averaged
