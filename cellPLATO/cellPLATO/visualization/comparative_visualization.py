@@ -462,17 +462,21 @@ def comparative_SNS_bar(df, save_path=BAR_SNS_DIR):
 
 def getaveragevalues(df_in, factorstoinclude, savepath = SAVED_DATA_PATH):
     cols = factorstoinclude + ['Condition_shortlabel']
-    df_in=df_in[cols] 
+    df_vals=df_in[cols] 
     
-    df_averaged_mean = df_in.groupby('Condition_shortlabel').median().reset_index()
-    df_averaged_median = df_in.groupby('Condition_shortlabel').mean().reset_index()
-    df_cluster_labels_averaged_mean = df_in.groupby('label').mean().reset_index()   
-    df_cluster_labels_averaged_median = df_in.groupby('label').median().reset_index() 
+    df_averaged_mean = df_vals.groupby('Condition_shortlabel').median().reset_index()
+    df_averaged_median = df_vals.groupby('Condition_shortlabel').mean().reset_index()
     # Save the dfs as csv files
     df_averaged_mean.to_csv(savepath + 'Mean_Values_per_condition.csv', index=False)
     df_averaged_median.to_csv(savepath + 'Median_Values_per_condition.csv', index=False)
-    df_cluster_labels_averaged_mean.to_csv(savepath + 'Mean_Values_per_cluster.csv', index=False)
-    df_cluster_labels_averaged_median.to_csv(savepath + 'Median_Values_per_cluster.csv', index=False)
 
-
+    if 'label' in df_in.columns:
+        cols = factorstoinclude + ['label']
+        df_labels=df_in[cols]
+        df_cluster_labels_averaged_mean = df_labels.groupby('label').mean().reset_index()   
+        df_cluster_labels_averaged_median = df_labels.groupby('label').median().reset_index() 
+        df_cluster_labels_averaged_mean.to_csv(savepath + 'Mean_Values_per_cluster.csv', index=False)
+        df_cluster_labels_averaged_median.to_csv(savepath + 'Median_Values_per_cluster.csv', index=False)
+        # Can potentially include a multi groupby on the label and condition_shortlabel to get the mean and median values per cluster per condition
+    
     return
