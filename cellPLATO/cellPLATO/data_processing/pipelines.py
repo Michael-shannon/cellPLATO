@@ -218,6 +218,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     print("THIS IS THE UNTRANSFORMED DATA ")
     sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
     plt.tight_layout()
+    plt.title('Untransformed data')
     # plt.show()
     plt.savefig(savedir+ 'UntransformedData.png')
 
@@ -289,6 +290,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         scaled_df_here = pd.DataFrame(x_, columns = newcols)
         scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
         plt.tight_layout()
+        plt.title('Transformed data')
         # plt.show()
         plt.savefig(savedir+ str(scalingmethod) +'.png')
 

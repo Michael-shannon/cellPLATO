@@ -395,10 +395,21 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
     elif colorby == 'condition':
         coloredby = 'Condition_shortlabel'
         # colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
-        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique())) # deleted...
+        # colors=[] # deleted...
+        # for i in range(cmap.N): # deleted
+        #     colors.append(cmap(i)) # Deleted...
+
         colors=[]
-        for i in range(cmap.N):
-            colors.append(cmap(i))
+        if CONDITION_CMAP != 'Dark24':
+            cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+            for i in range(cmap.N):
+                colors.append(cmap(i))
+        else:
+            colors = plotlytomatplotlibcolors()
+            colors=colors[:len(df['Condition_shortlabel'].unique())]    
+
+
 
     ax = plt.subplot(111, projection='3d')
      
