@@ -1348,10 +1348,19 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
     sub_set = df_in[metrics]
     Z = sub_set.values
 
+    # colors=[] # replaced with new one that allows dark24 as well as all the others
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique())) # replaced with new one that allows dark24 as well as all the others
+    # for i in range(cmap.N): # replaced with new one that allows dark24 as well as all the others
+    #     colors.append(cmap(i)) # replaced with new one that allows dark24 as well as all the others
+
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique()))
-    for i in range(cmap.N):
-        colors.append(cmap(i))
+    if CONDITION_CMAP != 'Dark24':
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique()))
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df_in['Condition_shortlabel'].unique())]
 
     ############################   
 
@@ -1411,7 +1420,7 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             else:
                 print('Not sampling the df')
                 ax.scatter(df_out[x], df_out[y], df_out[z], '.', c='gainsboro',  cmap=colormap, s=0.1, alpha = 0.02) # Makes each plot # c=df_out[cond], cmap=colormap,
-            ax.scatter(sub_df[x], sub_df[y], sub_df[z], '.', c=chosencolor, cmap=colormap, s=5, alpha = 0.9) # , edgecolors='Black' # Makes each plot # c=df_out[cond], cmap=colormap,
+            ax.scatter(sub_df[x], sub_df[y], sub_df[z], '.', c=chosencolor, cmap=colormap, s=0.1, alpha = 0.9) # , edgecolors='Black' # Makes each plot # c=df_out[cond], cmap=colormap,
             # ax.plot_trisurf(sub_df[x], sub_df[y], sub_df[z],  cmap='white', edgecolor='Black')
             # ax.plot_trisurf(Xs-Xs.mean(), Ys-Ys.mean(), Zs, cmap=cm.jet, linewidth=0)
             # ax.plot_trisurf(sub_df[x]-sub_df[x].mean(), sub_df[y]-sub_df[y].mean(), sub_df[z], linewidth=0, shade=False, facecolor=None,  edgecolor='Black', antialiased=False)
