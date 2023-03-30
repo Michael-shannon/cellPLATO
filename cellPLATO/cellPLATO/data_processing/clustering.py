@@ -2202,10 +2202,20 @@ def count_time_in_label(df):
     #               size=4, hue='Condition', dodge=True, ax=ax, palette=CONDITION_CMAP, ec='k', linewidth=1, alpha=.5) 
    
     
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
+
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition'].unique()))
-    for i in range(cmap.N):
-        colors.append(cmap(i))
+    if CONDITION_CMAP != 'Dark24':
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition'].unique()))
+        # sns.set_palette(CONDITION_CMAP)
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition'].unique())]    
         
 
     ax = sns.barplot(x=x_lab, y=timeminutes, data=df, hue='Condition',ax=ax, palette=colors, estimator='median', errorbar=('ci', 95), capsize=.1, errwidth=2, edgecolor='k', linewidth=2, alpha=0.9) #bw=.2, orient = 'v'

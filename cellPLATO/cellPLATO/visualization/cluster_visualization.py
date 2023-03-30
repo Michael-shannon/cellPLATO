@@ -590,7 +590,7 @@ def interactive_umap_plot_choosecondition(df, condition, xrot=0, yrot=0, zrot=0)
 
 
 
-def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
+def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): #spidey
 
     # f, axes = plt.subplots(1, 3, figsize=(15, 5)) #sharex=True
     # f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=True) #sharex=True
@@ -626,12 +626,24 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
     ##
     import seaborn as sns
     sns.set_theme(style="ticks")
-    sns.set_palette(CONDITION_CMAP)
+    # sns.set_palette(CONDITION_CMAP) #removed
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
 
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-    for i in range(cmap.N):
-        colors.append(cmap(i))
+    if CONDITION_CMAP != 'Dark24':
+
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        sns.set_palette(CONDITION_CMAP)
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+
 
     # display(df)
     df=df.dropna(how='any')
@@ -902,10 +914,20 @@ def plot_plasticity_countplots(df, identifier='\_allcells'):
                 label_counts_df.loc[i] = [cond, 'NA', labelchange, len(this_lab_df.index), percent_in_label]
                 i+=1
     label_counts_df.dropna(inplace=True)
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
+
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-    for i in range(cmap.N):
-        colors.append(cmap(i))
+    if CONDITION_CMAP != 'Dark24':
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        # sns.set_palette(CONDITION_CMAP)
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition_shortlabel'].unique())]    
 
     sub_df = df[['Condition_shortlabel', 'twind_n_changes', 'twind_n_labels']]    
     
