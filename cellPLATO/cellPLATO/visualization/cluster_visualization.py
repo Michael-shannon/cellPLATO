@@ -504,7 +504,7 @@ def interactive_plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortl
     fig.show()
     return
 
-def interactive_umap_plot_choosecondition(df, condition):
+def interactive_umap_plot_choosecondition(df, condition, xrot=0, yrot=0, zrot=0):
     # filter dataframe for the chosen condition
     import plotly.io as pio
     df_condition = df[df['Condition_shortlabel'] == condition]
@@ -577,6 +577,12 @@ def interactive_umap_plot_choosecondition(df, condition):
         legend= {'itemsizing': 'constant'},
         font=dict(family="Courier New, monospace",size=24),
     )
+
+    # Rotate the plot so it matches the statics
+
+    # fig.update_layout(scene_camera_eye=dict(x=xrot, y=yrot, z=zrot))
+    
+
 
     # show plot
     pio.write_image(fig, CLUST_DISAMBIG_DIR + condition + ' UMAP_Clusters.png',scale=1, width=1800, height=1200)
