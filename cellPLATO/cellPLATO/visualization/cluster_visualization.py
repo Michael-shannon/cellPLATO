@@ -455,7 +455,7 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
 
     return ax    
 
-def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what = ''):
+def interactive_plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what = ''):
 
     import plotly.io as pio
     import seaborn as sns
