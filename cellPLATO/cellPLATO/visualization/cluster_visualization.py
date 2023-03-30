@@ -457,16 +457,25 @@ def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what 
 
     import plotly.io as pio
     import seaborn as sns
+    import plotly.express as px
 
-    CLUSTER_CMAP = 'tab20'
-    CONDITION_CMAP = 'dark'
 
-    # CLUST_DISAMBIG_DIR = 'D:/Michael_Shannon/CELLPLATO_MASTER/OCTOBERTESTING_/ThreeConditions_Go_Stopping_Stopped_FinalFig1_OUTPUT/ThreeConditions_Go_Stopping_Stopped_12-14-2022/2022-12-15_10-23-41-828185/plots/Clustering/Cluster_Disambiguation'
+    if colorby == 'Condition_shortlabel':
 
-    # df = lab_dr_df #lab_tavg_dr_df #lab_dr_df
-
-    pal = sns.color_palette(CONDITION_CMAP) #extracts a colormap from the seaborn stuff.
-    cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
+        if CONDITION_CMAP != 'Dark24':
+            pal = sns.color_palette(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+            # pal = sns.color_palette(CONDITION_CMAP) #extracts a colormap from the seaborn stuff.
+            cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
+        else:
+            cmap = px.colors.qualitative.Dark24
+            # colors=colors[:len(df_in['Condition_shortlabel'].unique())]
+            # cmap=cmap[:len(df['Condition_shortlabel'].unique())] #spiderspice
+    else:
+        if CLUSTER_CMAP != 'Dark24':
+            pal = sns.color_palette(CLUSTER_CMAP, len(df['Condition_shortlabel'].unique()))
+            cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
+        else: 
+            cmap = px.colors.qualitative.Dark24
 
     if 'label' in df.columns:
         df['label'] = pd.Categorical(df.label)
@@ -1493,7 +1502,7 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             scaled_df = pd.DataFrame(x_, columns = newcols)
             df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
 
-        elif scalingmethod == 'choice': #SPIDERSPICE
+        elif scalingmethod == 'choice': 
             print('Factors to be scaled using log2 and then minmax:')
             FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
             FactorsNottotransform_actual=[]
