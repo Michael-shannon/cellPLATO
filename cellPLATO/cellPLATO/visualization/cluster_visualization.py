@@ -10,6 +10,7 @@ import pandas as pd
 import os
 
 import plotly.graph_objs as go
+import plotly.express as px
 
 
 # matplotlib imports
@@ -507,6 +508,21 @@ def interactive_umap_plot_choosecondition(df, condition):
     # filter dataframe for the chosen condition
     df_condition = df[df['Condition_shortlabel'] == condition]
 
+    if CONDITION_CMAP != 'Dark24':
+        pal = sns.color_palette(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        # pal = sns.color_palette(CONDITION_CMAP) #extracts a colormap from the seaborn stuff.
+        cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
+    else:
+        cmap = px.colors.qualitative.Dark24
+            # colors=colors[:len(df_in['Condition_shortlabel'].unique())]
+            # cmap=cmap[:len(df['Condition_shortlabel'].unique())] 
+    # Make a condition list from the dataframe
+    condlist = df['Condition_shortlabel'].unique().tolist()        
+    #extract the index of the chosen condition
+    condindex = condlist.index(condition)
+    #extract the color from the color map
+    chosencolor = cmap[condindex]
+
     # create trace for all data points in grey
     trace_all = go.Scatter3d(
         x=df['UMAP1'],
@@ -529,7 +545,7 @@ def interactive_umap_plot_choosecondition(df, condition):
         mode='markers',
         marker=dict(
             size=2,
-            color='#ff7f0e',
+            color=chosencolor, #'#ff7f0e',
             opacity=1
         ),
         name=f'Condition: {condition}'
