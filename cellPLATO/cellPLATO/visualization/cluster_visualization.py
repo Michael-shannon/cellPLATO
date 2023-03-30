@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 import os
 
+import plotly.graph_objs as go
+
 
 # matplotlib imports
 import matplotlib.pyplot as plt
@@ -469,19 +471,19 @@ def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what 
         else:
             cmap = px.colors.qualitative.Dark24
             # colors=colors[:len(df_in['Condition_shortlabel'].unique())]
-            # cmap=cmap[:len(df['Condition_shortlabel'].unique())] #spiderspice
+            # cmap=cmap[:len(df['Condition_shortlabel'].unique())] 
     else:
         if CLUSTER_CMAP != 'Dark24':
             pal = sns.color_palette(CLUSTER_CMAP, len(df['Condition_shortlabel'].unique()))
             cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
         else: 
             cmap = px.colors.qualitative.Dark24
-
+    print(cmap)
     if 'label' in df.columns:
         df['label'] = pd.Categorical(df.label)
 
 
-    import plotly.express as px
+    # import plotly.express as px
     # df = px.data.iris()
     fig = px.scatter_3d(df, x='UMAP1', y='UMAP2', z='UMAP3',
                   color=colorby, #Condition_shortlabel
@@ -500,6 +502,69 @@ def plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortlabel', what 
     pio.write_image(fig, CLUST_DISAMBIG_DIR + what + ' UMAP_Clusters.png',scale=1, width=1800, height=1200)
     fig.show()
     return
+
+def interactive_umap_plot_choosecondition(df, condition):
+    # filter dataframe for the chosen condition
+    df_condition = df[df['Condition_shortlabel'] == condition]
+
+    # create trace for all data points in grey
+    trace_all = go.Scatter3d(
+        x=df['UMAP1'],
+        y=df['UMAP2'],
+        z=df['UMAP3'],
+        mode='markers',
+        marker=dict(
+            size=2,
+            color='grey',
+            opacity=0.2
+        ),
+        name='Other Conditions'
+    )
+
+    # create trace for chosen condition in a different color
+    trace_condition = go.Scatter3d(
+        x=df_condition['UMAP1'],
+        y=df_condition['UMAP2'],
+        z=df_condition['UMAP3'],
+        mode='markers',
+        marker=dict(
+            size=2,
+            color='#ff7f0e',
+            opacity=1
+        ),
+        name=f'Condition: {condition}'
+    )
+
+    # create data list to pass to plotly figure
+    data = [trace_all, trace_condition]
+
+    # create layout for plot
+    layout = go.Layout(
+        scene=dict(
+            xaxis=dict(title='UMAP1'),
+            yaxis=dict(title='UMAP2'),
+            zaxis=dict(title='UMAP3')
+        ),
+        margin=dict(l=0, r=0, t=0, b=0)
+    )
+
+    # create figure object
+    fig = go.Figure(data=data, layout=layout)
+    #change figure size to 800x800
+    fig.update_layout(
+        width=1800,
+        height=1200,
+        autosize=False,
+        margin=dict(l=20, r=20, t=20, b=20,),
+        legend_font_size=24,
+        legend= {'itemsizing': 'constant'},
+        font=dict(family="Courier New, monospace",size=24),
+    )
+
+    # show plot
+    fig.show()
+
+
 
 def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None):
 
