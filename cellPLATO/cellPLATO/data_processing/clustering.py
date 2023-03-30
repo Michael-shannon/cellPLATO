@@ -2336,10 +2336,30 @@ def get_label_counts(df, per_rep=False):
     # label_counts_df
     return label_counts_df        
 
+def plotlytomatplotlibcolors():
+    import plotly.express as px
+    import matplotlib.colors
+    color_discrete_sequence=px.colors.qualitative.Dark24
+    freshcolors=[]
+    for i in range(len(color_discrete_sequence)):
+        freshcolortriplet=matplotlib.colors.to_rgb(color_discrete_sequence[i])
+        freshcolors.append(freshcolortriplet)
+    return freshcolors
+
 def plot_label_counts(df_in, colors=CONDITION_CMAP):
     x_label = 'label'
     y_label='count'
     y_label2='percent'
+
+    colors=[]
+    if CONDITION_CMAP != 'Dark24':
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition'].unique()))
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        # colors=CONDITION_CMAP
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df_in['Condition'].unique())]  
 
     fig, ax = plt.subplots(figsize=[15,10])
     sns.barplot(x = x_label,
