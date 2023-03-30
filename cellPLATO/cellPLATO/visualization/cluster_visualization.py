@@ -506,6 +506,7 @@ def interactive_plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortl
 
 def interactive_umap_plot_choosecondition(df, condition):
     # filter dataframe for the chosen condition
+    import plotly.io as pio
     df_condition = df[df['Condition_shortlabel'] == condition]
 
     if CONDITION_CMAP != 'Dark24':
@@ -578,6 +579,7 @@ def interactive_umap_plot_choosecondition(df, condition):
     )
 
     # show plot
+    pio.write_image(fig, CLUST_DISAMBIG_DIR + condition + ' UMAP_Clusters.png',scale=1, width=1800, height=1200)
     fig.show()
 
 
