@@ -1331,7 +1331,7 @@ def purity_plots_dev(df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DI
     return fig
 
 
-def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='log2minmax', identifier='',
+def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='choice', identifier='',
                                                     colormap='viridis', coloredbycondition = False, samplethedf = True): #new matplotlib version of scatter plot for umap 1-26-2023
     import matplotlib.pyplot as plt
     from numpy.random import random
@@ -1343,6 +1343,7 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
     from matplotlib.gridspec import GridSpec
 
     font_size = 20
+    savedir = CLUST_DISAMBIG_DIR
    
     # Scale the data
     sub_set = df_in[metrics]
@@ -1492,6 +1493,36 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             scaled_df = pd.DataFrame(x_, columns = newcols)
             df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
 
+        elif scalingmethod == 'choice': #SPIDERSPICE
+            print('Factors to be scaled using log2 and then minmax:')
+            FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
+            FactorsNottotransform_actual=[]
+            FactorsToTransform_actual=[]
+            for factor in metrics:
+                if factor in FactorsNOTtotransform:
+                    print('Factor: ' + factor + ' will not be transformed')
+                    FactorsNottotransform_actual.append(factor)
+                else:
+                    print('Factor: ' + factor + ' will be transformed')
+                    FactorsToTransform_actual.append(factor)
+            trans_df = df_in[FactorsToTransform_actual]
+            trans_x=trans_df.values
+            nontrans_df = df_in[FactorsNottotransform_actual]
+            nontrans_x=nontrans_df.values
+            trans_x_constant=trans_x + 0.000001
+            # trans_x_log = np.log2(trans_x + trans_x_constant) # Wait, this might be a mistake. You have already added the constant to the data. Here you are adding the data plus constant to the data without constant...
+            trans_x_log = np.log2(trans_x_constant) # This is what it should be.
+            trans_x_=MinMaxScaler().fit_transform(trans_x_log)
+            nontrans_x_=MinMaxScaler().fit_transform(nontrans_x)
+            x_=np.concatenate((trans_x_, nontrans_x_), axis=1)
+            newcols=FactorsToTransform_actual + FactorsNottotransform_actual
+            scaled_df_here = pd.DataFrame(x_, columns = newcols)
+            scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
+            plt.tight_layout()
+            plt.title('Transformed data')
+            # plt.show()
+            plt.savefig(savedir+ str(scalingmethod) +'.png')
+            df_out = pd.concat([scaled_df_here,df_in[[x,y,z]]], axis=1)
 
         elif scalingmethod == 'powertransformer':    
             
