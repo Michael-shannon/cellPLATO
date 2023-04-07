@@ -1450,6 +1450,88 @@ def purity_plots_dev(df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DI
 
     return fig
 
+def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
+
+    fontsize = 24
+    # Create a Subplot figure that shows the effect of clustering between conditions
+    fig = plt.figure(figsize=(20, 10))
+    fig.suptitle("How much each condition occupies each cluster", fontsize=fontsize)
+    # Making the first figure: UMAP colored by condition
+    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+    x = 'UMAP1'
+    y = 'UMAP2'
+    z = 'UMAP3'
+    dotsize = 0.1
+    alpha = 0.5
+    markerscale = 5
+    colors=[]
+    if CONDITION_CMAP != 'Dark24':
+        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        for i in range(cmap.N):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+    for colorselector in range(len(colors)):
+        ax1.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x],
+                        df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+                        df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z],
+                        '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
+        
+    ax1.set_xticklabels([])
+    ax1.set_yticklabels([])
+    ax1.set_zticklabels([])
+    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+    ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+
+    ##### Making the second axis: Stacked bar plot of cluster purity
+
+    ax2 = fig.add_subplot(1, 2, 2)
+
+    #defining a colormap for the clusters
+    cluster_colors = []
+    labels = list(set(df['label'].unique()))
+    cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
+    for i in range(cmap.N):
+        cluster_colors.append(cmap(i))
+    cluster_colors = cluster_colors[:-1] #rahs
+    labels = labels[:-1]
+
+    # set x axis as 'Condition' column
+    x = df2['Condition']
+    # set the number of ClusterID columns to plot
+    num_clusters = len(labels)
+    print(num_clusters)
+    # create empty list for bottom values of each bar
+    bottoms = [0] * len(df2)
+    # create stacked bar plot
+    for i in range(num_clusters):
+        # set y values as the ith ClusterID column
+        y = df2['Percent_condition_pts_in_ClusterID_' + str(i)]
+        # create a bar plot for the ith ClusterID column
+        ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(i), color=cluster_colors[i])
+        # update the bottom values of each bar to include the current y values
+        bottoms += y
+    #rotate the xticklabels 90 degrees
+    ax2.set_xticklabels(x, rotation=90)    
+    ax2.set_ylabel('Percent condition per cluster', fontsize = fontsize)
+    ax2.set_xlabel('', fontsize = fontsize)
+    ax2.legend(loc='upper right', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.6, 1.00), markerscale=markerscale)
+
+    # Set the colors of the x tick labels to match with the condition CMAP for easy reference
+    for ticklabel, tickcolor in zip(ax2.get_xticklabels(), colors):
+        ticklabel.set_color(tickcolor)
+
+    ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+
+    # show the plot
+    plt.show()
+    fig.savefig(CLUST_DISAMBIG_DIR+'PurityPlotConditionsinClusters.png', dpi=300, bbox_inches='tight')
+
+    return fig
+
 
 def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='choice', identifier='',
                                                     colormap='viridis', coloredbycondition = False, samplethedf = True): #new matplotlib version of scatter plot for umap 1-26-2023

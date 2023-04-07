@@ -422,6 +422,17 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     for i in range(cmap.N):
         colors.append(cmap(i))
 
+    # colors=[]
+    # if CONDITION_CMAP != 'Dark24':
+    #     cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+    #     for i in range(cmap.N):
+    #         colors.append(cmap(i))
+    # else:
+    #     colors = plotlytomatplotlibcolors()
+    #     colors=colors[:len(df['Condition_shortlabel'].unique())]   
+    #     print("This is the format for the colors:")
+    #     print(colors)
+
     #
     # Left subplot: horizontal scatter
     #

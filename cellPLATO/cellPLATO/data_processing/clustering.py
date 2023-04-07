@@ -1463,9 +1463,43 @@ def cluster_purity(lab_dr_df, cluster_label='label'):
 
 
 
+def purity_pointsinclusterspercondition(df, cluster_label='label'): 
 
+    '''
+    Calculate purity of input dataframe clusters with respect to the experimental condition.
 
+    Input:
+        lab_dr_df: pd.DataFrame containing cluster ids in the 'label' column.
 
+    '''
+
+    assert cluster_label in df.columns, 'Dataframe must contain cluster labels'
+    assert 'Condition_shortlabel' in df.columns, 'For now, assuming shortlabels in use.'
+
+    cond_list = df['Condition_shortlabel'].unique()
+    clusters = list(set(df[cluster_label].dropna())) # DropNA to also handle trajectory_ids where some are NaN
+
+    # Create a new dataframe to hold the cluster summary info.
+    cond_sum_df = pd.DataFrame()
+    
+    for cond in cond_list:
+
+        cond_sum_df.at[cond,'Condition'] = cond #Adds a new condition label for this df under colname 'Condition'
+
+        cond_sub_df = df[df['Condition_shortlabel'] == cond] #got dataframe for this cluster. 
+        totaldatapointsincondition = len(cond_sub_df)
+
+        for cluster_id in clusters[:-1]: # Skip last one that is noise (-1)
+            #Extract a dataframe for this cluster
+            cond_clust_sub_df = cond_sub_df[cond_sub_df['label'] == cluster_id]
+            totaldatapointsincluster = len(cond_clust_sub_df)
+            percentdatapointsincluster=totaldatapointsincluster/totaldatapointsincondition*100
+            # print('And so the percent points of cluster ' + str(cluster_id) + ' in ' + cond + ' condition is ' + str(percentdatapointsincluster))
+            rowtoputitin = cond
+            columntoputitin = 'Percent_condition_pts_in_ClusterID_'+str(cluster_id)
+            cond_sum_df.at[rowtoputitin,columntoputitin] = percentdatapointsincluster
+
+    return cond_sum_df
 
 def count_cluster_changes_old(df):
 
