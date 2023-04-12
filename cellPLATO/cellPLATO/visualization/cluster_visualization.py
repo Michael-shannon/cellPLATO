@@ -1454,7 +1454,7 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
 
     fontsize = 24
     # Create a Subplot figure that shows the effect of clustering between conditions
-    fig = plt.figure(figsize=(20, 10))
+    fig = plt.figure(figsize=(25, 10))
     fig.suptitle("How much each condition occupies each cluster", fontsize=fontsize)
     # Making the first figure: UMAP colored by condition
     ax1 = fig.add_subplot(1, 2, 1, projection='3d')
@@ -1464,6 +1464,7 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     dotsize = 0.1
     alpha = 0.5
     markerscale = 5
+    markerscale2 = 100
     colors=[]
     if CONDITION_CMAP != 'Dark24':
         cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
@@ -1478,6 +1479,10 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
                         df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
                         df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z],
                         '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
+        
+    leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale2)
+    for lh in leg.legendHandles: 
+        lh.set_alpha(1)
         
     ax1.set_xticklabels([])
     ax1.set_yticklabels([])
@@ -1526,6 +1531,9 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
         ticklabel.set_color(tickcolor)
 
     ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+
+    # Increase the spacing between the subplots so that ax1 legend is not cut off
+    fig.subplots_adjust(wspace=0.8)
 
     # show the plot
     plt.show()
