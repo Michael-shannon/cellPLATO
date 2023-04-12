@@ -1496,22 +1496,23 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
     for i in range(cmap.N):
         cluster_colors.append(cmap(i))
-    cluster_colors = cluster_colors[:-1] #rahs
+    # cluster_colors = cluster_colors[:-1]  #removed in order to include the unclustered portion
     labels = labels[:-1]
+
+    labels.insert(0, -1)
 
     # set x axis as 'Condition' column
     x = df2['Condition']
     # set the number of ClusterID columns to plot
     num_clusters = len(labels)
-    print(num_clusters)
     # create empty list for bottom values of each bar
     bottoms = [0] * len(df2)
     # create stacked bar plot
-    for i in range(num_clusters):
+    for i, clus in enumerate(labels):
         # set y values as the ith ClusterID column
-        y = df2['Percent_condition_pts_in_ClusterID_' + str(i)]
+        y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)]
         # create a bar plot for the ith ClusterID column
-        ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(i), color=cluster_colors[i])
+        ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
         # update the bottom values of each bar to include the current y values
         bottoms += y
     #rotate the xticklabels 90 degrees

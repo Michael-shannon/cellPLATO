@@ -1481,6 +1481,9 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
 
     # Create a new dataframe to hold the cluster summary info.
     cond_sum_df = pd.DataFrame()
+     # Add -1 as the new first element of list clusters
+    clusters = clusters[:-1]
+    clusters.insert(0, -1)
     
     for cond in cond_list:
 
@@ -1489,12 +1492,12 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
         cond_sub_df = df[df['Condition_shortlabel'] == cond] #got dataframe for this cluster. 
         totaldatapointsincondition = len(cond_sub_df)
 
-        for cluster_id in clusters[:-1]: # Skip last one that is noise (-1)
+        # for cluster_id in clusters[:-1]: # Skip last one that is noise (-1)
+        for cluster_id in clusters: # Skip last one that is noise (-1)
             #Extract a dataframe for this cluster
             cond_clust_sub_df = cond_sub_df[cond_sub_df['label'] == cluster_id]
             totaldatapointsincluster = len(cond_clust_sub_df)
             percentdatapointsincluster=totaldatapointsincluster/totaldatapointsincondition*100
-            # print('And so the percent points of cluster ' + str(cluster_id) + ' in ' + cond + ' condition is ' + str(percentdatapointsincluster))
             rowtoputitin = cond
             columntoputitin = 'Percent_condition_pts_in_ClusterID_'+str(cluster_id)
             cond_sum_df.at[rowtoputitin,columntoputitin] = percentdatapointsincluster
