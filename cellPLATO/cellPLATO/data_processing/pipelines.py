@@ -196,7 +196,7 @@ def dr_pipeline_dev(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSN
 
     return dr_df
 
-def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD):
+def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD): #SPIDERDEV
 
     component_list=np.arange(1, n_components+1,1).tolist()
     from sklearn.preprocessing import PowerTransformer
@@ -211,12 +211,29 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     print('Number of UMAP components = ', n_components)
 
     # Prepare data for dimensionality reduction by extracting the factors of interest from the DR_FACTORS list.
-    # x = get_data_matrix(df,dr_factors)
-    print("DR factors used were" + str(dr_factors))
-    sub_df = df[dr_factors]
 
-    print("THIS IS THE UNTRANSFORMED DATA ")
-    sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+    #### DEV part - adding tmeans functionality ####
+
+    if AVERAGE_TIME_WINDOWS:
+        tmeansdrfactors = [f'{i}_tmean' for i in dr_factors]
+        print("DR factors used were" + str(tmeansdrfactors))
+        sub_df = df[tmeansdrfactors]
+        print("THIS IS THE UNTRANSFORMED DATA ")
+        sub_df.hist(column=tmeansdrfactors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+    else:
+        print("DR factors used were" + str(dr_factors))
+        sub_df = df[dr_factors]
+        print("THIS IS THE UNTRANSFORMED DATA ")
+        sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        
+    # x = get_data_matrix(df,dr_factors)
+
+    #### End Dev part ####
+
+    # print("DR factors used were" + str(dr_factors))
+    # sub_df = df[dr_factors]
+
+
     plt.tight_layout()
     plt.title('Untransformed data')
     # plt.show()
@@ -266,16 +283,30 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 
     elif scalingmethod == 'choice':
         print('Factors to be scaled using log2 and then minmax:')
-        FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
-        FactorsNottotransform_actual=[]
-        FactorsToTransform_actual=[]
-        for factor in dr_factors:
-            if factor in FactorsNOTtotransform:
-                print('Factor: ' + factor + ' will not be transformed')
-                FactorsNottotransform_actual.append(factor)
-            else:
-                print('Factor: ' + factor + ' will be transformed')
-                FactorsToTransform_actual.append(factor)
+
+        if AVERAGE_TIME_WINDOWS:
+            FactorsNOTtotransform = ['arrest_coefficient_tmean', 'rip_L_tmean', 'rip_p_tmean', 'rip_K_tmean', 'eccentricity_tmean', 'orientation_tmean', 'directedness_tmean', 'turn_angle_tmean', 'dir_autocorr_tmean', 'glob_turn_deg_tmean']
+            FactorsNottotransform_actual=[]
+            FactorsToTransform_actual=[]
+            for factor in tmeansdrfactors:
+                if factor in FactorsNOTtotransform:
+                   print('Factor: ' + factor + ' will not be transformed')
+                   FactorsNottotransform_actual.append(factor) 
+                else:
+                    print('Factor: ' + factor + ' will be transformed')
+                    FactorsToTransform_actual.append(factor)                   
+        else:
+            FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
+            FactorsNottotransform_actual=[]
+            FactorsToTransform_actual=[]
+            for factor in dr_factors:
+                if factor in FactorsNOTtotransform:
+                    print('Factor: ' + factor + ' will not be transformed')
+                    FactorsNottotransform_actual.append(factor)
+                else:
+                    print('Factor: ' + factor + ' will be transformed')
+                    FactorsToTransform_actual.append(factor)
+
         trans_df = df[FactorsToTransform_actual]
         trans_x=trans_df.values
         nontrans_df = df[FactorsNottotransform_actual]

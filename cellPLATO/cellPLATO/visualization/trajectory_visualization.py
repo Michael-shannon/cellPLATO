@@ -885,6 +885,19 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     thelabels = df_in['label']
     scaled_df_in = pd.DataFrame(data=X, columns = correctcolumns)
     df_out = pd.concat([scaled_df_in,thelabels], axis=1)#Put this back into a DF, with the col names and labels.
+
+    ####### Here starts the new bit for the scaled numbers on the disambiguates #######
+
+    # Isolate the columsn of the cell_df that are not the newcols as a list
+    cols_to_keep = [col for col in df_in.columns if col not in correctcolumns]
+    # Extract a sub df from the cell_df that contains only the columns in cols_to_keep
+    scaled_df = pd.concat([df_in[cols_to_keep], scaled_df_in], axis=1)
+    print('CHECK THAT THIS DF IS CORRECT')
+    display(scaled_df.head(5))
+
+
+    ####### Here ends the new bit for the scaled numbers on the disambiguates #######
+
     # df_out
 
     # Part 2: Find the median value per cluster for each metric using groupby
@@ -975,7 +988,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 7: print a boolean_df?
 
     # Part 8: exports a df that can be used to select what metrics you want to show?
-    return top_dictionary, clusteraverage_df
+    return top_dictionary, clusteraverage_df, scaled_df
 
 def plot_cluster_averages(top_dictionary, df): # New 3-7-2023
     num_plots = len(top_dictionary)
@@ -1444,3 +1457,432 @@ def trajectory_cluster_vis(traj_clust_df,traj_factor, scatter=False):
 
 ##### DEBUGGING ######
 
+##### THE plot_cell_metrics_timepoint FUNCTION ######
+
+def plot_cell_metrics_timepoint_dev(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): #spoof
+    '''
+    For a selected cell, at a selected step of its trajectory, make a plot
+    '''
+
+    # Using the same sample cell trajectory, print out some measurements
+    fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
+    # print(top_dictionary)
+    
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Arial'] + plt.rcParams['font.serif'] #Times New Roman
+    plt.rcParams['mathtext.default'] = 'regular'
+
+    ax.title.set_text('Cell contour: xy space')
+    ax.plot(cell_df['x_pix'],cell_df['y_pix'],'-o',markersize=3,c='black')
+
+    ################
+    xminimum=cell_df['x_pix'].min()
+    xmaximum=cell_df['x_pix'].max()
+    xmid = np.median([xmaximum, xminimum])
+    xmin=xmid-XYRange/2
+    xmax=xmid+XYRange/2
+
+    yminimum=cell_df['y_pix'].min()
+    ymaximum=cell_df['y_pix'].max()
+    ymid = np.median([ymaximum, yminimum])
+    ymin=ymid-XYRange/2
+    ymax=ymid+XYRange/2
+
+    #######################
+
+    contour_list = get_cell_contours(cell_df)
+    # Draw all contours faintly as image BG
+    for i,contour in enumerate(contour_list):
+
+        rgb = np.random.rand(3,)
+        this_colour = rgb#'red' # Eventually calculate color along colormap
+        contour_arr = np.asarray(contour).T
+
+
+        if not np.isnan(np.sum(contour_arr)): # If the contour is not nan
+
+            x = cell_df['x_pix'].values[i]# - window / 2
+            y = cell_df['y_pix'].values[i]# - window / 2
+            # Cell contour relative to x,y positions
+            '''Want to double check that the x,y positions not mirrored from the contour function'''
+            ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='gray', alpha=0.2)
+
+    # Draw this contour, highlighted.
+    contour = contour_list[i_step]
+    contour_arr = np.asarray(contour).T
+    x = cell_df['x_pix'].values[i_step]# - window / 2
+    y = cell_df['y_pix'].values[i_step]# - window / 2
+
+    # Cell contour relative to x,y positions
+    '''Want to double check that the x,y positions not mirrored from the contour function'''
+    if not np.isnan(np.sum(contour_arr)):
+        ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='tab:orange',linewidth=5, alpha=1)
+
+        # Current segment
+        if i_step > 0:
+            x_seg = cell_df['x_pix'].values[i_step-1:i_step+1]# - window / 2
+            y_seg = cell_df['y_pix'].values[i_step-1:i_step+1]# - window / 2
+            # ax.plot(x+contour_arr[:,0],y+contour_arr[:,1],'-o',markersize=1,c='red', alpha=1)
+            # ax.plot(x_seg*2,y_seg*2,'-o',markersize=10,c='tab:blue', linewidth=4)
+            ax.plot(x_seg,y_seg,'-o',markersize=10,c='tab:blue', linewidth=4)
+
+    text_x = xmid
+    text_y = ymid
+    # SPIDER #
+    # p=cell_df.iloc[i_step]
+    # ClusterID = cell_df['label'].iloc[i_step]
+    # print('TRYING TO MAKE THIS A CLUSTER ID TO USE ON THE DICTIONARY >>>>>>>>' )
+    # display(ClusterID)
+    # # ClusterID=p['label']
+    # print(row['label']) #here, the row label is something different
+    # ClusterID = row['label']
+    display_factors = top_dictionary[Cluster_ID]
+    # You want the list of factors in top_dictionary that relates to the cluster in question.
+    # IN this case, the cluster in question is the one at iloc[i_step]
+
+    for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
+        facwithoutunderscores = fac.replace('_',' ')
+        text_str = facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f')
+        text_str_2 = format(scaled_cell_df.iloc[i_step][fac], '.1f')
+        ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str, #These weird numbers were worked out manually
+                color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
+        ax.text(text_x + 0.45*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str_2, #These weird numbers were worked out manually
+                color='grey', fontsize=PLOT_TEXT_SIZE, fontdict = None) # bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10} #spidermoose )        
+
+        
+
+        # text_str_2 = format(cell_df_scaled_final.iloc[i_step][fac], '.1f')
+        # print('CHECK THAT THIS IS THE NORMALIZED VALUES FOR THE ONE ABOVE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+        # print(text_str_2)
+
+        ################################
+        #Original line#
+        
+        # ax.text(text_x + 0.6*XYRange, text_y - 47 + (0.08*XYRange) + (n*(0.08*XYRange)), facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f'), #These weird numbers were worked out manually
+        #         color='k', fontsize=30, fontdict = None) #spidermoose )
+
+        ################################
+
+
+    # for n, fac in enumerate(shape_display_factors):
+    #
+    #     ax.text(text_x + 0.6*XYRange,text_y -  (n*(0.08*XYRange)), fac +': '+ format(cell_df.iloc[i_step][fac], '.1f'),
+    #             color='tab:orange', fontsize=30,size = 36, fontdict = None)
+
+    # General plot improvements
+    plottitle="Cluster ID: " + str(cell_df['label'].iloc[i_step]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
+    # plottitle="Cluster ID: " + str(Cluster_ID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
+    ax.set_title(plottitle, fontname="Arial",fontsize=PLOT_TEXT_SIZE) #TEMPORARILY COMMENTED OUT
+    ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.set_ylabel("y (px)", fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.tick_params(axis='both', labelsize=PLOT_TEXT_SIZE)
+    ax.set_aspect('equal')
+    ax.set_adjustable("datalim")
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    if boxoff:
+        ax.axis('off')
+
+    # plt.autoscale()
+    # sns.despine(left=True)
+
+    # ax.set_yticklabels(['eNK','eNK+CytoD'])
+    return fig#delete?
+
+##### THE plot_single_cell_factor FUNCTION ######
+
+def plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
+    # labels=wholetrack_exemplar_df['label'].unique()
+    # totaltime = totalframes*SAMPLING_INTERVAL
+    import matplotlib.cm as cm
+    from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+    import plotly.express as px
+    df=cell_df
+    # for the tavg version, work out the cluster ID from the tavg_label column
+
+    if thisistavg == True:
+        clusterID=cell_df['tavg_label'].unique()[0]
+        plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+
+    else:
+        clusterID=CLUSTERID
+        plottitle="Cluster ID: " + str(clusterID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+
+    factors = top_dictionary[clusterID]
+    n=len(factors)
+    factors=factors[::-1]
+
+    # for the non-tavg version, work out the cluster ID from the label column
+    
+    
+    fig = make_subplots(rows=n, cols=1, shared_xaxes=False, subplot_titles=factors) 
+    # add a new column to the cell_df that is the frame * SAMPLING_INTERVAL
+    cell_df['time']=cell_df['frame']*SAMPLING_INTERVAL
+
+    for i in range(n):
+        factor=factors[i]
+        
+        df=df.sort_values(by='frame')
+
+        fig.add_trace(go.Scatter(x=df['time'], y=df[factor], mode='lines', name=factor), row=i+1, col=1)
+
+        # change font size of the trace names
+        fig.update_layout(font_size=PLOT_TEXT_SIZE)
+        fig.update_annotations(font_size=PLOT_TEXT_SIZE)
+
+        # make the range of the x axis the min and max of the time column
+        # fig.update_xaxes(range=[0, totaltime], row=i+1, col=1)
+        mintime=df['time'].min()
+        maxtime=df['time'].max()
+
+        # change the color of the grid lines to light grey  
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', title_text='time (mins)', nticks=10, range = [mintime-1, maxtime+1])
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey')
+        #change each y axis title to the factor name in the for loop
+        fig.update_yaxes(title_text=factor, row=i+1, col=1)
+
+    
+     # make sure the x axis has ranges from 0 to totalframes
+    # fig.update_xaxes(range=[0, totaltime])
+    # fig.update_xaxes(range=[0, totaltime])
+    # fig.update_layout(height=n*300, width=900, title_text='', font_size=24, plot_bgcolor='white', xaxis_showgrid=True, yaxis_showgrid=True, title_font_size=24, hovermode="closest")
+    fig.update_layout(height=n*450, width=900, font_size=PLOT_TEXT_SIZE, plot_bgcolor='white', xaxis_showgrid=True, yaxis_showgrid=True, title_font_size=PLOT_TEXT_SIZE, hovermode="x unified", colorway=px.colors.qualitative.Dark24)
+    # change the overall title to the label and condition
+    # plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+    # plottitle="Cluster ID: " + str(clusterID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+    fig.update_layout(title_text=plottitle, title_font_size=PLOT_TEXT_SIZE)
+    #remove the legend
+    fig.update_layout(showlegend=False)
+
+   
+    # fig.update_layout(legend=dict(
+    #     orientation="h",
+    #     yanchor="bottom",
+    #     y=1.02,
+    #     xanchor="right",
+    #     x=3))
+    
+
+    # fig.show()
+
+    #####
+    if PLOT_PLASTICITY == True:
+        plasticity_factors=['label', 'tavg_label','twind_n_changes', 'tavg_twind_n_changes', 'twind_n_labels', 'tavg_twind_n_labels']
+        n=len(plasticity_factors)
+        # nticks should be only integers
+        # layout(yaxis=list(tickformat=',d'))
+        fig2 = make_subplots(rows=n, cols=1, shared_xaxes=False,  vertical_spacing = 0.1, horizontal_spacing = 0.2) #subplot_titles=plasticity_factor_titles,
+        for i in range(n):
+            plasticity_factor=plasticity_factors[i]       
+            # print('The plasticity factor is: ' + plasticity_factor) 
+            df=df.sort_values(by='frame')
+            # if i <= 2:
+            #     columntoplot = 1
+            #     rowtoplot = i+1
+            # else:
+            #     columntoplot = 2
+            #     rowtoplot = i-2
+            fig2.add_trace(go.Scatter(x=df['time'], y=df[plasticity_factor], mode='lines', name=plasticity_factor), row=i+1, col=1)
+            # Capitalize the plasticity factor and remove the underscore
+            plasticity_factor_title=plasticity_factor.replace('_', ' ').capitalize()
+            # print ('The plasticity factor title is: ' + plasticity_factor_title)   
+            # change font size of the trace names
+            fig2.update_layout(font_size=PLOT_TEXT_SIZE)
+            fig2.update_annotations(font_size=PLOT_TEXT_SIZE)
+            # make the range of the x axis the min and max of the time column
+            mintime=df['time'].min()
+            maxtime=df['time'].max()
+            # change the color of the grid lines to light grey  
+            fig2.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', title_text='time (mins)', nticks=10, range = [mintime-1, maxtime+1])
+            fig2.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', nticks = 5, title_text=plasticity_factor_title, row=i+1, col=1)
+
+        fig2.update_layout(
+            yaxis = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis2 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis3 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis4 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis5 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis6 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            )
+        )
+            #change each y axis title to the factor name in the for loop
+            # fig2.update_yaxes(title_text=plasticity_factor_title, row=rowtoplot, col=columntoplot)
+        fig2.update_layout(height=n*450, width=900, font_size=PLOT_TEXT_SIZE, plot_bgcolor='white', xaxis_showgrid=True,
+                            yaxis_showgrid=True,  hovermode="x unified", colorway=px.colors.qualitative.Dark24) #title_font_size=PLOT_TEXT_SIZE,
+    # change the overall title to the label and condition
+        # plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+        # plottitle="Cluster ID: " + str(clusterID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+        fig2.update_layout(title_text=plottitle, title_font_size=PLOT_TEXT_SIZE)
+        # fig2.update_layout(yaxis=list(tickformat ='d')) #yaxis_tickformat =',d', yaxis_tickformat ='d',
+        #remove the legend
+        fig2.update_layout(showlegend=False)    
+
+        ########### DEV
+        plasticity_factors=['label', 'tavg_label','cum_n_changes', 'tavg_cum_n_changes', 'cum_n_labels', 'tavg_cum_n_labels']
+        n=len(plasticity_factors)
+        fig3 = make_subplots(rows=n, cols=1, shared_xaxes=False,  vertical_spacing = 0.1, horizontal_spacing = 0.2) #subplot_titles=plasticity_factor_titles,
+        for i in range(n):
+            plasticity_factor=plasticity_factors[i]       
+            # print('The plasticity factor is: ' + plasticity_factor) 
+            df=df.sort_values(by='frame')
+            # if i <= 2:
+            #     columntoplot = 1
+            #     rowtoplot = i+1
+            # else:
+            #     columntoplot = 2
+            #     rowtoplot = i-2
+            fig3.add_trace(go.Scatter(x=df['time'], y=df[plasticity_factor], mode='lines', name=plasticity_factor), row=i+1, col=1)
+            # Capitalize the plasticity factor and remove the underscore
+            plasticity_factor_title=plasticity_factor.replace('_', ' ').capitalize()
+            # print ('The plasticity factor title is: ' + plasticity_factor_title)   
+            # change font size of the trace names
+            fig3.update_layout(font_size=PLOT_TEXT_SIZE)
+            fig3.update_annotations(font_size=PLOT_TEXT_SIZE)
+            # make the range of the x axis the min and max of the time column
+            mintime=df['time'].min()
+            maxtime=df['time'].max()
+            # change the color of the grid lines to light grey  
+            fig3.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', title_text='time (mins)', nticks=10, range = [mintime-1, maxtime+1])
+            fig3.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey', showline=True, linewidth=1, linecolor='lightgrey', nticks = 5, title_text=plasticity_factor_title, row=i+1, col=1)
+            #change each y axis title to the factor name in the for loop
+            # fig2.update_yaxes(title_text=plasticity_factor_title, row=rowtoplot, col=columntoplot)
+        fig3.update_layout(height=n*450, width=900, font_size=PLOT_TEXT_SIZE, plot_bgcolor='white', xaxis_showgrid=True,
+                            yaxis_showgrid=True,  hovermode="x unified", colorway=px.colors.qualitative.Dark24) #title_font_size=PLOT_TEXT_SIZE, 
+        
+        fig3.update_layout(
+            yaxis = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis2 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis3 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis4 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis5 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            ),
+            yaxis6 = dict(
+                tickmode = 'linear',
+                tick0 = 0,
+                dtick = 1
+            )
+        )
+    # change the overall title to the label and condition
+        # plottitle="Cluster ID: " + str(cell_df['tavg_label'].iloc[0]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+        # plottitle="Cluster ID: " + str(clusterID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[0] + ")"
+        fig3.update_layout(title_text=plottitle, title_font_size=PLOT_TEXT_SIZE)
+        # fig2.update_layout(yaxis_tickformat =',d', yaxis=dict(tickformat ='d'))
+        #remove the legend
+        fig3.update_layout(showlegend=False)   
+
+
+        ########### DEV
+
+    ######
+
+    return fig, fig2, fig3
+
+
+##### THE DISAMBIGAUTE FUNCTION ######
+
+##### THE DISAMBIGAUTE FUNCTION ######
+
+
+def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=100,boxoff=True):
+
+
+    for n in exemps.index:
+
+        row=exemps.iloc[n] #extract an example exemplar row
+
+        # Use exemplar row to look up the corresponding cell TRACK from the cell_df
+        cell_df = df[(df['Condition']==row['Condition']) &
+                        (df['Replicate_ID']==row['Replicate_ID']) &
+                        (df['particle']==row['particle'])]
+        cell_df = cell_df.reset_index(drop=True)
+
+        # Do the same for the scaled_df
+        print(row['Condition'], row['Replicate_ID'], row['particle'])
+
+        # scaled_cell_df = scaled_df[(scaled_df['Condition']==row['Condition']) &
+        #                 (scaled_df['Replicate_ID']==row['Replicate_ID']) &
+        #                 (scaled_df['particle']==row['particle'])]
+        scaled_cell_df = scaled_df[(scaled_df['uniq_id']==row['uniq_id'])]
+        scaled_cell_df = scaled_cell_df.reset_index(drop=True)
+
+        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization
+        exemplarpoint = cell_df.index[(cell_df['area']==row['area']) &
+                        (cell_df['speed']==row['speed']) &
+                        (cell_df['frame']==row['frame']) &
+                        (cell_df['label']==row['label'])]
+        CLUSTERID = row['label']
+
+        # 
+        # f=cp.plot_cell_metrics(cell_df, exemplarpoint[0]) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
+        f=plot_cell_metrics_timepoint_dev(cell_df, exemplarpoint[0], scaled_cell_df, XYRange, boxoff, top_dictionary, CLUSTERID) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS scaled_cell_df,
+
+        ######
+        f2,f3,f4 = plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
+
+        
+
+        # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
+            #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
+        f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
+
+        f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+
+        f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_TWindow_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+        
+        f4.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cumulative_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+
+        ######
+        print("Saving to" + CLUST_DISAMBIG_DIR + '\Disambiguated_ClusterID_'+str(CLUSTERID)+'_'+str(n))
+        # f.savefig( CLUST_DISAMBIG_DIR + '\ClusterID__'+str(ClusterID)+'__disambiguated__R'+str(XYRange)+'_'+str(n)  ,dpi=300,bbox_inches="tight")
+
+    return   
