@@ -37,7 +37,6 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
     plt.rcParams['font.family'] = 'serif'
     plt.rcParams['font.serif'] = ['Arial'] + plt.rcParams['font.serif'] #Times New Roman
     plt.rcParams['mathtext.default'] = 'regular'
-
     ax.title.set_text('Cell contour: xy space')
     ax.plot(cell_df['x_pix'],cell_df['y_pix'],'-o',markersize=3,c='black')
 
@@ -72,7 +71,6 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
             # Cell contour relative to x,y positions
             '''Want to double check that the x,y positions not mirrored from the contour function'''
             ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='gray', alpha=0.2)
-
     # Draw this contour, highlighted.
     contour = contour_list[i_step]
     contour_arr = np.asarray(contour).T
@@ -91,7 +89,6 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
             # ax.plot(x+contour_arr[:,0],y+contour_arr[:,1],'-o',markersize=1,c='red', alpha=1)
             # ax.plot(x_seg*2,y_seg*2,'-o',markersize=10,c='tab:blue', linewidth=4)
             ax.plot(x_seg,y_seg,'-o',markersize=10,c='tab:blue', linewidth=4)
-
     text_x = xmid
     text_y = ymid
     # SPIDER #
@@ -112,7 +109,7 @@ def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary,
         ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
                 text_str, #These weird numbers were worked out manually
                 color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
-
+        
         ################################
         #Original line#
         
@@ -305,11 +302,15 @@ def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
         cell_df = cell_df.reset_index(drop=True)
 
         # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization
-        exemplarpoint = cell_df.index[(cell_df['area']==row['area']) &
-                        (cell_df['speed']==row['speed']) &
+        # exemplarpoint = cell_df.index[(cell_df['area']==row['area']) &
+        #                 (cell_df['speed']==row['speed']) &
+        #                 (cell_df['frame']==row['frame']) &
+        #                 (cell_df['label']==row['label'])]
+        exemplarpoint = cell_df.index[(cell_df['uniq_id']==row['uniq_id']) &
                         (cell_df['frame']==row['frame']) &
                         (cell_df['label']==row['label'])]
         CLUSTERID = row['label']
+
         # f=cp.plot_cell_metrics(cell_df, exemplarpoint[0]) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
         f=plot_cell_metrics_timepoint(cell_df, exemplarpoint[0], XYRange, boxoff, top_dictionary, CLUSTERID) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
 
@@ -885,6 +886,8 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     thelabels = df_in['label']
     scaled_df_in = pd.DataFrame(data=X, columns = correctcolumns)
     df_out = pd.concat([scaled_df_in,thelabels], axis=1)#Put this back into a DF, with the col names and labels.
+
+   
 
     ####### Here starts the new bit for the scaled numbers on the disambiguates #######
 
@@ -1851,9 +1854,8 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         scaled_cell_df = scaled_df[(scaled_df['uniq_id']==row['uniq_id'])]
         scaled_cell_df = scaled_cell_df.reset_index(drop=True)
 
-        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization
-        exemplarpoint = cell_df.index[(cell_df['area']==row['area']) &
-                        (cell_df['speed']==row['speed']) &
+        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization #SPIDERSALLTHEWAYDOWN CHANGED THIS PART!!
+        exemplarpoint = cell_df.index[(cell_df['uniq_id']==row['uniq_id']) &
                         (cell_df['frame']==row['frame']) &
                         (cell_df['label']==row['label'])]
         CLUSTERID = row['label']
