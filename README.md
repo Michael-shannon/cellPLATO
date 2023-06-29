@@ -2,8 +2,7 @@
 
 A Python data analysis package for time-lapse cell migration experiments. Used in conjunction with Bayesian Tracker for automated cell tracking and segmentation, cellPLATO adds additional layers of analysis and visualization. This tool allows users to pool/compare multiple replicates from multiple experimental conditions, perform dimensionality reduction, and explore cell behavioural trajectories through physical and low-dimensional space.
 
-![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c55bdcc6-e0ee-49a9-8e8b-88644acd1292)
-
+![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c8f28934-18ae-4e36-8853-563c39391b53)
 
 ## Installation instructions
 
