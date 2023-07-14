@@ -1,6 +1,10 @@
 # cellPLATO: cell PLasticity Analysis TOol
 
-A Python data analysis package for time-lapse cell migration experiments. Used in conjunction with Bayesian Tracker for automated cell tracking and segmentation, cellPLATO adds additional layers of analysis and visualization. This tool allows users to pool/compare multiple replicates from multiple experimental conditions, perform dimensionality reduction, and explore cell behavioural trajectories through physical and low-dimensional space.
+[![DOI](https://zenodo.org/badge/588728402.svg)](https://zenodo.org/badge/latestdoi/588728402)
+
+A Python data analysis package for time-lapse cell migration experiments written in collaboration with [Tyler Sloan](https://github.com/tsloan1377) at [Quorumetrix](https://github.com/Quorumetrix). Used after segmention (eg. [Cellpose](https://github.com/MouseLand/cellpose)) and tracking (eg. [Bayesian Tracker](https://github.com/quantumjot/btrack)) of large timelapse microscopy datasets, cellPLATO measures morphokinetic information about each cell per timepoint and automatically makes statistical plots (plots of difference in python, inspired by those in R by [Joachim Goedhart](https://github.com/JoachimGoedhart)). Users can pool/compare multiple replicates from multiple experimental conditions. Next, dimensionality reduction and cluster analysis is used to segregate cells into behavioural subtypes and produce a fingerprint for each condition (cells per behaviour subtype). Finally, exemplar cells are automatically selected and graphically displayed to disambiguate the nature of each quanitfied cell behavioural subtype.
+
+![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c8f28934-18ae-4e36-8853-563c39391b53)
 
 ## Installation instructions
 
@@ -10,7 +14,7 @@ A Python data analysis package for time-lapse cell migration experiments. Used i
 4. Activate the environment: conda activate cellPLATO
 5. Install the rest of the packages: pip install -e .
 
-Known errors:
+Known issues with installation:
 
 If you get the ERROR: Could not build wheels for hdbscan, which is required to install pyproject.toml-based projects
 
