@@ -196,7 +196,7 @@ def dr_pipeline_dev(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSN
 
     return dr_df
 
-def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD): #SPIDERDEV
+def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD, do_tsne = True): #SPIDERDEV
 
     component_list=np.arange(1, n_components+1,1).tolist()
     from sklearn.preprocessing import PowerTransformer
@@ -357,11 +357,12 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 #         print('Using Principal Components for dimensionality reduction, matrix shape: ', x_.shape)
 
     # Do tSNE and insert into dataframe:
-    tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
-    tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
+    if do_tsne == True:
+        tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
+        tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
 
     # Do UMAP and insert into dataframe:
-    umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=N_COMPONENTS)
+    umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=N_COMPONENTS) #aubergine
     umap_df = pd.DataFrame(data = umap_x, columns = umap_components)
 
     # Create Dimension-reduced dataframe by adding PCA and tSNE columns.

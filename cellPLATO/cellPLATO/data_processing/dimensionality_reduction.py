@@ -46,7 +46,8 @@ def do_umap(datax, n_neighbors=15, min_dist=0.0, n_components=3, metric='euclide
     reducer = umap.UMAP(n_neighbors=n_neighbors,
                         min_dist=min_dist,
                         random_state=42,
-                        n_components=n_components)
+                        n_components=n_components,
+                        low_memory=True)
     # print("UMAP input data contains " + str(-np.isinf(datax).sum()) + " negative infinite values")
     # print("UMAP input data contains " + str(np.isinf(datax).sum()) + " positive infinite values")
     # print("UMAP input data contains " + str(np.isnan(datax).sum()) + " NaN values")

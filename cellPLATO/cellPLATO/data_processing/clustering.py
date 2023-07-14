@@ -1482,8 +1482,8 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
     # Create a new dataframe to hold the cluster summary info.
     cond_sum_df = pd.DataFrame()
      # Add -1 as the new first element of list clusters
-    clusters = clusters[:-1]
-    clusters.insert(0, -1)
+    # clusters = clusters[:-1] #aubergine removed
+    # clusters.insert(0, -1)
     
     for cond in cond_list:
 
@@ -2400,8 +2400,9 @@ def plot_label_counts(df_in, colors=CONDITION_CMAP):
 
     colors=[]
     if CONDITION_CMAP != 'Dark24':
-        cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition'].unique()))
-        for i in range(cmap.N):
+        cmap = cm.get_cmap(CONDITION_CMAP, )
+        numcolors = len(df_in['Condition'].unique())
+        for i in range(numcolors):
             colors.append(cmap(i))
     else:
         # colors=CONDITION_CMAP

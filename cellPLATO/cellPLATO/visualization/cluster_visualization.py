@@ -405,9 +405,14 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
 
         colors=[]
         if CONDITION_CMAP != 'Dark24':
-            cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-            for i in range(cmap.N):
-                colors.append(cmap(i))
+            # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique())) #changedforbelow
+            # for i in range(cmap.N):
+            #     colors.append(cmap(i))
+            cmap = cm.get_cmap(CONDITION_CMAP) 
+            numcolors=len(df['Condition_shortlabel'].unique())
+            for i in range(numcolors):
+                colors.append(cmap(i))            
+
         else:
             colors = plotlytomatplotlibcolors()
             colors=colors[:len(df['Condition_shortlabel'].unique())]    
@@ -598,7 +603,7 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): 
 
     whattoplot=['label','twind_n_changes', 'twind_n_labels']
 
-    CLUSTER_CMAP = 'tab20'
+    # CLUSTER_CMAP = 'tab20'
     # CONDITION_CMAP = 'dark'
 
     time = df['frame']
@@ -635,9 +640,10 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): 
     colors=[]
     if CONDITION_CMAP != 'Dark24':
 
-        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        cmap = cm.get_cmap(CONDITION_CMAP)
+        numcolors= len(df['Condition_shortlabel'].unique())
         sns.set_palette(CONDITION_CMAP)
-        for i in range(cmap.N):
+        for i in range(numcolors):
             colors.append(cmap(i))
     else:
         colors = plotlytomatplotlibcolors()
@@ -921,9 +927,10 @@ def plot_plasticity_countplots(df, identifier='\_allcells'):
 
     colors=[]
     if CONDITION_CMAP != 'Dark24':
-        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+        cmap = cm.get_cmap(CONDITION_CMAP, )
+        numcolors=len(df['Condition_shortlabel'].unique())
         # sns.set_palette(CONDITION_CMAP)
-        for i in range(cmap.N):
+        for i in range(numcolors):
             colors.append(cmap(i))
     else:
         colors = plotlytomatplotlibcolors()
@@ -1467,8 +1474,9 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     markerscale2 = 100
     colors=[]
     if CONDITION_CMAP != 'Dark24':
-        cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-        for i in range(cmap.N):
+        cmap = cm.get_cmap(CONDITION_CMAP)
+        numcolors= len(df['Condition_shortlabel'].unique())
+        for i in range(numcolors):
             colors.append(cmap(i))
     else:
         colors = plotlytomatplotlibcolors()
@@ -1498,13 +1506,19 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     #defining a colormap for the clusters
     cluster_colors = []
     labels = list(set(df['label'].unique()))
-    cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
-    for i in range(cmap.N):
+    print('first you make this one')
+    print(labels)
+    cmap = cm.get_cmap(CLUSTER_CMAP) #Changes made here
+    numlabelcolors= len(labels)
+    for i in range(numlabelcolors):
         cluster_colors.append(cmap(i))
     # cluster_colors = cluster_colors[:-1]  #removed in order to include the unclustered portion
-    labels = labels[:-1]
-
-    labels.insert(0, -1)
+    # labels = labels[:-1]
+    # print('then you make this one')
+    # print(labels)
+    # labels.insert(0, -1)
+    # print('then finally you make this one')
+    # print(labels)
 
     # set x axis as 'Condition' column
     x = df2['Condition']

@@ -1860,9 +1860,18 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
                         (cell_df['label']==row['label'])]
         CLUSTERID = row['label']
 
+        ##
+        cluster_colors = []
+        labels = list(set(df['label'].unique()))
+        numofcolors = len(labels)
+        cmap = cm.get_cmap(CLUSTER_CMAP)
+        for i in range(numofcolors):
+            cluster_colors.append(cmap(i))
+        ###
+
         # 
         # f=cp.plot_cell_metrics(cell_df, exemplarpoint[0]) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
-        f=plot_cell_metrics_timepoint_dev(cell_df, exemplarpoint[0], scaled_cell_df, XYRange, boxoff, top_dictionary, CLUSTERID) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS scaled_cell_df,
+        f=plot_cell_metrics_timepoint_dev_dev(cell_df, exemplarpoint[0], scaled_cell_df, XYRange, boxoff, top_dictionary, CLUSTERID, cluster_colors) #cilantro #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS scaled_cell_df,
 
         ######
         f2,f3,f4 = plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
@@ -1888,3 +1897,120 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         # f.savefig( CLUST_DISAMBIG_DIR + '\ClusterID__'+str(ClusterID)+'__disambiguated__R'+str(XYRange)+'_'+str(n)  ,dpi=300,bbox_inches="tight")
 
     return   
+
+##########
+
+def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, cluster_colors, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): 
+    '''
+    For a selected cell, at a selected step of its trajectory, make a plot
+    '''
+
+    # Using the same sample cell trajectory, print out some measurements
+    fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
+    # print(top_dictionary)
+    
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = ['Arial'] + plt.rcParams['font.serif'] #Times New Roman
+    plt.rcParams['mathtext.default'] = 'regular'
+
+    ax.title.set_text('Cell contour: xy space')
+    ax.plot(cell_df['x_pix'],cell_df['y_pix'],'-o',markersize=3,c='black')
+
+    #######################
+    # cluster_colors = []
+    # labels = list(set(lab_dr_df['label'].unique()))
+    # cmap = cm.get_cmap(CLUSTER_CMAP, len(labels))
+    # for i in range(cmap.N):
+    #     cluster_colors.append(cmap(i))
+
+    #######################
+
+    ################
+    xminimum=cell_df['x_pix'].min()
+    xmaximum=cell_df['x_pix'].max()
+    xmid = np.median([xmaximum, xminimum])
+    xmin=xmid-XYRange/2
+    xmax=xmid+XYRange/2
+
+    yminimum=cell_df['y_pix'].min()
+    ymaximum=cell_df['y_pix'].max()
+    ymid = np.median([ymaximum, yminimum])
+    ymin=ymid-XYRange/2
+    ymax=ymid+XYRange/2
+
+    #######################
+
+    contour_list = get_cell_contours(cell_df)
+    # Draw all contours faintly as image BG
+    for i,contour in enumerate(contour_list):
+
+        rgb = np.random.rand(3,)
+        this_colour = rgb#'red' # Eventually calculate color along colormap
+        contour_arr = np.asarray(contour).T
+
+
+        if not np.isnan(np.sum(contour_arr)): # If the contour is not nan
+
+            x = cell_df['x_pix'].values[i]# - window / 2
+            y = cell_df['y_pix'].values[i]# - window / 2
+            # Cell contour relative to x,y positions
+            '''Want to double check that the x,y positions not mirrored from the contour function'''
+            ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='gray', alpha=0.2)
+
+    # Draw this contour, highlighted.
+    contour = contour_list[i_step]
+    contour_arr = np.asarray(contour).T
+    x = cell_df['x_pix'].values[i_step]# - window / 2
+    y = cell_df['y_pix'].values[i_step]# - window / 2
+
+    # Cell contour relative to x,y positions
+    '''Want to double check that the x,y positions not mirrored from the contour function'''
+    if not np.isnan(np.sum(contour_arr)):
+        ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=cluster_colors[Cluster_ID],linewidth=5, alpha=1) #cilantro
+
+        # Current segment
+        if i_step > 0:
+            x_seg = cell_df['x_pix'].values[i_step-1:i_step+1]# - window / 2
+            y_seg = cell_df['y_pix'].values[i_step-1:i_step+1]# - window / 2
+            # ax.plot(x+contour_arr[:,0],y+contour_arr[:,1],'-o',markersize=1,c='red', alpha=1)
+            # ax.plot(x_seg*2,y_seg*2,'-o',markersize=10,c='tab:blue', linewidth=4)
+            ax.plot(x_seg,y_seg,'-o',markersize=10,c='tab:blue', linewidth=4)
+
+    text_x = xmid
+    text_y = ymid
+
+    display_factors = top_dictionary[Cluster_ID]
+
+    for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
+        facwithoutunderscores = fac.replace('_',' ')
+        text_str = facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f')
+        text_str_2 = format(scaled_cell_df.iloc[i_step][fac], '.1f')
+        ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str, #These weird numbers were worked out manually
+                color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
+        ax.text(text_x + 0.45*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
+                text_str_2, #These weird numbers were worked out manually
+                color='grey', fontsize=PLOT_TEXT_SIZE, fontdict = None) # bbox={'facecolor': 'red', 'alpha': 0.5, 'pad': 10} #spidermoose )        
+
+
+    # General plot improvements
+    plottitle="Cluster ID: " + str(cell_df['label'].iloc[i_step]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
+    # plottitle="Cluster ID: " + str(Cluster_ID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
+    ax.set_title(plottitle, fontname="Arial",fontsize=PLOT_TEXT_SIZE) #TEMPORARILY COMMENTED OUT
+    ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.set_ylabel("y (px)", fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+    ax.tick_params(axis='both', labelsize=PLOT_TEXT_SIZE)
+    ax.set_aspect('equal')
+    ax.set_adjustable("datalim")
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    if boxoff:
+        ax.axis('off')
+
+    # plt.autoscale()
+    # sns.despine(left=True)
+
+    # ax.set_yticklabels(['eNK','eNK+CytoD'])
+    return fig#delete?
+
