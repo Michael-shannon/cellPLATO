@@ -895,8 +895,28 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     cols_to_keep = [col for col in df_in.columns if col not in correctcolumns]
     # Extract a sub df from the cell_df that contains only the columns in cols_to_keep
     scaled_df = pd.concat([df_in[cols_to_keep], scaled_df_in], axis=1)
-    print('CHECK THAT THIS DF IS CORRECT')
-    display(scaled_df.head(5))
+    ### debug check ###
+    # print('CHECK THAT THIS non scaled DF IS CORRECT')
+    # display(df_in.head(5))
+    # print('CHECK THAT THIS SCALED DF IS CORRECT')
+    # display(scaled_df.head(5))
+
+    # # extract a random uniq_id from the df_in
+    # chosen_uniq_id = df_in['uniq_id'].sample(n=1).iloc[0]
+    # print('The chosen uniq_id is: ' + str(chosen_uniq_id))
+
+
+    # # extract an example cell from each of df_in and scaled_df
+    # cell_df = df_in[(df_in['uniq_id']==chosen_uniq_id)]
+    # scaled_cell_df = scaled_df[(scaled_df['uniq_id']==chosen_uniq_id)]
+    # print('CHECK THAT THIS non scaled DF perimeter IS CORRECT')
+    # # show just the perimeter and the scaled perimeter
+    # display(cell_df['perimeter'])
+    # print('Compared with this scaled DF perimeter')
+    # # show just the perimeter and the scaled perimeter
+    # display(scaled_cell_df['perimeter'])
+                    ### debug check end ###
+
 
 
     ####### Here ends the new bit for the scaled numbers on the disambiguates #######
@@ -993,7 +1013,58 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 8: exports a df that can be used to select what metrics you want to show?
     return top_dictionary, clusteraverage_df, scaled_df
 
-def plot_cluster_averages(top_dictionary, df): # New 3-7-2023
+# def plot_cluster_averages(top_dictionary, df): # New 3-7-2023 #deprecated in favour of one below
+#     num_plots = len(top_dictionary)
+#     # print(top_dictionary)
+#     # Reverse the order of the values in the dictionary so that the biggest contributor to variability is on top
+#     top_dictionary = {k: v[::-1] for k, v in top_dictionary.items()}
+#     # print(top_dictionary)
+#     ### Make a totally non-normalized version of the clusteraverage_df
+#     cluster_average_df = df.groupby('label').median()#.reset_index(drop=True)
+
+#     # Create a grid of subplots with one row and num_plots columns
+#     fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(10*num_plots,10))
+    
+#     # Loop over the cluster IDs and corresponding values in the dictionary
+#     for i, (cluster_id, value) in enumerate(top_dictionary.items()):
+#         # Get the row in the dataframe that corresponds to the current cluster ID
+#         cluster_row = cluster_average_df.loc[cluster_id]
+        
+#         # Loop over the column names for the current key and create a text string
+#         text_str = ""
+#         for column_name in value:
+#             # Get the value in the specified column for the current cluster
+#             column_value = round(cluster_row[column_name], 4)
+            
+#             # Add the string and the corresponding value to the text string
+#             text_str += f"{column_name.title()}: {column_value}\n"
+#             text_str = text_str.replace('_',' ')
+        
+#         # Plot the text string as text in the current subplot
+#         axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
+        
+#         # Set the title of the current subplot to the current cluster ID
+#         axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
+
+#         axs[i].set_xticks([])
+#         axs[i].set_yticks([])
+#         # Remove the lines around the subplot
+#         axs[i].spines['top'].set_visible(False)
+#         axs[i].spines['right'].set_visible(False)
+#         axs[i].spines['bottom'].set_visible(False)
+#         axs[i].spines['left'].set_visible(False)
+    
+    
+#     # Add an overall title to the figure
+#     fig.suptitle("Average of top contributors per cluster ID", fontsize=36)
+#     # Save figure as a png
+#     # plt.savefig("cluster_average.png")
+#     fig.savefig( CLUST_DISAMBIG_DIR + '\cluster_average.png',dpi=300,bbox_inches="tight") 
+ 
+    
+#     plt.show()
+
+def plot_cluster_averages(top_dictionary, df, scaled_df): # New 3-7-2023
     num_plots = len(top_dictionary)
     # print(top_dictionary)
     # Reverse the order of the values in the dictionary so that the biggest contributor to variability is on top
@@ -1001,27 +1072,36 @@ def plot_cluster_averages(top_dictionary, df): # New 3-7-2023
     # print(top_dictionary)
     ### Make a totally non-normalized version of the clusteraverage_df
     cluster_average_df = df.groupby('label').median()#.reset_index(drop=True)
+    cluster_average_scaled_df = scaled_df.groupby('label').median()#.reset_index(drop=True)
 
     # Create a grid of subplots with one row and num_plots columns
-    fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(10*num_plots,10))
+    fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(15*num_plots,10))
     
     # Loop over the cluster IDs and corresponding values in the dictionary
     for i, (cluster_id, value) in enumerate(top_dictionary.items()):
         # Get the row in the dataframe that corresponds to the current cluster ID
         cluster_row = cluster_average_df.loc[cluster_id]
+        scaled_cluster_row=cluster_average_scaled_df.loc[cluster_id]
         
         # Loop over the column names for the current key and create a text string
         text_str = ""
+        scaled_text_str = ""
         for column_name in value:
             # Get the value in the specified column for the current cluster
             column_value = round(cluster_row[column_name], 4)
+            scaled_column_value = round(scaled_cluster_row[column_name], 1)
             
             # Add the string and the corresponding value to the text string
-            text_str += f"{column_name.title()}: {column_value}\n"
+            text_str += f"{column_name.title()}: {column_value} (s={scaled_column_value})\n"
             text_str = text_str.replace('_',' ')
+
+            # scaled_text_str += f"{column_name.title()}: {scaled_column_value}\n"
+            # scaled_text_str = f"{scaled_column_value}\n"
+            # scaled_text_str = scaled_text_str.replace('_',' ')
         
         # Plot the text string as text in the current subplot
         axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
+        # axs[i].text(0.8, 0.5, scaled_text_str.strip(), ha='center', va='center', fontsize=30)
         
         # Set the title of the current subplot to the current cluster ID
         axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
@@ -1840,9 +1920,16 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         row=exemps.iloc[n] #extract an example exemplar row
 
         # Use exemplar row to look up the corresponding cell TRACK from the cell_df
+        ### Old way beginning...###
         cell_df = df[(df['Condition']==row['Condition']) &
                         (df['Replicate_ID']==row['Replicate_ID']) &
                         (df['particle']==row['particle'])]
+        
+        ### Old way end...###
+        ### new way beginning...###
+        # cell_df = df[(df['Condition']==row['Condition']) &
+        cell_df = df[(df['uniq_id']==row['uniq_id'])]
+        ### new way end...###
         cell_df = cell_df.reset_index(drop=True)
 
         # Do the same for the scaled_df
@@ -1853,6 +1940,10 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         #                 (scaled_df['particle']==row['particle'])]
         scaled_cell_df = scaled_df[(scaled_df['uniq_id']==row['uniq_id'])]
         scaled_cell_df = scaled_cell_df.reset_index(drop=True)
+        print('Cell df: ')
+        display(cell_df)
+        print('Scaled cell df: ')
+        display(scaled_cell_df)
 
         # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization #SPIDERSALLTHEWAYDOWN CHANGED THIS PART!!
         exemplarpoint = cell_df.index[(cell_df['uniq_id']==row['uniq_id']) &
@@ -1876,20 +1967,22 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         ######
         f2,f3,f4 = plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
 
-        
+        cell_ID = str(cell_df['uniq_id'].iloc[0])
 
         # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
             #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
-        f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
+        # f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+        #     '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
+        f.savefig( CLUST_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")          
 
-        f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+        f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
             '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
-        f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_TWindow_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+        f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'TWindow_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
             '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
         
-        f4.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cumulative_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+        f4.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'Cumulative_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
             '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
         ######
@@ -1985,6 +2078,7 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
         facwithoutunderscores = fac.replace('_',' ')
         text_str = facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f')
         text_str_2 = format(scaled_cell_df.iloc[i_step][fac], '.1f')
+
         ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
                 text_str, #These weird numbers were worked out manually
                 color='k', fontsize=PLOT_TEXT_SIZE, fontdict = None) #spidermoose )
@@ -2014,3 +2108,78 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
     # ax.set_yticklabels(['eNK','eNK+CytoD'])
     return fig#delete?
 
+### Function to take ANY exemplar df or df of chosen cells (from single timepoints), and find the full tracks from an input dataframe, outputting those as a dataframe
+
+# Those cells are then used for plotting.
+
+def cell_tracks_from_chosen_cells(df_in, chosen_cells_df):
+
+    particles = chosen_cells_df['uniq_id'].unique()
+    # print(particles)
+    # Use this list to filter the tptlabel_dr_df so it only contains rows in which particle = one of the elements in particles
+    exemplar_cell_tracks_df = df_in[df_in['uniq_id'].isin(particles)]
+    print("The number of datapoints in the original dataframe was " + str(len(df_in)))
+    print("The number of cells in the original dataframe was " + str(len(df_in['uniq_id'].unique())))
+    print("The number of datapoints in the new dataframe is " + str(len(exemplar_cell_tracks_df)))
+    print("The number of cells in the new dataframe is " + str(len(exemplar_cell_tracks_df['uniq_id'].unique())))
+
+    return exemplar_cell_tracks_df
+
+
+# This version uses the uniq_id instead of the particle number
+# This is used for the small multiples and for the disambiguations, and it chooses exemplars with a good number of timepoints so as to sample single cells well
+
+def filter_exemplars(whole_df, exemplar_df, numberofdesiredtimepoints = 200, numberofcellspercluster = 40, override = 100):
+
+    print('Filtering exemplars so that only those with > ' + str(numberofdesiredtimepoints) + ' timepoints are included')
+
+    print('Aiming for ' + str(numberofcellspercluster) + ' cells per cluster')
+
+    num_clusters_whole_dataset = len(whole_df['label'].unique())
+
+    print('Which means ' + str(num_clusters_whole_dataset*numberofcellspercluster) + ' cells in total')
+
+    print('But we can accept 70 percent! Which means we are only aiming for ' + str((num_clusters_whole_dataset*numberofcellspercluster)*0.7) + ' cells in total')
+
+    print('Number of unique cells in exemplar_df: ', len(exemplar_df['uniq_id'].unique()))    
+
+    exemplar_df_filt = exemplar_df[exemplar_df['ntpts'] > numberofdesiredtimepoints] # filter out cells that don't have enough timepoints
+
+    print('Number of unique cells in exemplar_df after filtering: ', len(exemplar_df_filt['uniq_id'].unique()))
+    # Draw a histogram of which frames are most common in the exemplar_df
+    exemplar_df['frame'].hist(bins=100)
+    # do the same for the exemplar_df_filt
+    exemplar_df_filt['frame'].hist(bins=100)
+    # Save the exemplar_df_filt
+    
+    num_clusters_exemplars = len(exemplar_df_filt['label'].unique())
+    print('The number of clusters in whole dataset is: ' + str(num_clusters_whole_dataset) + ' whereas represented in the filtered and ready exemplar = ' + str(num_clusters_exemplars))
+
+    exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(lambda x: x.sample(min(numberofcellspercluster,len(x)))).reset_index(drop=True)
+
+    numberofcellsindf = len(exemplar_df_filt_selected['uniq_id'].unique())
+
+    numberofuniquecells_intended = numberofcellspercluster*num_clusters_whole_dataset
+
+    print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
+
+
+    # while numberofuniquecells_intended != numberofcellsindf:
+    while override >= numberofcellsindf:
+
+        print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
+        
+        exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(lambda x: x.sample(min(numberofcellspercluster,len(x)))).reset_index(drop=True)
+        numberofcellsindf = len(exemplar_df_filt_selected['uniq_id'].unique())
+        numberofuniquecells_intended = numberofcellspercluster*num_clusters_whole_dataset
+    else:
+        print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
+
+        exemplar_df_filt = exemplar_df_filt_selected
+
+    exemplar_cell_tracks_df = cell_tracks_from_chosen_cells(df_in=whole_df, chosen_cells_df=exemplar_df_filt)
+
+    exemplar_df_filt.to_csv(SAVED_DATA_PATH + 'exemplar_df_filt.csv', index=False)
+    exemplar_cell_tracks_df.to_csv(SAVED_DATA_PATH + 'exemplar_cell_tracks_df.csv', index=False)
+
+    return exemplar_df_filt, exemplar_cell_tracks_df

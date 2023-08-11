@@ -2023,11 +2023,15 @@ def count_cluster_changes(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_WIND):
 
 ##########
 
-def count_cluster_changes_with_tavg(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_WIND):
+def count_cluster_changes_with_tavg(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_WIND, t_window_multiplier=T_WINDOW_MULTIPLIER):
 
     '''
     Count the number of changes to the cluster ID
     '''
+    t_window = t_window * t_window_multiplier
+    print('Time window is ' + str(t_window) + ' frames: applied multiplier = ' + str(t_window_multiplier))  
+
+    min_frames=t_window #added this too
 
     assert 'label' in df_in.columns, 'count_cluster_changes() must be provided with label-containing dataframe.'
 

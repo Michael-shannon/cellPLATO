@@ -389,9 +389,11 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
     if colorby == 'label':
         coloredby = 'label'
         # colors = cm.Dark2(np.linspace(0, 1, len(df['label'].unique())))  
-        cmap = cm.get_cmap(CLUSTER_CMAP, len(df['label'].unique()))
+        cmap = cm.get_cmap(CLUSTER_CMAP) 
+                           
+        numcolors=len(df['label'].unique())
         colors=[]
-        for i in range(cmap.N):
+        for i in range(numcolors):
             colors.append(cmap(i))
         df = df.sort_values(by=['label'])
           
@@ -428,6 +430,128 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
         elif colorby == 'condition':
             ax.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x], df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
              df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
+
+    leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
+    for lh in leg.legendHandles: 
+        lh.set_alpha(1)
+    
+    # plt.tight_layout()
+    
+    # Set the axis labels with or without ticks
+    if ticks == False:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.set_zticklabels([])
+        ax.set_xlabel(x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel(y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel(z, fontsize=font_size, linespacing=3.2)
+    elif ticks == True:
+        # Set the axis labels
+        ax.set_xlabel('\n ' + x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
+        ax.set_ylabel('\n ' + y, fontsize=font_size, linespacing=3.2)
+        ax.set_zlabel('\n ' + z, fontsize=font_size, linespacing=3.2)
+        ax.tick_params(axis='both', which='major', labelsize=font_size)
+    
+    # set the axis limits to tight
+    ax.set_xlim3d(np.min(df[x]), np.max(df[x]))
+    ax.set_ylim3d(np.min(df[y]), np.max(df[y]))
+    ax.set_zlim3d(np.min(df[z]), np.max(df[z]))
+
+    plt.show()
+
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.png', dpi=300, bbox_inches='tight')
+
+    return ax    
+
+def plot_3D_scatter_dev(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
+    import matplotlib.pyplot as plt
+    from numpy.random import random
+    from mpl_toolkits.mplot3d import Axes3D
+
+    font_size = 24
+    # df = lab_dr_df
+
+    fig = plt.figure(figsize=(15, 15))
+
+    # colors=[]
+    # cmap = cm.get_cmap(CONDITION_CMAP, len(df_in['Condition_shortlabel'].unique()))
+    # for i in range(cmap.N):
+    #     colors.append(cmap(i))
+
+    if colorby == 'label':
+        coloredby = 'label'
+        # colors = cm.Dark2(np.linspace(0, 1, len(df['label'].unique())))  
+        cmap = cm.get_cmap(CLUSTER_CMAP) 
+                           
+        numcolors=len(df['label'].unique())
+        colors=[]
+        for i in range(numcolors):
+            colors.append(cmap(i))
+        df = df.sort_values(by=['label'])
+          
+    elif colorby == 'condition':
+        coloredby = 'Condition_shortlabel'
+        # colors = cm.Dark2(np.linspace(0, 1, len(df['Condition_shortlabel'].unique())))
+        # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique())) # deleted...
+        # colors=[] # deleted...
+        # for i in range(cmap.N): # deleted
+        #     colors.append(cmap(i)) # Deleted...
+
+        colors=[]
+        if CONDITION_CMAP != 'Dark24':
+            # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique())) #changedforbelow
+            # for i in range(cmap.N):
+            #     colors.append(cmap(i))
+            cmap = cm.get_cmap(CONDITION_CMAP) 
+            numcolors=len(df['Condition_shortlabel'].unique())
+            for i in range(numcolors):
+                colors.append(cmap(i)) 
+        else:
+            colors = plotlytomatplotlibcolors()
+            colors=colors[:len(df['Condition_shortlabel'].unique())]   
+
+    elif colorby == 'frame':
+        cmap = cm.get_cmap('inferno') 
+                           
+        numcolors=max(df['frame'])
+        numcolors=int(numcolors)
+        colors=[]
+        for i in range(numcolors):
+            colors.append(cmap(i))
+        # print(colors)
+        # df = df.sort_values(by=['frame'])         
+
+    elif colorby == 'uniq_id':
+        cmap = cm.get_cmap('inferno') 
+                           
+        numcolors=len(df['uniq_id'].unique())
+        numcolors=int(numcolors)
+        colors=[]
+        for i in range(numcolors):
+            colors.append(cmap(i))
+        df = df.sort_values(by=['uniq_id'])             
+
+ 
+
+
+
+    ax = plt.subplot(111, projection='3d')
+     
+    for colorselector in range(len(colors)): #you have to plot each label separately to get the legend to work
+        if colorby == 'label':
+            ax.scatter(df[df['label'] == df['label'].unique()[colorselector]][x], df[df['label'] == df['label'].unique()[colorselector]][y],
+             df[df['label'] == df['label'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['label'].unique()[colorselector], s=dotsize, alpha = alpha)
+        elif colorby == 'condition':
+            ax.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x], df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+             df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
+    if colorby == 'frame':
+        # make a scatter plot of x, y and z, colored by frame number
+        ax.scatter(df[x], df[y], df[z], c=df['frame'], cmap='cividis', s=dotsize, alpha = alpha) #label = df['Condition_shortlabel'].unique()    
+    if colorby == 'uniq_id':
+        # make a scatter plot of x, y and z, colored by frame number
+        ax.scatter(df[df['uniq_id'] == df['uniq_id'].unique()[colorselector]][x], df[df['uniq_id'] == df['uniq_id'].unique()[colorselector]][y],
+             df[df['uniq_id'] == df['uniq_id'].unique()[colorselector]][z], '.', color=colors[colorselector],  s=dotsize, alpha = alpha) #label = df['uniq_id'].unique()[colorselector],
+        # ax.scatter(df[x], df[y], df[z], c=df['uniq_id'], cmap='inferno', s=dotsize, alpha = alpha) #label = df['Condition_shortlabel'].unique()    
 
     leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
     for lh in leg.legendHandles: 
@@ -509,93 +633,42 @@ def interactive_plot_3D_UMAP(df, colorby = 'label', symbolby = 'Condition_shortl
     fig.show()
     return
 
-def interactive_umap_plot_choosecondition(df, condition, xrot=0, yrot=0, zrot=0):
-    # filter dataframe for the chosen condition
-    import plotly.io as pio
-    df_condition = df[df['Condition_shortlabel'] == condition]
+def interactive_plot_3D_UMAP_chosen_condition(df, chosen_condition, colorby='Condition_shortlabel', symbolby='Condition_shortlabel', 
+                                              opacity_grey=0.5, marker_size_all=2, what=''):
 
+    import plotly.express as px
+    import plotly.io as pio
+    import seaborn as sns
+
+    # Generate the initial colormap
     if CONDITION_CMAP != 'Dark24':
-        pal = sns.color_palette(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-        # pal = sns.color_palette(CONDITION_CMAP) #extracts a colormap from the seaborn stuff.
-        cmap=pal.as_hex()[:] #outputs that as a hexmap which is compatible with plotlyexpress below
+        pal = sns.color_palette(CONDITION_CMAP, len(df[colorby].unique()))
+        cmap = pal.as_hex()
     else:
         cmap = px.colors.qualitative.Dark24
-            # colors=colors[:len(df_in['Condition_shortlabel'].unique())]
-            # cmap=cmap[:len(df['Condition_shortlabel'].unique())] 
-    # Make a condition list from the dataframe
-    condlist = df['Condition_shortlabel'].unique().tolist()        
-    #extract the index of the chosen condition
-    condindex = condlist.index(condition)
-    #extract the color from the color map
-    chosencolor = cmap[condindex]
 
-    # create trace for all data points in grey
-    trace_all = go.Scatter3d(
-        x=df['UMAP1'],
-        y=df['UMAP2'],
-        z=df['UMAP3'],
-        mode='markers',
-        marker=dict(
-            size=2,
-            color='grey',
-            opacity=0.2
-        ),
-        name='Other Conditions'
-    )
+    # Overwrite colors to make all conditions except the chosen one grey
+    chosen_color = cmap[df[colorby].unique().tolist().index(chosen_condition)]
+    cmap = [chosen_color if cond == chosen_condition else '#808080' for cond in df[colorby].unique()]
 
-    # create trace for chosen condition in a different color
-    trace_condition = go.Scatter3d(
-        x=df_condition['UMAP1'],
-        y=df_condition['UMAP2'],
-        z=df_condition['UMAP3'],
-        mode='markers',
-        marker=dict(
-            size=2,
-            color=chosencolor, #'#ff7f0e',
-            opacity=1
-        ),
-        name=f'Condition: {condition}'
-    )
+    fig = px.scatter_3d(df, x='UMAP1', y='UMAP2', z='UMAP3',
+                        color=colorby,
+                        symbol=symbolby,
+                        opacity=opacity_grey,  # Adjust opacity for grey points
+                        # size_max=1,
+                        #   opacity=0.7,
+                            width=1800, height=1200, color_discrete_sequence=cmap)
 
-    # create data list to pass to plotly figure
-    data = [trace_all, trace_condition]
+    fig.update_traces(marker_size=marker_size_all)  # Adjust marker size for all points
+    fig.update_layout(margin=dict(l=20, r=20, t=20, b=20), legend_font_size=24)
+    fig.update_layout(font=dict(family="Courier New, monospace", size=24))
+    fig.update_layout(legend={'itemsizing': 'constant'})
 
-    # create layout for plot
-    layout = go.Layout(
-        scene=dict(
-            xaxis=dict(title='UMAP1'),
-            yaxis=dict(title='UMAP2'),
-            zaxis=dict(title='UMAP3')
-        ),
-        margin=dict(l=0, r=0, t=0, b=0)
-    )
-
-    # create figure object
-    fig = go.Figure(data=data, layout=layout)
-    #change figure size to 800x800
-    fig.update_layout(
-        width=1800,
-        height=1200,
-        autosize=False,
-        margin=dict(l=20, r=20, t=20, b=20,),
-        legend_font_size=24,
-        legend= {'itemsizing': 'constant'},
-        font=dict(family="Courier New, monospace",size=24),
-    )
-
-    # Rotate the plot so it matches the statics
-
-    # fig.update_layout(scene_camera_eye=dict(x=xrot, y=yrot, z=zrot))
-    
-
-
-    # show plot
-    pio.write_image(fig, CLUST_DISAMBIG_DIR + condition + ' UMAP_Clusters.png',scale=1, width=1800, height=1200)
+    pio.write_image(fig, CLUST_DISAMBIG_DIR + what + ' UMAP_Clusters.png', scale=1, width=1800, height=1200)
     fig.show()
+    return
 
-
-
-def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): #spidey
+def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER): #spidey
 
     # f, axes = plt.subplots(1, 3, figsize=(15, 5)) #sharex=True
     # f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=True) #sharex=True
@@ -667,23 +740,35 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): 
                  hue="Condition_shortlabel",
                  data=df, palette=colors)
 
-    timewindowmins = MIG_T_WIND*SAMPLING_INTERVAL
+    timewindowmins = (MIG_T_WIND * t_window_multiplier)*SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+    # The actual calculation is done in count_cluster_changes_with_tavg function
+    timewindowmins = round(timewindowmins, 1)
+
+    print('Time window mins: ', timewindowmins)
     text1 = "Cluster ID"
-    text2 = "Cluster switches (per " + str(timewindowmins) + " min)"
-    text3 = "Unseen cluster switches (per " + str(timewindowmins) + " min)"
+    text2 = "Cluster switches / " + str(timewindowmins) + " min"
+    text3 = "New clusters / " + str(timewindowmins) + " min"
 
     x_lab = "Distinct Behaviors"
     plottitle = ""
+
+    # get the max value of the whattoplot[1] column of df
+    max1=np.nanmax(df[whattoplot[1]])
+    max2=np.nanmax(df[whattoplot[2]])
+    tickfrequency1 = int(max1/5)
+    tickfrequency2 = int(max2/5)
 
     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), 1)
     the_yticks = [int(x) for x in the_yticks]
     axes[0].set_yticks(the_yticks) # set new tick positions
     axes[0].margins(y=0) # set tight margins
-    the_yticks = np.arange(0, len(df[whattoplot[1]].unique()), 1)
+    the_yticks = np.arange(0, len(df[whattoplot[1]].unique()), tickfrequency1)
     the_yticks = [int(x) for x in the_yticks]
+
+
     axes[1].set_yticks(the_yticks) # set new tick positions
     axes[1].margins(y=0) # set tight margins
-    the_yticks = np.arange(0, len(df[whattoplot[2]].unique()), 1)
+    the_yticks = np.arange(0, len(df[whattoplot[2]].unique()), tickfrequency2)
     the_yticks = [int(x) for x in the_yticks]
     axes[2].set_yticks(the_yticks) # set new tick positions
     axes[2].margins(y=0) # set tight margins
@@ -742,6 +827,779 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None): 
     f.savefig(CLUST_DISAMBIG_DIR+identifier+'_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
 
     return
+
+####################### DEVELOPMENTAL PLOTS #############################
+
+# def plot_cumulative_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotallcells = False): #spidey
+
+#     # f, axes = plt.subplots(1, 3, figsize=(15, 5)) #sharex=True
+#     # f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=True) #sharex=True
+#     f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False) #sharex=True
+
+#     # whattoplot=['cum_n_changes','cum_n_labels', 'twind_n_labels']
+#     whattoplot=['cum_n_changes','cum_n_labels',]
+
+#     # CLUSTER_CMAP = 'tab20'
+#     # CONDITION_CMAP = 'dark'
+
+#     time = df['frame']
+#     # SAMPLING_INTERVAL=10/60 #This shouldn't be hardcoded!
+#     timeminutes=time*SAMPLING_INTERVAL
+
+#     # dfnumericals = df.select_dtypes('number')
+
+#     # extracted_col = df["Condition_shortlabel"]
+
+#     # df=dfnumericals.join(extracted_col)
+
+#     ##
+#     if miny != None or maxy != None:
+#         minimumy=miny
+#         maximumy1=maxy
+#         maximumy2=maxy
+#         # maximumy3=maxy
+#     else:
+#         minimumy=0
+#         maximumy1=np.nanmax(df[whattoplot[0]])
+#         maximumy2=np.nanmax(df[whattoplot[1]])
+#         # maximumy3=np.nanmax(df[whattoplot[2]])
+
+#     ##
+#     import seaborn as sns
+#     sns.set_theme(style="ticks")
+#     # sns.set_palette(CONDITION_CMAP) #removed
+#     # colors=[]
+#     # cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
+#     # for i in range(cmap.N):
+#     #     colors.append(cmap(i))
+
+#     colors=[]
+#     if CONDITION_CMAP != 'Dark24':
+
+#         cmap = cm.get_cmap(CONDITION_CMAP)
+#         numcolors= len(df['Condition_shortlabel'].unique())
+#         sns.set_palette(CONDITION_CMAP)
+#         for i in range(numcolors):
+#             colors.append(cmap(i))
+#     else:
+#         colors = plotlytomatplotlibcolors()
+#         colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+
+
+#     # display(df)
+#     df=df.dropna(how='any')
+#     # display(df)
+
+#     if plotallcells == False:
+            
+#         # Plot the responses for different events and regions
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+#     else:
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",  units = 'particle', estimator = None, #style = 'particle', dashes = False, 
+#                     data=df, palette=colors)
+
+
+#         # w = axes[0].properties()
+#         # print("Display all Properties\n")
+#         # for i in w:
+#         #     print(i, ":", w[i])
+#         for line, name in zip(axes[0].lines, df['particle'].unique()): #df['particle'].unique()
+#             # print(line)
+#             # print(name)
+#             y = line.get_ydata()[-1]
+#             # t= line.get_label()
+#             # h = line.get_label()[-1]
+#             # print(y)
+#             # print(t)
+#             # print(h)
+#             axes[0].annotate(name, xy=(1,y), xytext=(6,0), color=line.get_color(), 
+#             xycoords = axes[0].get_yaxis_transform(), textcoords="offset points",
+#             size=14, va="center")
+
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors, lw=4)
+    
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",  units = 'particle', estimator = None, #style = 'particle', dashes = False,
+#                     data=df, palette=colors)
+
+#         for line, name in zip(axes[1].lines, df['particle'].unique()):
+#             y = line.get_ydata()[-1]
+#             axes[1].annotate(name, xy=(1,y), xytext=(6,0), color=line.get_color(), 
+#             xycoords = axes[1].get_yaxis_transform(), textcoords="offset points",
+#             size=14, va="center")
+
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors, lw=4)            
+
+#     # sns.lineplot(ax=axes[2], x=timeminutes, y=whattoplot[2], #n_labels #n_changes #label
+#     #              hue="Condition_shortlabel",
+#     #              data=df, palette=colors)
+
+#     # timewindowmins = (MIG_T_WIND * t_window_multiplier)*SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+#     # # The actual calculation is done in count_cluster_changes_with_tavg function
+#     timewindowmins = MIG_T_WIND*SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+#     # The actual calculation is done in count_cluster_changes_with_tavg function
+
+#     print('Time window mins: ', timewindowmins)
+#     text1 = "Cumulative cluster switches"
+#     text2 = "Cumulative new clusters"
+#     # text3 = "New clusters / " + str(timewindowmins) + " min"
+
+#     x_lab = "Distinct Behaviors"
+#     plottitle = ""
+
+#     # get the max value of the whattoplot[1] column of df
+#     max1=np.nanmax(df[whattoplot[0]])
+#     max2=np.nanmax(df[whattoplot[1]])
+#     tickfrequency1 = int(max1/5)
+#     tickfrequency2 = int(max2/5)
+
+#     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+#     axes[0].set_yticks(the_yticks) # set new tick positions
+#     axes[0].margins(y=0) # set tight margins
+#     the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+
+
+#     axes[1].set_yticks(the_yticks) # set new tick positions
+#     axes[1].margins(y=0) # set tight margins
+
+#     # the_yticks = np.arange(0, len(df[whattoplot[2]].unique()), tickfrequency2)
+#     # the_yticks = [int(x) for x in the_yticks]
+#     # axes[2].set_yticks(the_yticks) # set new tick positions
+#     # axes[2].margins(y=0) # set tight margins
+
+#     # the_xticks = np.arange(0, len(timeminutes), 1)
+#     # the_xticks = [int(x) for x in the_xticks]
+#     # axes[0].set_xticks(the_xticks) # set new tick positions
+#     # axes[0].margins(x=0) # set tight margins
+#     # axes[1].set_xticks(the_xticks) # set new tick positions
+#     # axes[1].margins(x=0) # set tight margins
+#     # axes[2].set_xticks(the_xticks) # set new tick positions
+#     # axes[2].margins(x=0) # set tight margins
+
+
+#     # Tweak the visual presentation
+#     axes[0].xaxis.grid(True)
+#     axes[1].xaxis.grid(True)
+#     # axes[2].xaxis.grid(True)
+
+#     # axes[0].set_ylabel(whattoplot[0], fontsize=36)
+#     # axes[1].set_ylabel(whattoplot[1], fontsize=36)
+#     # axes[2].set_ylabel(whattoplot[2], fontsize=36)
+#     axes[0].set_ylabel(text1, fontsize=36)
+#     axes[1].set_ylabel(text2, fontsize=36)
+#     # axes[2].set_ylabel(text3, fontsize=36)
+
+#     axes[0].set_title("", fontsize=36)
+#     axes[1].set_title("", fontsize=36)
+#     # axes[2].set_title("", fontsize=36)
+
+#     axes[0].set_xlabel("Time (min)", fontsize=36)
+#     axes[1].set_xlabel("Time (min)", fontsize=36)
+#     # axes[2].set_xlabel("Time (min)", fontsize=36)
+
+#     # axes[0].set_ylim(0, np.nanmax(df[whattoplot[0]]))
+#     # axes[1].set_ylim(0, np.nanmax(df[whattoplot[1]]))
+#     # axes[2].set_ylim(0, np.nanmax(df[whattoplot[2]]))
+#     axes[0].set_ylim(0, max1+1)
+#     axes[1].set_ylim(0, max2+2)
+#     # axes[2].set_ylim(0, maximumy3)
+
+
+    
+
+#     # ax.set_ylabel(y_lab, fontsize=36)
+#     axes[0].tick_params(axis='both', labelsize=36)
+#     axes[1].tick_params(axis='both', labelsize=36)
+#     # axes[2].tick_params(axis='both', labelsize=36)
+
+#     axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     # axes[2].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+
+#     f.tight_layout()
+#     # fig.write_image(CLUST_DISAMBIG_DIR+'\cluster_label_counts.png')
+#     f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+
+#     return
+
+############# Developmental plots end ######################
+
+############# DEV PLOTS 2 ######################
+
+# def plot_cumulative_plasticity_changes_test(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotallcells = False): #spidey
+
+#     f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False) #sharex=True
+
+#     whattoplot=['cum_n_changes','cum_n_labels',]
+
+#     time = df['frame']
+
+#     timeminutes=time*SAMPLING_INTERVAL
+
+#     ##
+#     if miny != None or maxy != None:
+#         minimumy=miny
+#         maximumy1=maxy
+#         maximumy2=maxy
+
+#     else:
+#         minimumy=0
+#         maximumy1=np.nanmax(df[whattoplot[0]])
+#         maximumy2=np.nanmax(df[whattoplot[1]])
+
+
+#     ##
+#     import seaborn as sns
+#     sns.set_theme(style="ticks")
+
+#     colors=[]
+#     if CONDITION_CMAP != 'Dark24':
+
+#         cmap = cm.get_cmap(CONDITION_CMAP)
+#         numcolors= len(df['Condition_shortlabel'].unique())
+#         sns.set_palette(CONDITION_CMAP)
+#         for i in range(numcolors):
+#             colors.append(cmap(i))
+#     else:
+#         colors = plotlytomatplotlibcolors()
+#         colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+#     df=df.dropna(how='any')
+
+
+#     if plotallcells == False:
+            
+#         # Plot the responses for different events and regions
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+#     else:
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",  units = 'particle', estimator = None, #style = 'particle', dashes = False, 
+#                     data=df, palette=colors)
+
+#         # sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#         #             hue="Condition_shortlabel",
+#         #             data=df, palette=colors, lw=4)
+    
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",  units = 'particle', estimator = None, #style = 'particle', dashes = False,
+#                     data=df, palette=colors)
+
+#         # sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#         #             hue="Condition_shortlabel",
+#         #             data=df, palette=colors, lw=4)         
+#         # 
+#         # Annotate the end of each line with 'uniq_ID' values
+
+
+#     # # Annotate the end of each line with 'uniq_ID' values outside the main plot
+#     # for ax in axes:
+#     #     lines = ax.get_lines()
+#     #     for line in lines:
+#     #         x_data = line.get_xdata()
+#     #         y_data = line.get_ydata()
+#     #         if len(x_data) > 0 and len(y_data) > 0:
+#     #             uniq_ID = int(y_data[-1])  # Assuming 'uniq_ID' is an integer, adjust accordingly if it's not
+#     #             ax.annotate(f'Uniq_ID: {uniq_ID}', xy=(x_data[-1], y_data[-1]), xytext=(5, 5), textcoords='offset points', fontsize=14, ha='left', va='bottom', zorder=5)
+#     #             ax.plot([x_data[-1], x_data[-1]], [y_data[-1], y_data[-1] + 0.2], linestyle='dotted', color='gray', transform=ax.transData, zorder=4)  # Dotted line from the end of the line to the text position        
+
+#     # Annotate the end of each line with 'uniq_ID' values outside the main plot
+#     # for ax in axes:
+#     #     lines = ax.get_lines()
+#     #     for line in lines:
+#     #         x_data = line.get_xdata()
+#     #         y_data = line.get_ydata()
+#     #         if len(x_data) > 0 and len(y_data) > 0:
+#     #             uniq_ID = int(y_data[-1])  # Assuming 'uniq_ID' is an integer, adjust accordingly if it's not
+#     #             ax.annotate(f'Uniq_ID: {uniq_ID}', xy=(1.02, y_data[-1]), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center')
+
+#     # Annotate the end of each line with 'uniq_ID' values outside the main plot
+
+#     ############# THIS WORKS ###############################
+#     # for n, ax in enumerate(axes):
+
+#     #     max_x = np.max(timeminutes)
+#     #     print(max_x)
+
+#     #     lines = ax.get_lines()
+#     #     # alldata=lines.get_data()
+#     #     for line in lines:
+#     #         x_data = line.get_xdata()
+#     #         y_data = line.get_ydata()
+#     #         if len(x_data) > 0 and len(y_data) > 0:
+#     #             # uniq_ID = int(y_data[-1])  # Assuming 'uniq_ID' is an integer, adjust accordingly if it's not
+#     #             uniq_id = df['uniq_id'].iloc[n]  # Get the 'uniq_id' value for the corresponding line
+#     #             ax.annotate(f'Uniq_ID: {uniq_ID}', xy=(max_x + 10, y_data[-1]), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center')
+
+#     ############# THIS WORKS ###############################
+
+#     # # Annotate the end of each line with 'uniq_id' values outside the main plot
+#     # for n, ax in enumerate(axes):
+#     #     max_x = np.max(timeminutes)
+#     #     lines = ax.get_lines()
+#     #     for line in lines:
+#     #         x_data = line.get_xdata()
+#     #         y_data = line.get_ydata()
+#     #         if len(x_data) > 0 and len(y_data) > 0:
+#     #             uniq_id = df['uniq_id'].iloc[n]  # Get the 'uniq_id' value for the corresponding line
+#     #             ax.annotate(f'Uniq_ID: {uniq_id}', xy=(max_x + 10, y_data[-1]), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center')    
+
+
+
+#     # # Annotate the end of each line with 'uniq_id' values outside the main plot
+#     # for ax in axes:
+#     #     lines = ax.get_lines()
+#     #     for line in lines:
+#     #         x_data = line.get_xdata()
+#     #         y_data = line.get_ydata()
+#     #         if len(x_data) > 0 and len(y_data) > 0:
+#     #             # line_index = lines.index(line)  # Get the index of the line in the lines list
+#     #             # print('This is the line index')
+#     #             # print(line_index)
+#     #             # uniq_id = df['uniq_id'].iloc[line_index]  # Get the 'uniq_id' value using the line index
+#     #             # print('this is the uniq_id')
+#     #             # print(uniq_id)
+#     #             print(x_data[-1])
+#     #             print(y_data[-1])
+
+#     #             ax.annotate(f'Uniq_ID: {uniq_id}', xy=(x_data[-1], y_data[-1]), xytext=(5, 5), textcoords='offset points', fontsize=14, ha='left', va='bottom', zorder=5)
+#     #             ax.plot([x_data[-1], x_data[-1]], [y_data[-1], y_data[-1] + 0.2], linestyle='dotted', color='gray', transform=ax.transData, zorder=4)  # Dotted line from the end of the line to the text position        
+
+#     # Annotate the end of each line with 'uniq_id' values outside the main plot
+#     for n, ax in enumerate(axes):
+#         lines = ax.get_lines()
+#         max_x = np.max(timeminutes)
+#         for line in lines:
+#             x_data = line.get_xdata()
+#             y_data = line.get_ydata()
+#             if len(x_data) > 0 and len(y_data) > 0:
+#                 x_final = x_data[-1]  # Final entry in x_data
+#                 y_final = y_data[-1]  # Final entry in y_data
+                
+#                 x_finalframe = x_final/SAMPLING_INTERVAL
+#                 # print('The x final frame non integer is: ', x_finalframe)
+#                 # x_finalframe = int(x_finalframe)
+#                 print('The x final (minutes) is: ', x_final)
+#                 print('The x final frame (frames) is: ', x_finalframe)
+#                 # # Find the corresponding 'uniq_id' using the final x_data and y_data
+#                 # uniq_id = df.loc[(df['frame'] == x_finalframes) & (df[whattoplot[n]] == y_final), 'uniq_id'].iloc[0]
+#                 # uniq_id = df.loc[(df['frame'] == x_finalframe) & (df[whattoplot[n]] == y_final), 'uniq_id'].iloc[0] #original line
+#                 print('This is the y_final')
+#                 print(y_final)
+#                 print('This is the df that contains the y_final')
+#                 print(df.loc[(df[whattoplot[n]] == y_final)])
+
+#                 #####
+#                 # uniq_id_row = df.loc[(df['frame'] == x_finalframe) & (df[whattoplot[n]] == y_final), 'uniq_id']
+
+
+#                 uniq_id_row = df.loc[(df[whattoplot[n]] == y_final) , 'uniq_id']
+#                 # Option 1 - translate all of the df_frames into minutes first
+#                 # Or test without this and see whether it works.
+
+#                 # nicely display the uniq_id_row
+#                 print('This is the uniq_id_row')
+#                 print(uniq_id_row)
+#                 # Get the number of elements in the uniq_id_row
+#                 uniq_id_row_length = len(uniq_id_row)
+#                 print('This is the length of the uniq_id_row')
+#                 print(uniq_id_row_length)
+#                 # Separate out each element of the uniq_id_row and print them
+#                 print('These are the elements of the uniq_id_row')
+#                 for i in range(uniq_id_row_length):
+#                     print(uniq_id_row.iloc[i])
+#                 uniq_id=uniq_id_row
+#                 # uniq_id = uniq_id_row.iloc[0]
+#                 # print(uniq_id)
+#                 #####
+
+#                 # uniq_id = df.loc[(df[whattoplot[n]] == y_final), 'uniq_id'].iloc[0]
+#                 ax.annotate(f'Cell ID: {uniq_id}', xy=(max_x+85, y_final), xytext=(5, 5), textcoords='offset points', fontsize=14, ha='left', va='bottom', zorder=5)
+#                 ax.plot([x_final, max_x+85], [y_final, y_final], linestyle='dotted', color='gray', transform=ax.transData, zorder=4)  # Dotted line from the end of the line to the text position 
+
+
+
+
+#     timewindowmins = MIG_T_WIND*SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+#     # The actual calculation is done in count_cluster_changes_with_tavg function
+
+#     print('Time window mins: ', timewindowmins)
+#     text1 = "Cumulative cluster switches"
+#     text2 = "Cumulative new clusters"
+#     # text3 = "New clusters / " + str(timewindowmins) + " min"
+
+#     x_lab = "Distinct Behaviors"
+#     plottitle = ""
+
+#     # get the max value of the whattoplot[1] column of df
+#     max1=np.nanmax(df[whattoplot[0]])
+#     max2=np.nanmax(df[whattoplot[1]])
+#     tickfrequency1 = int(max1/5)
+#     tickfrequency2 = int(max2/5)
+
+#     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+#     axes[0].set_yticks(the_yticks) # set new tick positions
+#     axes[0].margins(y=0) # set tight margins
+#     the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+
+
+#     axes[1].set_yticks(the_yticks) # set new tick positions
+#     axes[1].margins(y=0) # set tight margins
+
+#     # Tweak the visual presentation
+#     axes[0].xaxis.grid(True)
+#     axes[1].xaxis.grid(True)
+
+#     axes[0].set_ylabel(text1, fontsize=36)
+#     axes[1].set_ylabel(text2, fontsize=36)
+
+#     axes[0].set_title("", fontsize=36)
+#     axes[1].set_title("", fontsize=36)
+
+#     axes[0].set_xlabel("Time (min)", fontsize=36)
+#     axes[1].set_xlabel("Time (min)", fontsize=36)
+
+#     axes[0].set_ylim(0, max1+1)
+#     axes[1].set_ylim(0, max2+2)
+  
+#     axes[0].tick_params(axis='both', labelsize=36)
+#     axes[1].tick_params(axis='both', labelsize=36)
+
+#     axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+
+#     f.tight_layout()
+#     f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+
+#     return
+
+
+def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotametric=None, plotallcells = False): #spidey
+    
+    if plotallcells:
+        f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False)
+    else:
+        f, axes = plt.subplots(2, 1, figsize=(15, 20), sharex=False)
+    # f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False) #sharex=True
+
+    if plotametric != None:
+        whattoplot=[plotametric, plotametric]
+    else:
+        whattoplot=['cum_n_changes','cum_n_labels',]
+
+    time = df['frame']
+
+    timeminutes=time*SAMPLING_INTERVAL
+
+    ##
+    if miny != None or maxy != None:
+        minimumy=miny
+        maximumy1=maxy
+        maximumy2=maxy
+
+    else:
+        minimumy=0
+        maximumy1=np.nanmax(df[whattoplot[0]])
+        maximumy2=np.nanmax(df[whattoplot[1]])
+
+    ##
+    import seaborn as sns
+    sns.set_theme(style="ticks")
+
+    colors=[]
+    if CONDITION_CMAP != 'Dark24':
+
+        cmap = cm.get_cmap(CONDITION_CMAP)
+        numcolors= len(df['Condition_shortlabel'].unique())
+        sns.set_palette(CONDITION_CMAP)
+        for i in range(numcolors):
+            colors.append(cmap(i))
+    else:
+        colors = plotlytomatplotlibcolors()
+        colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+    df=df.dropna(how='any')
+
+    conditionsindf = df['Condition_shortlabel'].unique()
+
+
+    if plotallcells == False:
+            
+        # Plot the responses for different events and regions
+        sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+                    hue="Condition_shortlabel",
+                    data=df, palette=colors)
+
+        sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+                    hue="Condition_shortlabel",
+                    data=df, palette=colors)
+    else:
+        # Create a dictionary to map condition_shortlabel to colors
+        condition_colors = {condition: color for condition, color in zip(df['Condition_shortlabel'].unique(), colors)}
+        # Make timeminuteslist and get the last element for the annotations
+        timeminuteslist = timeminutes.tolist()
+        # x_final = timeminuteslist[-1] # Final entry in x_data
+        max_x = np.max(timeminutes)
+        # Create a set to keep track of plotted condition_shortlabels
+        plotted_labels = set()
+        # This will be used to offset the x position of the annotations
+        # x_offsets = np.arange(20, len(df['uniq_id'].unique()), 1)
+        x_offsets = [20, 100, 180, 260, 340, 420, 500] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+
+        y_offsets = [0, -40, -80, -120] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+
+        for offset, uniq_id in enumerate(df['uniq_id'].unique()):
+            df_uniq = df[df['uniq_id'] == uniq_id]
+            condition_label = df_uniq['Condition_shortlabel'].iloc[0]  # Get the condition_shortlabel for this 'uniq_id'
+            line_color = condition_colors[condition_label]  # Get the corresponding color for the condition_shortlabel
+            if condition_label not in plotted_labels:
+                # Plot the line with a label for the legend only if it hasn't been plotted before
+                singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color, label=condition_label)
+                singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color, label=condition_label)
+                plotted_labels.add(condition_label)  # Add the condition_shortlabel to the set of plotted labels
+            else:
+                # If the label has already been plotted, don't add it to the legend again
+                singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color)
+                singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color) #, label=condition_label
+
+            x_final_frames = df_uniq['frame'].iloc[-1]  # Final entry in x_data
+            x_final = x_final_frames*SAMPLING_INTERVAL
+
+            y_final = df_uniq[whattoplot[0]].iloc[-1]  # Final entry in y_data
+            y_final1 = df_uniq[whattoplot[1]].iloc[-1]  # Final entry in y_data
+            
+            uniq_id_label = f'Cell_ID: {uniq_id}'
+            axes[0].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center', arrowprops=dict(arrowstyle="<-", color='black'))
+            axes[0].plot([x_final, max_x + x_offsets[offset]], [y_final, y_final], linestyle='dotted', color='gray', transform=axes[0].transData, zorder=4)
+
+            axes[1].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final1 ), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center',arrowprops=dict(arrowstyle="<-", color='black'))
+            axes[1].plot([x_final, max_x + x_offsets[offset]], [y_final1, y_final1], linestyle='dotted', color='gray', transform=axes[1].transData, zorder=4)            
+        
+    timewindowmins = (MIG_T_WIND*t_window_multiplier) * SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+    # The actual calculation is done in count_cluster_changes_with_tavg function
+    timewindowmins = round(timewindowmins, 1)
+
+    print('Time window mins: ', timewindowmins)
+    text1 = "Cumulative cluster switches"
+    text2 = "Cumulative new clusters"
+    # text3 = "New clusters / " + str(timewindowmins) + " min"
+
+    x_lab = "Distinct Behaviors"
+    plottitle = ""
+
+    # get the max value of the whattoplot[1] column of df
+    max1=np.nanmax(df[whattoplot[0]])
+    max2=np.nanmax(df[whattoplot[1]])
+    tickfrequency1 = int(max1/5)
+    tickfrequency2 = int(max2/5)
+
+    the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+    the_yticks = [int(x) for x in the_yticks]
+    axes[0].set_yticks(the_yticks) # set new tick positions
+    axes[0].margins(y=0) # set tight margins
+    the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
+    the_yticks = [int(x) for x in the_yticks]
+
+
+    axes[1].set_yticks(the_yticks) # set new tick positions
+    axes[1].margins(y=0) # set tight margins
+
+    # Tweak the visual presentation
+    axes[0].xaxis.grid(True)
+    axes[1].xaxis.grid(True)
+
+    axes[0].set_ylabel(text1, fontsize=36)
+    axes[1].set_ylabel(text2, fontsize=36)
+
+    axes[0].set_title("", fontsize=36)
+    axes[1].set_title("", fontsize=36)
+
+    axes[0].set_xlabel("Time (min)", fontsize=36)
+    axes[1].set_xlabel("Time (min)", fontsize=36)
+
+    axes[0].set_ylim(0, max1+1)
+    axes[1].set_ylim(0, max2+2)
+  
+    axes[0].tick_params(axis='both', labelsize=36)
+    axes[1].tick_params(axis='both', labelsize=36)
+
+    axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+
+    f.tight_layout()
+    f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+
+    return
+
+# def plot_cumulative_plasticity_changes_multiples(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotallcells = False): #spidey
+
+#     if plotallcells:
+
+#         # find the number of unique uniq_ids
+#         num_uniq_ids = len(df['uniq_id'].unique())
+#         # find the number of conditions
+#         num_conditions = len(df['Condition_shortlabel'].unique())
+#         # Use that to make an array of subplots for each condition 
+#         f, axes = plt.subplots(num_uniq_ids, num_conditions, figsize=(5*num_uniq_ids, 5*num_conditions), sharex=False) #sharex=True
+#         f2, axes2 = plt.subplots(num_uniq_ids, num_conditions, figsize=(5*num_uniq_ids, 5*num_conditions), sharex=False) #sharex=True
+
+#     else:
+#         f, axes = plt.subplots(2, 1, figsize=(15, 20), sharex=False)
+#     # f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False) #sharex=True
+
+#     whattoplot=['cum_n_changes','cum_n_labels',]
+
+#     time = df['frame']
+
+#     timeminutes=time*SAMPLING_INTERVAL
+
+#     ##
+#     import seaborn as sns
+#     sns.set_theme(style="ticks")
+
+#     colors=[]
+#     if CONDITION_CMAP != 'Dark24':
+
+#         cmap = cm.get_cmap(CONDITION_CMAP)
+#         numcolors= len(df['Condition_shortlabel'].unique())
+#         sns.set_palette(CONDITION_CMAP)
+#         for i in range(numcolors):
+#             colors.append(cmap(i))
+#     else:
+#         colors = plotlytomatplotlibcolors()
+#         colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+#     df=df.dropna(how='any')
+
+#     conditionsindf = df['Condition_shortlabel'].unique()
+
+
+#     if plotallcells == False:
+            
+#         # Plot the responses for different events and regions
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+#     else:
+#         # Create a dictionary to map condition_shortlabel to colors
+#         condition_colors = {condition: color for condition, color in zip(df['Condition_shortlabel'].unique(), colors)}
+#         # Make timeminuteslist and get the last element for the annotations
+#         timeminuteslist = timeminutes.tolist()
+#         # x_final = timeminuteslist[-1] # Final entry in x_data
+#         max_x = np.max(timeminutes)
+#         # Create a set to keep track of plotted condition_shortlabels
+#         plotted_labels = set()
+#         # This will be used to offset the x position of the annotations
+#         # x_offsets = np.arange(20, len(df['uniq_id'].unique()), 1)
+#         # x_offsets = [20, 100, 180, 260, 340, 420, 500] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+
+
+
+#         for offset, uniq_id in enumerate(df['uniq_id'].unique()):
+#             df_uniq = df[df['uniq_id'] == uniq_id]
+#             condition_label = df_uniq['Condition_shortlabel'].iloc[0]  # Get the condition_shortlabel for this 'uniq_id'
+#             line_color = condition_colors[condition_label]  # Get the corresponding color for the condition_shortlabel
+#             if condition_label not in plotted_labels:
+#                 # Plot the line with a label for the legend only if it hasn't been plotted before
+#                 f = sns.lineplot(ax=axes[0, offset], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color, label=condition_label)
+#                 f2 = sns.lineplot(ax=axes[0,offset], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color, label=condition_label)
+#                 plotted_labels.add(condition_label)  # Add the condition_shortlabel to the set of plotted labels
+#             else:
+#                 # If the label has already been plotted, don't add it to the legend again
+#                 singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color)
+#                 singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color) #, label=condition_label
+
+#             x_final_frames = df_uniq['frame'].iloc[-1]  # Final entry in x_data
+#             x_final = x_final_frames*SAMPLING_INTERVAL
+
+#             y_final = df_uniq[whattoplot[0]].iloc[-1]  # Final entry in y_data
+#             y_final1 = df_uniq[whattoplot[1]].iloc[-1]  # Final entry in y_data
+            
+#             uniq_id_label = f'Cell_ID: {uniq_id}'
+    
+        
+#     timewindowmins = (MIG_T_WIND*t_window_multiplier) * SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+#     # The actual calculation is done in count_cluster_changes_with_tavg function
+#     timewindowmins = round(timewindowmins, 1)
+
+#     print('Time window mins: ', timewindowmins)
+#     text1 = "Cumulative cluster switches"
+#     text2 = "Cumulative new clusters"
+#     # text3 = "New clusters / " + str(timewindowmins) + " min"
+
+#     x_lab = "Distinct Behaviors"
+#     plottitle = ""
+
+#     # get the max value of the whattoplot[1] column of df
+#     max1=np.nanmax(df[whattoplot[0]])
+#     max2=np.nanmax(df[whattoplot[1]])
+#     tickfrequency1 = int(max1/5)
+#     tickfrequency2 = int(max2/5)
+
+#     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+#     axes[0].set_yticks(the_yticks) # set new tick positions
+#     axes[0].margins(y=0) # set tight margins
+#     the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+
+
+#     axes[1].set_yticks(the_yticks) # set new tick positions
+#     axes[1].margins(y=0) # set tight margins
+
+#     # Tweak the visual presentation
+#     axes[0].xaxis.grid(True)
+#     axes[1].xaxis.grid(True)
+
+#     axes[0].set_ylabel(text1, fontsize=36)
+#     axes[1].set_ylabel(text2, fontsize=36)
+
+#     axes[0].set_title("", fontsize=36)
+#     axes[1].set_title("", fontsize=36)
+
+#     axes[0].set_xlabel("Time (min)", fontsize=36)
+#     axes[1].set_xlabel("Time (min)", fontsize=36)
+
+#     axes[0].set_ylim(0, max1+1)
+#     axes[1].set_ylim(0, max2+2)
+  
+#     axes[0].tick_params(axis='both', labelsize=36)
+#     axes[1].tick_params(axis='both', labelsize=36)
+
+#     axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+
+#     f.tight_layout()
+#     f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+
+#     return
+
+############# DEV PLOTS 2 END ######################
 
 
 def plot_UMAP_subplots_coloredbymetrics(df_in, x= 'UMAP1', y= 'UMAP2', z = 'UMAP3', n_cols = 5, ticks=False, metrics = ALL_FACTORS, scalingmethod='log2minmax', identifier='', colormap='viridis'): #new matplotlib version of scatter plot for umap 1-26-2023
@@ -1783,3 +2641,129 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
     
     plt.show()
     return     
+
+
+def plot_small_multiples(dataframe, column_name):
+    # Calculate the 'timeminutes' variable
+    dataframe['timeminutes'] = dataframe['frame'] * SAMPLING_INTERVAL
+
+    # Get unique 'Condition_shortlabel' values from the DataFrame
+    unique_conditions = dataframe['Condition_shortlabel'].unique()
+
+    FONT_SIZE = 12
+
+    # Find the global minimum and maximum values for the 'y' axis
+    global_y_min = dataframe[column_name].min()
+    global_y_max = dataframe[column_name].max()
+
+    global_x_min = dataframe['timeminutes'].min()
+    global_x_max = dataframe['timeminutes'].max()
+
+    # Create a mapping of 'Condition_shortlabel' to colors
+    color_map = plt.get_cmap(CONDITION_CMAP)
+    # CONDITION_CMAP
+    condition_colors = {condition: color_map(i) for i, condition in enumerate(unique_conditions)}
+
+    # Create a dictionary to store separate sets of subplots for each condition
+    condition_subplots = {}
+
+    # Find the maximum number of rows and columns across both sets of subplots
+    max_rows = max_cols = 0
+    for condition in unique_conditions:
+        condition_df = dataframe[dataframe['Condition_shortlabel'] == condition]
+        num_plots = len(condition_df['uniq_id'].unique())
+        num_cols = int(num_plots ** 0.5)
+        num_rows = (num_plots + num_cols - 1) // num_cols
+        max_rows = max(max_rows, num_rows)
+        max_cols = max(max_cols, num_cols)
+
+    # Calculate the common figure size based on the maximum number of rows and columns
+    figsize = (max_cols * 5, max_rows * 2)  # Adjust the width (5) to control the aspect ratio
+
+    # Create subplots for each condition
+    for condition in unique_conditions:
+        condition_df = dataframe[dataframe['Condition_shortlabel'] == condition]
+        num_plots = len(condition_df['uniq_id'].unique())
+        num_cols = int(num_plots ** 0.5)
+        num_rows = (num_plots + num_cols - 1) // num_cols
+
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=figsize, sharex=False)
+
+        # Set the ylabel based on the column_name
+        ylabel = 'Cluster ID' if column_name == 'label' else column_name
+
+        # Flatten the axes array if it's a single row or column grid
+        if num_rows == 1:
+            axes = axes.reshape(1, -1)
+        elif num_cols == 1:
+            axes = axes.reshape(-1, 1)
+
+        # Adjust layout and show the plots for each condition
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95], h_pad=1.5, w_pad=1.5)   
+        
+        # Set the font size for all subplots on all axes in all figures to be larger
+        plt.rcParams.update({'font.size': FONT_SIZE})     
+            # Set the x tick font size to be larger
+        plt.xticks(fontsize=FONT_SIZE)
+        # and y tick font size to be larger
+        plt.yticks(fontsize=FONT_SIZE)
+        # and the y label font size to be larger
+        plt.ylabel(ylabel, fontsize=FONT_SIZE)
+        # and the x axis label font size to be larger
+        plt.xlabel('Time (minutes)', fontsize=FONT_SIZE)
+
+        # fig.savefig(CLUST_DISAMBIG_DIR+ylabel+'smallmultiplesovertime.png', dpi=300, bbox_inches='tight')
+
+        for i, uniq_id in enumerate(condition_df['uniq_id'].unique()):
+            ax = axes[i // num_cols, i % num_cols]
+            df_subset = condition_df[condition_df['uniq_id'] == uniq_id]
+            ax.plot(df_subset['timeminutes'], df_subset[column_name], label=f'ID: {uniq_id}', color=condition_colors[condition])
+            ax.set_xlabel('Time (minutes)')
+            ax.set_ylabel(ylabel)
+
+            # Set y-axis limits for each subplot to be consistent with global min and max
+            ax.set_ylim(global_y_min-0.5, global_y_max+0.5)
+            ax.set_xlim(global_x_min-0.5, global_x_max+0.5)
+
+            # Show all integer tick values on the y-axis if the column_name is 'label'
+            if column_name == 'label':
+                ax.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+                
+
+            ax.legend()
+
+            # ax.grid(True)
+            # f.savefig(CLUST_DISAMBIG_DIR+ylabel+'smallmultiplesovertime.png', dpi=300, bbox_inches='tight')
+
+        # Remove any empty subplots
+        if num_plots < num_rows * num_cols:
+            for i in range(num_plots, num_rows * num_cols):
+                axes.flat[i].set_visible(False)
+
+        # Add the title for each set of subplots based on the 'Condition_shortlabel'
+        fig.suptitle(f'Condition: {condition}')
+
+        # Add the subplots for this condition to the dictionary
+        condition_subplots[condition] = (fig, axes)
+
+        # filename = os.path.join(output_directory, f'plot_{condition}.png')
+        # fig.savefig(filename)
+        fig.savefig(CLUST_DISAMBIG_DIR+ylabel+f'smallmultiplesovertime_{condition}.png', dpi=300, bbox_inches='tight')
+
+    # Add the legend for each condition using the color_map
+    fig, axes = plt.subplots(1, 1, figsize=(12, 1))
+    for i, condition in enumerate(unique_conditions):
+        axes.plot([], [], label=f'Condition: {condition}', color=color_map(i))
+    axes.set_axis_off()
+    axes.legend(ncol=len(unique_conditions))
+
+    # Set the font size for all subplots on all axes in all figures to be larger
+    plt.rcParams.update({'font.size': FONT_SIZE})     
+    plt.xticks(fontsize=FONT_SIZE)
+    plt.yticks(fontsize=FONT_SIZE)
+    plt.ylabel(ylabel, fontsize=FONT_SIZE)
+    plt.xlabel('Time (minutes)', fontsize=FONT_SIZE)
+    fig.savefig(CLUST_DISAMBIG_DIR+ylabel+'smallmultiplesovertime_legend.png', dpi=300, bbox_inches='tight')
+
+    plt.show()
+    return

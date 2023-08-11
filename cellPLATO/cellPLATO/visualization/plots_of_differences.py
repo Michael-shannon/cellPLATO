@@ -12,6 +12,7 @@ import scipy.stats as st
 
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib # spidercilantro
 
 import plotly
 import plotly.graph_objects as go
@@ -407,19 +408,42 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
         factor_ = factor_.replace('_',' ')
     fig.suptitle('Plots of data and effect size: '+ factor_, fontsize= PLOT_TEXT_SIZE)
 
-    # Resize points based on number of samples to reduce overplotting.
-    if(len(df) > 1000):
-        pt_size = 3
-    else:
-        pt_size = 6
+    numberoftotalpoints = len(df)
 
+    if(numberoftotalpoints > 1000 and numberoftotalpoints < 5000):
+        pt_size = 5
+        alphavalue = 0.9
+    elif(numberoftotalpoints > 5000 and numberoftotalpoints < 10000):
+        pt_size = 4
+        alphavalue = 0.7
+    elif(numberoftotalpoints > 10000 and numberoftotalpoints < 20000):
+        pt_size=3
+        alphavalue = 0.6
+    else:
+        pt_size = 2
+        alphavalue = 0.3
+
+    # Resize points based on number of samples to reduce overplotting.
+    # if(len(df) > 1000 and len(df) < 5000):
+    #     pt_size = 3
+    #     alphavalue = 0.08
+    # elif(len(df) > 5000 and len(df) < 10000):
+    #     pt_size = 2
+    #     alphavalue = 0.04
+    # else:
+    #     pt_size = 1
+    #     alphavalue = 0.01
+
+    
+    print('There are ' + str(len(df)) + ' points, so using point size: ' + str(pt_size))
     # Get the bootstrapped sample as a dataframe
     bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
 
 
     colors=[]
-    cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-    for i in range(cmap.N):
+    cmap = cm.get_cmap(CONDITION_CMAP)
+    numcolors = len(df['Condition_shortlabel'].unique())
+    for i in range(numcolors):
         colors.append(cmap(i))
 
     # colors=[]
@@ -435,13 +459,64 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
 
     #
     # Left subplot: horizontal scatter
-    #
+    # ORiginal: 
+    # sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=0.1)
+    # sns.pointplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df,color='black', ci = 95, join=False, errwidth=10.0) #calamansi kind="swarm",
+    # g=axes[0]
+    # plt.setp(g.lines, zorder=100)
+    # plt.setp(g.collections, zorder=100, )
 
-    #sns.swarmplot(ax=axes[0], x=factor, y="Condition",size=2, data=df)#, ax=g.ax) # Built with sns.swarmplot (no ci arg.)
-    sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df)
+    # # Draw confidence intervalswith point plot onto scatter plot and make this overlay the other plot
+    # plt.setp(g.lines, zorder=100)
+    # plt.setp(g.collections, zorder=100, )   
+    ################ VERSION 1 #####
+    # gax=axes[0]
+    # #######
+    # # Draw boxplot on top
+    # sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, 
+    #             # meanline=True,
+    #             # meanprops={'color': 'k', 'ls': '-', 'lw': 5},
+    #             medianprops={'color': 'k', 'ls': '-', 'lw': 2},
+    #             # medianprops={'visible': False},
+    #             whiskerprops={'visible': True,'color': 'k', 'ls': '-', 'lw': 2},
+    #             # showmeans=True,
+    #             # meanprops={"marker": "|", "markeredgecolor": "black","markersize": "50"},
+    #             showfliers=True,
+    #             flierprops={"marker": "x", "markeredgecolor": "black","markersize": "2","fillstyle": "none" },
+    #             showbox=True,
+    #             # make the boxes a bit transparent
+    #             # alpha=0.01,
+    #             # make the box width smaller
+    #             # width=0.5,
+    #             notch=True,
+    #             showcaps=True,
+    #             palette=colors) #calamansi kind="swarm",
+    # for patch in gax.patches:
+    #     r, g, b, a = patch.get_facecolor()
+    #     patch.set_facecolor((r, g, b, .3))
+    #     patch.set_edgecolor((0, 0, 0, 1))
+    #     patch.set_zorder(10) #This did it.
 
-    # Draw confidence intervalswith point plot onto scatter plot
-    sns.pointplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df,color='black', ci = 95, join=False, errwidth=10.0) #calamansi kind="swarm",
+    # plt.setp(gax.lines, zorder=100)
+    # sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=alphavalue)   
+    ##### VERSION 1 ENDS #####
+
+    #### VERSION 2 #####
+    gax=axes[0]
+    sns.violinplot(ax=axes[0], x=factor, y="Condition",kind="violin", palette=colors, inner='box', data=df, split=False, ci = 'sd',linewidth=2)
+    sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, medianprops={'color': 'k', 'ls': '-', 'lw': 2},whiskerprops={'visible': False},
+                showbox=False, notch=True, showcaps=False, showfliers=False,
+                flierprops={"marker": "x", "markeredgecolor": "black","markersize": "3","fillstyle": "none" },)
+    for collection in gax.collections:
+        if isinstance(collection, matplotlib.collections.PolyCollection):
+            collection.set_edgecolor('none')
+            collection.set_facecolor('none')
+            collection.set_zorder(10)
+        
+    plt.setp(gax.lines, zorder=100)
+    sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=alphavalue)   
+
+    ######### VERSION 2 ENDS #####
 
     #
     # Right subplot: differences

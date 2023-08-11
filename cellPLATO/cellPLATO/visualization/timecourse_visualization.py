@@ -582,7 +582,15 @@ def timeplots_of_differences(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     n_frames = int(np.max(bootstrap_df['frame']))
     fig1_data = []
     # palette = 'tab10'
-    colors = sns.color_palette(PALETTE, n_colors=len(bootstrap_df[cond_grouping].unique()))
+    # colors = sns.color_palette(PALETTE, n_colors=len(bootstrap_df[cond_grouping].unique())) #removed in favour of the below
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP)
+    numcolors= len(bootstrap_df[cond_grouping].unique())
+    for i in range(numcolors):
+        colors.append(cmap(i))
+    #Remove the last element of each item in the colors list to match the sns output but with the universally applicable cmap
+    colors = [i[:-1] for i in colors]
 
     # Loop for each condition
     for i, cond in enumerate(bootstrap_df[cond_grouping].unique()):
@@ -741,7 +749,17 @@ def multi_condition_timeplot(df, factor,t_window=None, savepath=TIMEPLOT_DIR):
 
 
     # palette = 'tab10'
-    colors = sns.color_palette(PALETTE, n_colors=len(df[cond_grouping].unique()))
+    # colors = sns.color_palette(PALETTE, n_colors=len(df[cond_grouping].unique()))
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP)
+    numcolors= len(df[cond_grouping].unique())
+    for i in range(numcolors):
+        colors.append(cmap(i))
+    #Remove the last element of each item in the colors list to match the sns output but with the universally applicable cmap
+    colors = [i[:-1] for i in colors]
+
+
     fig_data_list = []
 
     # Loop for each condition
