@@ -42,6 +42,7 @@ Z_SCALE = 1.00
 
 MigrationTimeWindow_minutes = 5 # Here, set the length of the time window in minutes
 MIG_T_WIND = round(MigrationTimeWindow_minutes / SAMPLING_INTERVAL)
+T_WINDOW_MULTIPLIER = 1.0 #  6.0 # For plasticity plots, to potentially increase the time window size for those calculations
 
 CLUSTER_CMAP = 'tab20' # Define colormap used for clustering plots
 CONDITION_CMAP = 'Dark2' #'Define colormap used for condition maps. Dark2 is good for 7 conditions, tab20 > 20 conditions.
@@ -51,7 +52,7 @@ ARREST_THRESHOLD = 3 * SAMPLING_INTERVAL # Here, user can define threshold in MI
 RIP_R = 140 # Radius to search when calculating Ripleys L in pixels. 1.5 * the size of a cell = 12+6=18
 
 DATA_FILTERS = {
-  "area": (10, 10000), # Debris removal
+  "area": (50, 10000), # Debris removal
   "ntpts": (8,1800) # Remove cells that are tracked for less than 8 frames
 
 }
@@ -341,7 +342,3 @@ T_WIND_DR_FACTORS = ['MSD',
                      'turn_angle',
                      'turn_angle_ratio',
                      'turn_angle_tmean']
-
-
-
-
