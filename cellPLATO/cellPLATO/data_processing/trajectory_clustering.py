@@ -260,3 +260,184 @@ def traj_clusters_2_df(df_in, cell_df_list, cluster_lst):
 #######################
 ## Adding DTW here ####
 #######################
+
+from fastdtw import fastdtw
+
+# def dtw_distance(list1, list2, use_levenshtein=True):
+#     """
+#     Calculate the DTW distance between two sequences.
+    
+#     Parameters:
+#     - sequence1: The first sequence (list of cluster IDs).
+#     - sequence2: The second sequence (list of cluster IDs).
+#     - use_levenshtein: If True, use Levenshtein distance; if False, use Hamming distance.
+    
+#     Returns:
+#     - distance: The DTW distance between the sequences.
+#     """
+#     if use_levenshtein:
+#         # Define a custom distance function for Levenshtein distance
+#         def levenshtein_distance(list1, list2):
+#             if len(list1) != len(list2):
+#                 raise ValueError("Both lists should have the same length")
+            
+#             matrix = [[0] * (len(list2) + 1) for _ in range(len(list1) + 1)]
+            
+#             for i in range(len(list1) + 1):
+#                 matrix[i][0] = i
+#             for j in range(len(list2) + 1):
+#                 matrix[0][j] = j
+            
+#             for i in range(1, len(list1) + 1):
+#                 for j in range(1, len(list2) + 1):
+#                     cost = 0 if list1[i - 1] == list2[j - 1] else 1
+#                     matrix[i][j] = min(
+#                         matrix[i - 1][j] + 1,      # Deletion
+#                         matrix[i][j - 1] + 1,      # Insertion
+#                         matrix[i - 1][j - 1] + cost  # Substitution
+#                     )
+            
+#             return matrix[len(list1)][len(list2)]
+        
+#         # Calculate DTW distance using Levenshtein distance
+#         distance, _ = fastdtw(list1, list2, dist=levenshtein_distance)
+    
+#     else:
+#         # Define a custom distance function for Hamming distance
+#         def hamming_distance(list1, list2):
+#             if len(list1) != len(list2):
+#                 raise ValueError("Both lists should have the same length")
+            
+#             distance = sum(el1 != el2 for el1, el2 in zip(list1, list2))
+#             return distance
+        
+#         # Calculate DTW distance using Hamming distance
+#         distance, _ = fastdtw(list1, list2, dist=hamming_distance)
+    
+#     return distance
+
+# # Example usage:
+# sequence1 = [1, 2, 3, 4, 5]
+# sequence2 = [1, 3, 4, 5, 6, 7]
+
+# # Calculate DTW distance using Levenshtein distance
+# distance_levenshtein = dtw_distance(sequence1, sequence2, use_levenshtein=True)
+# print(f"DTW distance (Levenshtein) between sequence1 and sequence2: {distance_levenshtein:.2f}")
+
+# # Calculate DTW distance using Hamming distance
+# distance_hamming = dtw_distance(sequence1, sequence2, use_levenshtein=False)
+# print(f"DTW distance (Hamming) between sequence1 and sequence2: {distance_hamming}")
+
+
+# from fastdtw import fastdtw
+# import numpy as np
+
+# def dtw_distance(sequence1, sequence2, use_levenshtein=True):
+#     """
+#     Calculate the DTW distance between two sequences.
+    
+#     Parameters:
+#     - sequence1: The first sequence (matrix of cluster IDs).
+#     - sequence2: The second sequence (matrix of cluster IDs).
+#     - use_levenshtein: If True, use Levenshtein distance; if False, use Hamming distance.
+    
+#     Returns:
+#     - distance: The DTW distance between the sequences.
+#     """
+#     if use_levenshtein:
+#         # Define a custom distance function for Levenshtein distance
+#         def levenshtein_distance(list1, list2):
+#             if len(list1) != len(list2):
+#                 raise ValueError("Both lists should have the same length")
+            
+#             matrix = [[0] * (len(list2) + 1) for _ in range(len(list1) + 1)]
+            
+#             for i in range(len(list1) + 1):
+#                 matrix[i][0] = i
+#             for j in range(len(list2) + 1):
+#                 matrix[0][j] = j
+            
+#             for i in range(1, len(list1) + 1):
+#                 for j in range(1, len(list2) + 1):
+#                     cost = 0 if list1[i - 1] == list2[j - 1] else 1
+#                     matrix[i][j] = min(
+#                         matrix[i - 1][j] + 1,      # Deletion
+#                         matrix[i][j - 1] + 1,      # Insertion
+#                         matrix[i - 1][j - 1] + cost  # Substitution
+#                     )
+            
+#             return matrix[len(list1)][len(list2)]
+        
+#         # Convert matrix-based sequences to lists of lists
+#         sequence1 = sequence1.tolist()
+#         sequence2 = sequence2.tolist()
+        
+#         # Calculate DTW distance using Levenshtein distance
+#         distance, _ = fastdtw(sequence1, sequence2, dist=levenshtein_distance)
+    
+#     else:
+#         # Define a custom distance function for Hamming distance
+#         def hamming_distance(list1, list2):
+#             if len(list1) != len(list2):
+#                 raise ValueError("Both lists should have the same length")
+            
+#             distance = sum(el1 != el2 for el1, el2 in zip(list1, list2))
+#             return distance
+        
+#         # Convert matrix-based sequences to lists of lists
+#         sequence1 = sequence1.tolist()
+#         sequence2 = sequence2.tolist()
+        
+#         # Calculate DTW distance using Hamming distance
+#         distance, _ = fastdtw(sequence1, sequence2, dist=hamming_distance)
+    
+#     return distance
+
+
+import fastdtw
+import Levenshtein
+
+def levenshtein_distance(list1, list2):
+    str1 = ''.join(map(str, list1))  # Convert the list to a string
+    str2 = ''.join(map(str, list2))  # Convert the list to a string
+    return Levenshtein.distance(str1, str2)
+
+def dtw_distance(sequence1, sequence2, use_levenshtein=True):
+    """
+    Calculate the DTW distance between two sequences.
+
+    Parameters:
+    - sequence1: The first sequence (list of cluster IDs).
+    - sequence2: The second sequence (list of cluster IDs).
+    - use_levenshtein: If True, use Levenshtein distance; if False, use Hamming distance.
+
+    Returns:
+    - distance: The DTW distance between the sequences.
+    """
+    if use_levenshtein:
+        # Calculate DTW distance using Levenshtein distance
+        distance, _ = fastdtw.fastdtw(sequence1, sequence2, radius=1, dist=levenshtein_distance)
+    else:
+        # Define a custom distance function for Hamming distance
+        def hamming_distance(list1, list2):
+            len1, len2 = len(list1), len(list2)
+
+            # Pad or truncate lists to equal length
+            if len1 < len2:
+                list1 += [0] * (len2 - len1)
+            elif len1 > len2:
+                list2 += [0] * (len1 - len2)
+
+            if len(list1) != len(list2):
+                raise ValueError("Both lists should have the same length")
+
+            distance = sum(el1 != el2 for el1, el2 in zip(list1, list2))
+            return distance
+
+        # Calculate DTW distance using Hamming distance
+        distance, _ = fastdtw.fastdtw(sequence1, sequence2, radius=1, dist=hamming_distance)
+
+    return distance
+
+
+
