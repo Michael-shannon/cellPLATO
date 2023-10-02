@@ -393,51 +393,258 @@ from fastdtw import fastdtw
     
 #     return distance
 
+import textdistance
+# import numpy as np
+# import pandas as pd
+import tqdm
 
-import fastdtw
-import Levenshtein
+def damerau_levenshtein_distance(seq1, seq2): 
+    return 1.0 - textdistance.damerau_levenshtein.normalized_similarity(seq1, seq2)
 
-def levenshtein_distance(list1, list2):
-    str1 = ''.join(map(str, list1))  # Convert the list to a string
-    str2 = ''.join(map(str, list2))  # Convert the list to a string
-    return Levenshtein.distance(str1, str2)
-
-def dtw_distance(sequence1, sequence2, use_levenshtein=True):
-    """
-    Calculate the DTW distance between two sequences.
-
-    Parameters:
-    - sequence1: The first sequence (list of cluster IDs).
-    - sequence2: The second sequence (list of cluster IDs).
-    - use_levenshtein: If True, use Levenshtein distance; if False, use Hamming distance.
-
-    Returns:
-    - distance: The DTW distance between the sequences.
-    """
-    if use_levenshtein:
-        # Calculate DTW distance using Levenshtein distance
-        distance, _ = fastdtw.fastdtw(sequence1, sequence2, radius=1, dist=levenshtein_distance)
-    else:
-        # Define a custom distance function for Hamming distance
-        def hamming_distance(list1, list2):
-            len1, len2 = len(list1), len(list2)
-
-            # Pad or truncate lists to equal length
-            if len1 < len2:
-                list1 += [0] * (len2 - len1)
-            elif len1 > len2:
-                list2 += [0] * (len1 - len2)
-
-            if len(list1) != len(list2):
-                raise ValueError("Both lists should have the same length")
-
-            distance = sum(el1 != el2 for el1, el2 in zip(list1, list2))
-            return distance
-
-        # Calculate DTW distance using Hamming distance
-        distance, _ = fastdtw.fastdtw(sequence1, sequence2, radius=1, dist=hamming_distance)
-
+# Calculate DTW distance between two sequences
+def fastdtw_distance(seq1, seq2):
+    distance, _ = fastdtw(seq1, seq2)
     return distance
+
+def calculate_edit_distances(df, distancemetric = 'dameraulev', sequence_column='label', uniq_id_column='uniq_id', frame_column='frame', print_interval=1000):
+    print(f'Using {distancemetric} distance metric')
+    # Sort the DataFrame by 'uniq_id' and 'frame'
+    df_sorted = df.sort_values([uniq_id_column, frame_column])
+    
+    # Group sequences by 'uniq_id' and collect them in a list
+    grouped_sequences = df_sorted.groupby(uniq_id_column)[sequence_column].apply(list).tolist()
+    
+    # Convert sequences to NumPy arrays
+    sequences_array = np.array(grouped_sequences)
+    
+    # Calculate the number of sequences
+    num_sequences = len(grouped_sequences)
+    
+    # Initialize the distance matrix
+    distance_matrix = np.zeros((num_sequences, num_sequences))
+    
+    # Calculate pairwise distances using broadcasting
+    for i in tqdm.tqdm(range(num_sequences)):
+        for j in range(i, num_sequences):
+            if distancemetric == 'dameraulev':
+                distance = damerau_levenshtein_distance(sequences_array[i], sequences_array[j])
+            elif distancemetric == 'fastdtw':
+                distance = fastdtw_distance(sequences_array[i], sequences_array[j])
+            # distance = damerau_levenshtein_distance(sequences_array[i], sequences_array[j])
+            distance_matrix[i, j] = distance
+            distance_matrix[j, i] = distance
+
+            # Check if the current comparison index is a multiple of print_interval
+            if (i * num_sequences + j) % print_interval == 0:
+                print(f"Pairwise comparison ({i}, {j}):")
+                print("Sequence 1:", sequences_array[i])
+                print("Sequence 2:", sequences_array[j])
+                print("Distance:", distance)
+
+    np.save(SAVED_DATA_PATH + f'distance_matrix_{distancemetric}.npy', distance_matrix)            
+    
+    return distance_matrix
+
+from sklearn.metrics import silhouette_score, adjusted_rand_score, adjusted_mutual_info_score
+import umap
+import hdbscan
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.cm as cm
+from matplotlib.lines import Line2D
+
+def cluster_sequences(df, distance_matrix, do_umap = True, eps=0.1, min_samples=5, min_cluster_size = 5, n_neighbors = 5):
+
+
+    
+    if do_umap:
+        print('Performing UMAP')
+        # Apply UMAP for dimensionality reduction
+        reducer = umap.UMAP(
+            n_neighbors=n_neighbors,
+            min_dist=0.0,
+            n_components=2,
+            random_state=42,
+        )
+        # reduced_data = reducer.fit_transform(distance_matrix)
+        out_data = reducer.fit_transform(distance_matrix)
+
+        # Create new columns in the dataframe for UMAP dimensions
+        print(out_data[:, 0])
+        print(out_data[:, 1])
+
+            
+        # # Create a dictionary to map uniq_id to umap traj 1
+        UMAP1_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 0]))
+        # Add 'umap traj 1' to the DataFrame 
+        df['UMAP_traj_1'] = df['uniq_id'].map(UMAP1_mapping)
+        # # Create a dictionary to map uniq_id to umap traj 1
+        UMAP2_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 1]))
+        # Add 'umap traj 1' to the DataFrame 
+        df['UMAP_traj_2'] = df['uniq_id'].map(UMAP2_mapping)
+
+
+    else:
+        print('Skipping UMAP')
+
+    # Cluster using HDBSCAN with adjusted parameters
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+    print(f'Using min_cluster_size = {min_cluster_size} and min_samples = {min_samples}')
+    cluster_labels = clusterer.fit_predict(out_data)
+
+    # Calculate the number of clusters
+    n_clusters = len(np.unique(cluster_labels[cluster_labels != -1]))
+    print(f'The number of clusters is {n_clusters}')
+
+
+
+    # # Create a dictionary to map uniq_id to cluster labels
+    cluster_mapping = dict(zip(df['uniq_id'].unique(), cluster_labels))
+
+    # Add 'cluster_id' to the DataFrame based on cluster labels
+    df['trajectory_id'] = df['uniq_id'].map(cluster_mapping)
+
+    if n_clusters <= 1:
+        print("Only one cluster was found. Skipping silhouette score calculation.")
+        silhouette_avg = 'none'
+    else:
+        # Calculate Silhouette Score
+        silhouette_avg = silhouette_score(out_data, cluster_labels)
+        print(f"Silhouette Score: {silhouette_avg}")
+        # Calculate Adjusted Rand Index 
+        adjusted_rand = adjusted_rand_score(df['label'], df['trajectory_id'])
+        print(f"Adjusted Rand Index: {adjusted_rand}")
+        # Calculate Adjusted Mutual Information
+        adjusted_mutual_info = adjusted_mutual_info_score(df['label'], df['trajectory_id'])
+        print(f"Adjusted Mutual Information: {adjusted_mutual_info}")
+
+        # Visualize the clusters as a bar plot
+        cluster_counts = df.groupby('trajectory_id')['uniq_id'].count()
+
+        # Sort the DataFrame by 'uniq_id' and 'frame'
+        df = df.sort_values(['trajectory_id', 'uniq_id', 'frame'])
+
+        ################# PLOTTING CHAOS BEGINS ####################
+        colors = []
+        cmap = cm.get_cmap(CLUSTER_CMAP) 
+        numcolors=len(df['trajectory_id'].unique())
+        for i in range(numcolors):
+            colors.append(cmap(i))    
+
+        # First plot:
+
+        fig = plt.figure(figsize=(9, 6))
+        fig.suptitle("Trajectory clusters", fontsize=PLOT_TEXT_SIZE)
+        mpl.rcParams['font.size'] = PLOT_TEXT_SIZE
+        plt.bar(cluster_counts.index, cluster_counts.values, color = 'black')
+        plt.xlabel('Cluster (Trajectory ID)')
+        plt.ylabel('Number of Trajectories')
+
+        # Second plot: UMAP
+        fig2 = plt.figure(figsize=(10, 10))
+        scatter = plt.scatter(out_data[:, 0], out_data[:, 1], c=cluster_labels, cmap=CLUSTER_CMAP, s=25, alpha=0.6)
+        plt.xlabel('UMAP Dimension 1', fontsize=PLOT_TEXT_SIZE)
+        plt.ylabel('UMAP Dimension 2', fontsize=PLOT_TEXT_SIZE)
+        plt.title('UMAP: trajectory ID', fontsize=PLOT_TEXT_SIZE)
+
+        # Create a custom legend
+        legend_labels = np.unique(cluster_labels)
+        legend_elements = []
+
+        for label in sorted(legend_labels):
+            indices = np.where(cluster_labels == label)[0]
+            color = cmap(label / (len(legend_labels) - 1))  # Normalize the color by dividing by the number of unique labels
+            legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Trajectory {label}', markerfacecolor=color, markersize=10))
+
+        legend = plt.legend(handles=legend_elements, title="Trajectory ID", fontsize=PLOT_TEXT_SIZE, bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.gca().add_artist(legend)
+
+        # Save the figure to the chosen directory with the specified name
+        figure_name = "TrajectoryClustersOnUMAP.png"
+        output_filename = os.path.join(TRAJECTORY_DISAMBIG_DIR, figure_name)
+        fig2.savefig(output_filename, dpi=300)  # Adjust dpi as needed
+        plt.show()
+
+
+###########################################
+
+        # Print DataFrame with trajectory IDs
+        print("DataFrame with Trajectory IDs:")
+        print(df[['uniq_id', 'frame', 'label', 'trajectory_id']])
+
+        # Save the DataFrame to a CSV file
+        df.to_csv(SAVED_DATA_PATH + f'tptlabel_dr_df_{min_cluster_size}_{min_samples}_silhouette_{silhouette_avg}.csv') #SAVE OPTION
+        return df
+
+# Using this, you will get UNIQUE examples of each trajectory_id to make a fake exemplar df that looks like the one you usually make
+
+import pandas as pd
+import random
+
+def make_exemplar_df_basedon_trajectories(df, cells_per_traj=4):
+
+    # Define the number of unique 'uniq_id' values to select for each 'trajectory_id'
+    n = 4
+
+    # Initialize an empty list to store the selected 'uniq_id' values
+    selected_uniq_ids = []
+
+    # Get a list of unique 'trajectory_id' values
+    unique_trajectory_ids = df['trajectory_id'].unique()
+
+    # Iterate over each unique 'trajectory_id'
+    for traj_id in unique_trajectory_ids:
+        # Filter the DataFrame to select rows for the current 'trajectory_id'
+        traj_df = df[df['trajectory_id'] == traj_id]
+        
+        # Get a list of unique 'uniq_id' values within the current 'trajectory_id'
+        unique_uniq_ids = traj_df['uniq_id'].unique().tolist()
+        
+        # Shuffle the list of unique 'uniq_id' values
+        random.shuffle(unique_uniq_ids)
+        
+        # Take the first n 'uniq_id' values and add them to the selected_uniq_ids list
+        selected_uniq_ids.extend(unique_uniq_ids[:cells_per_traj])
+
+    # Initialize an empty DataFrame to store the selected rows
+    exemplar_df_trajectories = pd.DataFrame()
+
+    # Iterate over the selected 'uniq_id' values and select a random row for each 'uniq_id'
+    for uniq_id in selected_uniq_ids:
+        # Filter the DataFrame to get rows with the current 'uniq_id'
+        selected_rows = df[df['uniq_id'] == uniq_id]
+        
+        # Randomly select one row from the filtered rows
+        random_row = selected_rows.sample(n=1, random_state=42)  # You can change the random_state for reproducibility
+        
+        # Append the selected row to the exemplar DataFrame
+        exemplar_df_trajectories = exemplar_df_trajectories.append(random_row)
+
+        # Reset the index of the exemplar DataFrame
+        exemplar_df_trajectories.reset_index(drop=True, inplace=True)
+    
+    # After that, output a 'full tracks' version of the exemplar df
+
+    # Extract the full tracks from the df using the uniq_id's specified in the exemplar_df
+    
+    # List of unique 'uniq_id' values from the 'exemplar_df'
+    unique_uniq_ids = exemplar_df_trajectories['uniq_id'].unique()
+
+    # Extract full tracks for each 'uniq_id' in a list
+    full_tracks = []
+
+    for uniq_id in unique_uniq_ids:
+        # Filter the DataFrame to get the rows with the current 'uniq_id'
+        track = df[df['uniq_id'] == uniq_id]
+        full_tracks.append(track)
+
+    # Combine the full tracks into a single DataFrame if needed
+    exemplar_df_trajectories_fulltrack = pd.concat(full_tracks)
+
+    # 'full_tracks_df' now contains the full tracks for the 'uniq_id' values specified in 'exemplar_df'
+
+    return exemplar_df_trajectories, exemplar_df_trajectories_fulltrack
+
 
 
 

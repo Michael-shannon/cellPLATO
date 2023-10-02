@@ -2315,18 +2315,14 @@ def purity_plots_dev(df, clust_sum_df, cluster_by=CLUSTER_BY, save_path=CLUST_DI
 
     return fig
 
-def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path=CLUST_DIR ):
+def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path=CLUST_DIR, cluster_label='label',dotsize = 0.1 ):
 
     fontsize = 24
     # Create a Subplot figure that shows the effect of clustering between conditions
     fig = plt.figure(figsize=(25, 10))
     fig.suptitle("How much each condition occupies each cluster", fontsize=fontsize)
     # Making the first figure: UMAP colored by condition
-    ax1 = fig.add_subplot(1, 2, 1, projection='3d')
-    x = 'UMAP1'
-    y = 'UMAP2'
-    z = 'UMAP3'
-    dotsize = 0.1
+    # dotsize = 0.1
     alpha = 0.5
     markerscale = 5
     markerscale2 = 100
@@ -2338,24 +2334,57 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
             colors.append(cmap(i))
     else:
         colors = plotlytomatplotlibcolors()
-        colors=colors[:len(df['Condition_shortlabel'].unique())]
+        colors=colors[:len(df['Condition_shortlabel'].unique())]    
 
-    for colorselector in range(len(colors)):
-        ax1.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x],
-                        df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
-                        df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z],
-                        '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
+    if cluster_label == 'label': 
+
+        ax1 = fig.add_subplot(1, 2, 1, projection='3d')
+
+        x = 'UMAP1'
+        y = 'UMAP2'
+        z = 'UMAP3'
+
+    # PLOT NUMBER 1: UMAP COLORED BY CONDITION
+
+        for colorselector in range(len(colors)):
+            ax1.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x],
+                            df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+                            df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z],
+                            '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
+            
+        leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale2)
+        for lh in leg.legendHandles: 
+            lh.set_alpha(1)
+
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        ax1.set_zticklabels([])
+        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+        ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+
+    elif cluster_label == 'trajectory_id':
+        ax1 = fig.add_subplot(1, 2, 1)
+        x = 'UMAP_traj_1'
+        y = 'UMAP_traj_2'
+
+        for colorselector in range(len(colors)):
+            ax1.scatter(df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][x],
+                            df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][y],
+                            s=dotsize, color=colors[colorselector], marker='o', label = df['Condition_shortlabel'].unique()[colorselector],alpha = alpha)
+            
+            # x, y, s=None, c=None, marker=None, cmap=None, norm=None, vmin=None, vmax=None, alpha=None, linewidths=None, *, edgecolors=None, plotnonfinite=False, data=None,
+            
+        leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
+        for lh in leg.legendHandles: 
+            lh.set_alpha(1)        
         
-    leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale2)
-    for lh in leg.legendHandles: 
-        lh.set_alpha(1)
-        
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    ax1.set_zticklabels([])
-    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
-    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
-    ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        # ax1.set_zticklabels([])
+        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+        # ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
     ##### Making the second axis: Stacked bar plot of cluster purity
 
@@ -2363,21 +2392,13 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
 
     #defining a colormap for the clusters
     cluster_colors = []
-    labels = list(set(df['label'].unique()))
+    labels = list(set(df[cluster_label].unique())) #changed
     print('first you make this one')
     print(labels)
     cmap = cm.get_cmap(CLUSTER_CMAP) #Changes made here
     numlabelcolors= len(labels)
     for i in range(numlabelcolors):
         cluster_colors.append(cmap(i))
-    # cluster_colors = cluster_colors[:-1]  #removed in order to include the unclustered portion
-    # labels = labels[:-1]
-    # print('then you make this one')
-    # print(labels)
-    # labels.insert(0, -1)
-    # print('then finally you make this one')
-    # print(labels)
-
     # set x axis as 'Condition' column
     x = df2['Condition']
     # set the number of ClusterID columns to plot
@@ -2385,13 +2406,39 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     # create empty list for bottom values of each bar
     bottoms = [0] * len(df2)
     # create stacked bar plot
+
+    ###################################################
+# Create stacked bar plot and add text labels
     for i, clus in enumerate(labels):
-        # set y values as the ith ClusterID column
-        y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)]
-        # create a bar plot for the ith ClusterID column
-        ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
-        # update the bottom values of each bar to include the current y values
+        # Set y values as the ith ClusterID column
+        y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)] # THIS IS A SET COL NAME AND CANT BE CHANGED
+
+        # Skip bars with 0 percentage
+        if all(y == 0):
+            continue
+        # Create a bar plot for the ith ClusterID column
+        bars = ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
+        
+        # Calculate the positions for text labels
+        label_x = [bar.get_x() + bar.get_width() / 2 for bar in bars]
+        label_y = [bottom + height / 2 for bottom, height in zip(bottoms, y)]
+        
+        # Add text labels with percentages
+        for j, txt in enumerate(y):
+            if txt != 0:
+                ax2.text(label_x[j], label_y[j], f'{txt:.2f}%', ha='center', va='center', fontsize=fontsize)
+        
+        # Update the bottom values of each bar to include the current y values
         bottoms += y
+########################################################################
+    # for i, clus in enumerate(labels):
+    #     # set y values as the ith ClusterID column
+    #     y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)]
+    #     # create a bar plot for the ith ClusterID column
+    #     ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
+    #     # update the bottom values of each bar to include the current y values
+    #     bottoms += y
+##########################################################################
     #rotate the xticklabels 90 degrees
     ax2.set_xticklabels(x, rotation=90)    
     ax2.set_ylabel('Percent condition per cluster', fontsize = fontsize)
@@ -2767,3 +2814,14 @@ def plot_small_multiples(dataframe, column_name):
 
     plt.show()
     return
+
+import pandas as pd
+import random
+import matplotlib.pyplot as plt
+
+############################################################
+
+
+###############################################################
+
+

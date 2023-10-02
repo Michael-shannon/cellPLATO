@@ -126,6 +126,7 @@ CLUST_TSNE_DIR = os.path.join(CLUST_DIR,'tSNE/')
 CLUST_PCA_DIR = os.path.join(CLUST_DIR,'PCA/')
 CLUST_XY_DIR = os.path.join(CLUST_DIR,'xy/')
 CLUST_DISAMBIG_DIR = os.path.join(CLUST_DIR,'Cluster_Disambiguation/')
+TRAJECTORY_DISAMBIG_DIR = os.path.join(CLUST_DIR,'Trajectory_Cluster_Disambiguation/')
 CLUST_DISAMBIG_DIR_TAVG = os.path.join(CLUST_DIR,'Cluster_Disambiguation_tavg/')
 CLUSTERING_DIR = os.path.join(CLUST_DIR,'Clustering/')
 
@@ -134,6 +135,9 @@ if not os.path.exists(CLUSTERING_DIR):
 
 if not os.path.exists(CLUST_DISAMBIG_DIR):
      os.makedirs(CLUST_DISAMBIG_DIR)
+
+if not os.path.exists(TRAJECTORY_DISAMBIG_DIR):
+     os.makedirs(TRAJECTORY_DISAMBIG_DIR)
 
 if not os.path.exists(CLUST_DISAMBIG_DIR_TAVG):
      os.makedirs(CLUST_DISAMBIG_DIR_TAVG)
