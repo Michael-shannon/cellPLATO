@@ -1972,18 +1972,33 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
             #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
         # f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-        #     '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")  
-        f.savefig( CLUST_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")          
+        #     '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")
+        # if trajectory id is in the cell_df:
+        if 'trajectory_id' in cell_df.columns:
+            f.savefig( TRAJECTORY_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")
 
-        f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+            f2.write_image( TRAJECTORY_DISAMBIG_DIR + '\Metrics_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
             '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
-        f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'TWindow_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
-        
-        f4.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'Cumulative_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-            '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+            f3.write_image( TRAJECTORY_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+            
+            f4.write_image( TRAJECTORY_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1)       
+        else: 
+          
+            f.savefig( CLUST_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")          
+
+            f2.write_image( CLUST_DISAMBIG_DIR + '\Metrics_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+
+            f3.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'TWindow_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
+            
+            f4.write_image( CLUST_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + 'Cumulative_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
+                '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
         ######
         print("Saving to" + CLUST_DISAMBIG_DIR + '\Disambiguated_ClusterID_'+str(CLUSTERID)+'_'+str(n))
@@ -2088,7 +2103,10 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
 
 
     # General plot improvements
-    plottitle="Cluster ID: " + str(cell_df['label'].iloc[i_step]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
+    if 'trajectory_id' in cell_df.columns:
+        plottitle = f'TRAJECTORY ID is {cell_df["trajectory_id"].iloc[0]}'
+    else:
+        plottitle="Cluster ID: " + str(cell_df['label'].iloc[i_step]) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
     # plottitle="Cluster ID: " + str(Cluster_ID) + " (condition: " + cell_df['Condition_shortlabel'].iloc[i_step] + ")"
     ax.set_title(plottitle, fontname="Arial",fontsize=PLOT_TEXT_SIZE) #TEMPORARILY COMMENTED OUT
     ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
@@ -2183,3 +2201,77 @@ def filter_exemplars(whole_df, exemplar_df, numberofdesiredtimepoints = 200, num
     exemplar_cell_tracks_df.to_csv(SAVED_DATA_PATH + 'exemplar_cell_tracks_df.csv', index=False)
 
     return exemplar_df_filt, exemplar_cell_tracks_df
+
+################################################
+
+def plot_trajectories(df, global_y=True, global_x=True):
+    # Sort the DataFrame by 'Condition_shortlabel' and 'frame'
+    df_sorted = df.sort_values(by=['Condition_shortlabel', 'frame'])
+
+    # Group data by 'trajectory_id'
+    grouped = df_sorted.groupby('trajectory_id')
+
+    # Calculate the 'timeminutes' variable
+    df['timeminutes'] = df['frame'] * SAMPLING_INTERVAL
+
+    if global_y:
+
+        # Find the global minimum and maximum values for the 'y' axis
+        y_min = df['label'].min()
+        y_max = df['label'].max()
+    else:
+        y_min = y_max = None
+
+    if global_x:
+        # Find the global minimum and maximum values for the 'x' axis
+        global_x_min = df['timeminutes'].min()
+        global_x_max = df['timeminutes'].max()
+    else:
+        print('global_x is False')
+    # Determine unique conditions and corresponding colors
+    conditions = df_sorted['Condition_shortlabel'].unique()
+    color_map = plt.cm.get_cmap(CONDITION_CMAP, len(conditions))
+    # Set the font size for all subplots on all axes in all figures to be larger
+    plt.rcParams.update({'font.size': FONT_SIZE})  
+
+    for trajectory_id, group in grouped:
+        num_rows = len(group['uniq_id'].unique())
+        figsize = (6, num_rows * 2)  # Adjust the figure size as needed
+
+        fig, ax = plt.subplots(num_rows, 1, figsize=figsize, sharex=False)
+        fig.suptitle(f'Trajectory ID: {trajectory_id}', y=0.95, fontsize=PLOT_TEXT_SIZE)
+
+        for i, uniq_id in enumerate(group['uniq_id'].unique()):
+            sub_df = group[group['uniq_id'] == uniq_id]
+            condition = sub_df['Condition_shortlabel'].iloc[0]
+            color = color_map(conditions.tolist().index(condition))
+
+            ax[i].plot(sub_df['timeminutes'], sub_df['label'], label=f'{condition} ID: {uniq_id}', color=color)
+            ax[i].set_ylabel('Label',fontsize=FONT_SIZE)
+            if global_y:
+                ax[i].set_yticks(np.arange(y_min, y_max, 1))
+                ax[i].set_ylim(y_min-0.5, y_max+0.5)
+            else:
+                print('')
+                # Display every y tick value
+                y_min = []
+                y_max = []
+                y_min, y_max = ax[i].get_ylim()
+                ax[i].set_yticks(np.arange(y_min, y_max, 1))
+                ax[i].set_ylim(y_min-0.5, y_max+0.5)
+            if global_x:
+                ax[i].set_xlim(global_x_min-0.5, global_x_max+0.5)
+            else:
+                ax[i].set_xlim(sub_df['timeminutes'].min()-0.5, sub_df['timeminutes'].max()+0.5)
+                ax[i].set_xlabel('Time (min)',fontsize=FONT_SIZE)
+
+            ax[i].legend()
+
+        # Adjust layout and spacing
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+        # Show or save the figure (replace 'savefig' with 'plt.show()' to display)
+        plt.savefig(TRAJECTORY_DISAMBIG_DIR + f'trajectory_{trajectory_id}_plots.png')
+        # fig.write_image(TRAJECTORY_DISAMBIG_DIR + f'trajectory_{trajectory_id}_plots.png')
+
+    plt.show()  # If you want to display the plots
