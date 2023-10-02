@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 import scipy.stats as st
+import scipy.stats as stats
 
 
 def average_per_condition(df, avg_per_rep=False):
@@ -203,3 +204,41 @@ def bootstrap_sample_df(df,factor,ctl_label):
         bootstrap_diff_df = bootstrap_diff_df.append(this_diff_df)
 
     return bootstrap_diff_df
+
+# Function to calculate median and mean for each condition per factor and save results to CSV
+def calculate_median_mean_and_save(df, factors):
+    for factor_name in factors:
+        result_df = df.groupby('Condition_shortlabel')[factor_name].agg(['median', 'mean']).reset_index()
+        output_file = f'{DATA_OUTPUT}/{factor_name}_median_mean_results.csv'
+        result_df.to_csv(output_file, index=False)
+
+# Function to perform statistical testing between two conditions for each factor and save results to CSV
+def perform_statistical_testing_and_save(df, factors): # , output_folder,
+    for factor_name in factors:
+        conditions = df['Condition_shortlabel'].unique()
+        condition1, condition2 = conditions[:2]  # Assuming only two conditions for simplicity
+        
+        data1 = df[df['Condition_shortlabel'] == condition1][factor_name]
+        data2 = df[df['Condition_shortlabel'] == condition2][factor_name]
+        
+        # Perform Mann-Whitney U test for non-normal data
+        stat_mw, p_value_mw = stats.mannwhitneyu(data1, data2)
+        
+        # Perform t-test for normal data (assuming normality for simplicity)
+        stat_t, p_value_t = stats.ttest_ind(data1, data2)
+        
+        result_df = pd.DataFrame({
+            'Factor': [factor_name],
+            'Condition1': [condition1],
+            'Condition2': [condition2],
+            'Mann-Whitney U Statistic': [stat_mw],
+            'Mann-Whitney U P-Value': [p_value_mw],
+            't-test Statistic': [stat_t],
+            't-test P-Value': [p_value_t]
+        })
+        
+        output_file_mw = f'{DATA_OUTPUT}/{factor_name}_mannwhitneyu_results.csv'
+        output_file_t = f'{DATA_OUTPUT}/{factor_name}_ttest_results.csv'
+        # DATA_OUTPUT
+        result_df.to_csv(output_file_mw, index=False)
+        result_df.to_csv(output_file_t, index=False)
