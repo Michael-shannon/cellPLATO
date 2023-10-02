@@ -1495,7 +1495,9 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
         # for cluster_id in clusters[:-1]: # Skip last one that is noise (-1)
         for cluster_id in clusters: # Skip last one that is noise (-1)
             #Extract a dataframe for this cluster
-            cond_clust_sub_df = cond_sub_df[cond_sub_df['label'] == cluster_id]
+            # cond_clust_sub_df = cond_sub_df[cond_sub_df['label'] == cluster_id] #old version
+            cond_clust_sub_df = cond_sub_df[cond_sub_df[cluster_label] == cluster_id] #new version
+
             totaldatapointsincluster = len(cond_clust_sub_df)
             percentdatapointsincluster=totaldatapointsincluster/totaldatapointsincondition*100
             rowtoputitin = cond
