@@ -26,7 +26,7 @@ plt.rcParams.update({
 
 
 
-def plot_cell_metrics_timepoint(cell_df, i_step, XYRange,boxoff, top_dictionary, Cluster_ID, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS):
+def plot_cell_metrics_timepoint_deprecated(cell_df, i_step, XYRange,boxoff, top_dictionary, Cluster_ID, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS):
     '''
     For a selected cell, at a selected step of its trajectory, make a plot
     '''
@@ -288,7 +288,7 @@ def plot_cell_metrics_tavg(cell_df, XYRange,boxoff, row, top_dictionary, mig_dis
 
  ##### Using as of 1-18-2023 #####
  # 
-def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
+def disambiguate_timepoint_deprecated(df, exemps, top_dictionary, XYRange=100,boxoff=True):
 
 
     for n in exemps.index:
@@ -341,7 +341,7 @@ def disambiguate_timepoint(df, exemps, top_dictionary, XYRange=100,boxoff=True):
 
 ####### new 1-18-2023 #######
 
-def plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
+def plot_single_cell_factor_deprecated(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
     # labels=wholetrack_exemplar_df['label'].unique()
     # totaltime = totalframes*SAMPLING_INTERVAL
     import matplotlib.cm as cm
@@ -694,7 +694,7 @@ def correlation_matrix_heatmap(df_in, factors = ALL_FACTORS): #Function added ne
     f.savefig( CLUST_DISAMBIG_DIR + '\correlation_matrix',dpi=300,bbox_inches="tight")
     return
 
-def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS): #New function 21-14-2022
+def contribution_to_clusters_deprecated(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS): #New function 21-14-2022
 
     ### 12-12-2022 ##### DEV THIS ONE
 
@@ -784,9 +784,9 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
     # Part 8: exports a df that can be used to select what metrics you want to show?
     return(variance_df)
 
-def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, scalingmethod = SCALING_METHOD): #New function 21-14-2022
+def contribution_to_clusters_topdictionary_deprecated(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, scalingmethod = SCALING_METHOD): #New function 21-14-2022
 
-    ### 12-12-2022 ##### DEV THIS ONE
+    ### 12-12-2022 ##### 
 
     # Part 1: take the metrics and center scales them, then puts them back into a DF
     # Part 2: Find the median value per cluster for each metric using groupby
@@ -895,33 +895,7 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     cols_to_keep = [col for col in df_in.columns if col not in correctcolumns]
     # Extract a sub df from the cell_df that contains only the columns in cols_to_keep
     scaled_df = pd.concat([df_in[cols_to_keep], scaled_df_in], axis=1)
-    ### debug check ###
-    # print('CHECK THAT THIS non scaled DF IS CORRECT')
-    # display(df_in.head(5))
-    # print('CHECK THAT THIS SCALED DF IS CORRECT')
-    # display(scaled_df.head(5))
 
-    # # extract a random uniq_id from the df_in
-    # chosen_uniq_id = df_in['uniq_id'].sample(n=1).iloc[0]
-    # print('The chosen uniq_id is: ' + str(chosen_uniq_id))
-
-
-    # # extract an example cell from each of df_in and scaled_df
-    # cell_df = df_in[(df_in['uniq_id']==chosen_uniq_id)]
-    # scaled_cell_df = scaled_df[(scaled_df['uniq_id']==chosen_uniq_id)]
-    # print('CHECK THAT THIS non scaled DF perimeter IS CORRECT')
-    # # show just the perimeter and the scaled perimeter
-    # display(cell_df['perimeter'])
-    # print('Compared with this scaled DF perimeter')
-    # # show just the perimeter and the scaled perimeter
-    # display(scaled_cell_df['perimeter'])
-                    ### debug check end ###
-
-
-
-    ####### Here ends the new bit for the scaled numbers on the disambiguates #######
-
-    # df_out
 
     # Part 2: Find the median value per cluster for each metric using groupby
     clusteraverage_df = df_out.groupby('label').median()#.reset_index(drop=True)
@@ -1013,58 +987,9 @@ def contribution_to_clusters_topdictionary(df_in, threshold_value=0.0001, dr_fac
     # Part 8: exports a df that can be used to select what metrics you want to show?
     return top_dictionary, clusteraverage_df, scaled_df
 
-# def plot_cluster_averages(top_dictionary, df): # New 3-7-2023 #deprecated in favour of one below
-#     num_plots = len(top_dictionary)
-#     # print(top_dictionary)
-#     # Reverse the order of the values in the dictionary so that the biggest contributor to variability is on top
-#     top_dictionary = {k: v[::-1] for k, v in top_dictionary.items()}
-#     # print(top_dictionary)
-#     ### Make a totally non-normalized version of the clusteraverage_df
-#     cluster_average_df = df.groupby('label').median()#.reset_index(drop=True)
 
-#     # Create a grid of subplots with one row and num_plots columns
-#     fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(10*num_plots,10))
-    
-#     # Loop over the cluster IDs and corresponding values in the dictionary
-#     for i, (cluster_id, value) in enumerate(top_dictionary.items()):
-#         # Get the row in the dataframe that corresponds to the current cluster ID
-#         cluster_row = cluster_average_df.loc[cluster_id]
-        
-#         # Loop over the column names for the current key and create a text string
-#         text_str = ""
-#         for column_name in value:
-#             # Get the value in the specified column for the current cluster
-#             column_value = round(cluster_row[column_name], 4)
-            
-#             # Add the string and the corresponding value to the text string
-#             text_str += f"{column_name.title()}: {column_value}\n"
-#             text_str = text_str.replace('_',' ')
-        
-#         # Plot the text string as text in the current subplot
-#         axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
-        
-#         # Set the title of the current subplot to the current cluster ID
-#         axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
 
-#         axs[i].set_xticks([])
-#         axs[i].set_yticks([])
-#         # Remove the lines around the subplot
-#         axs[i].spines['top'].set_visible(False)
-#         axs[i].spines['right'].set_visible(False)
-#         axs[i].spines['bottom'].set_visible(False)
-#         axs[i].spines['left'].set_visible(False)
-    
-    
-#     # Add an overall title to the figure
-#     fig.suptitle("Average of top contributors per cluster ID", fontsize=36)
-#     # Save figure as a png
-#     # plt.savefig("cluster_average.png")
-#     fig.savefig( CLUST_DISAMBIG_DIR + '\cluster_average.png',dpi=300,bbox_inches="tight") 
- 
-    
-#     plt.show()
-
-def plot_cluster_averages(top_dictionary, df, scaled_df): # New 3-7-2023
+def plot_cluster_averages_deprecated(top_dictionary, df, scaled_df): # New 3-7-2023
     num_plots = len(top_dictionary)
     # print(top_dictionary)
     # Reverse the order of the values in the dictionary so that the biggest contributor to variability is on top
@@ -1542,7 +1467,7 @@ def trajectory_cluster_vis(traj_clust_df,traj_factor, scatter=False):
 
 ##### THE plot_cell_metrics_timepoint FUNCTION ######
 
-def plot_cell_metrics_timepoint_dev(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): #spoof
+def plot_cell_metrics_timepoint_dev_deprecated(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): #spoof
     '''
     For a selected cell, at a selected step of its trajectory, make a plot
     '''
@@ -1677,7 +1602,7 @@ def plot_cell_metrics_timepoint_dev(cell_df, i_step, scaled_cell_df, XYRange,box
 
 ##### THE plot_single_cell_factor FUNCTION ######
 
-def plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
+def plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg = True):
     # labels=wholetrack_exemplar_df['label'].unique()
     # totaltime = totalframes*SAMPLING_INTERVAL
     import matplotlib.cm as cm
@@ -1697,7 +1622,7 @@ def plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTIC
 
     factors = top_dictionary[clusterID]
     n=len(factors)
-    factors=factors[::-1]
+    # factors=factors[::-1] #Here, you don't reverse them, so they plot in order. The reversal is because when matplotlib does text, it does the last one first.
 
     # for the non-tavg version, work out the cluster ID from the label column
     
@@ -1909,10 +1834,22 @@ def plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTIC
 
 ##### THE DISAMBIGAUTE FUNCTION ######
 
-##### THE DISAMBIGAUTE FUNCTION ######
+def disambiguate_timepoint(df,  exemps, scaled_df, top_dictionary, XYRange=100,boxoff=True, trajectory=False):
 
+    '''
+    This function uses several other functions to make plots of single cells. 
+    If trajectory is True, it plots the whole cell trajectory. If trajectory is False, it plots a single timepoint.
 
-def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=100,boxoff=True):
+    Inputs:
+    The main df, with at least 'label' which is the cluster ID. 
+    Exemps is a dataframe with the same columns as the main df, but with only one row per cell because it denotes exemplar cells at given timepoints.
+    scaled_df is produced in the 'contribution to clusters' function and is just scaled version of the main df.
+    top_dictionary is the dictionary of top factors for each cluster, produced in the 'contribution to clusters' function.
+    XYRange is the size of the plot in pixels.
+
+    '''
+
+    top_dictionary = {k: [metric for metric, variance in v] for k, v in top_dictionary.items()} # This actually removes the variances from the dictionary
 
 
     for n in exemps.index:
@@ -1921,9 +1858,9 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
 
         # Use exemplar row to look up the corresponding cell TRACK from the cell_df
         ### Old way beginning...###
-        cell_df = df[(df['Condition']==row['Condition']) &
-                        (df['Replicate_ID']==row['Replicate_ID']) &
-                        (df['particle']==row['particle'])]
+        # cell_df = df[(df['Condition']==row['Condition']) &
+        #                 (df['Replicate_ID']==row['Replicate_ID']) &
+        #                 (df['particle']==row['particle'])]
         
         ### Old way end...###
         ### new way beginning...###
@@ -1940,12 +1877,8 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         #                 (scaled_df['particle']==row['particle'])]
         scaled_cell_df = scaled_df[(scaled_df['uniq_id']==row['uniq_id'])]
         scaled_cell_df = scaled_cell_df.reset_index(drop=True)
-        print('Cell df: ')
-        display(cell_df)
-        print('Scaled cell df: ')
-        display(scaled_cell_df)
 
-        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization #SPIDERSALLTHEWAYDOWN CHANGED THIS PART!!
+        # This looks up the exemplar point, based on all of these metrics, so that the correct exemplar point is displayed in the visualization 
         exemplarpoint = cell_df.index[(cell_df['uniq_id']==row['uniq_id']) &
                         (cell_df['frame']==row['frame']) &
                         (cell_df['label']==row['label'])]
@@ -1958,23 +1891,23 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
         cmap = cm.get_cmap(CLUSTER_CMAP)
         for i in range(numofcolors):
             cluster_colors.append(cmap(i))
+            
         ###
+        if trajectory:
+            do_trajectory = 'DoingTrajectories'
+        else:
+            do_trajectory = 'NotDoingTrajectories'
 
-        # 
-        # f=cp.plot_cell_metrics(cell_df, exemplarpoint[0]) #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS
-        f=plot_cell_metrics_timepoint_dev_dev(cell_df, exemplarpoint[0], scaled_cell_df, XYRange, boxoff, top_dictionary, CLUSTERID, cluster_colors) #cilantro #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS scaled_cell_df,
+        f=plot_cell_metrics_timepoint(cell_df, exemplarpoint[0], scaled_cell_df, XYRange, boxoff, top_dictionary, CLUSTERID, cluster_colors, do_trajectory) #cilantro #mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS scaled_cell_df,
 
         ######
-        f2,f3,f4 = plot_single_cell_factor_dev(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
+        f2,f3,f4 = plot_single_cell_factor(cell_df, top_dictionary, CLUSTERID, PLOT_PLASTICITY = True, thisistavg=False)
 
         cell_ID = str(cell_df['uniq_id'].iloc[0])
 
-        # f.savefig( CLUST_DISAMBIG_DIR_TAVG + '\Contour ' + str(cell_df['Condition_shortlabel'].iloc[0]) +
-            #   '. TAVG_Cluster ID = ' + str(cell_df['tavg_label'].iloc[0]) +'__disambiguated__R'+str(XYRange)+'_'+str(n)+'.png'  ,dpi=300,bbox_inches="tight")
-        # f.savefig( CLUST_DISAMBIG_DIR + '\Contour__CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
-        #     '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")
+
         # if trajectory id is in the cell_df:
-        if 'trajectory_id' in cell_df.columns:
+        if trajectory:
             f.savefig( TRAJECTORY_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
             '__R'+str(XYRange)+'_'+str(n)+'.png', dpi=300,bbox_inches="tight")
 
@@ -1986,6 +1919,8 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
             
             f4.write_image( TRAJECTORY_DISAMBIG_DIR + '\Plasticity_Cell' + cell_ID + '_TRAJECTORY_ID_' + str(cell_df['trajectory_id'].iloc[0]) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
                 '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1)       
+            
+            print("Saving to" + TRAJECTORY_DISAMBIG_DIR + '\Disambiguated_TrajectoryID_'+str(cell_df['trajectory_id'].iloc[0])+'_'+str(n))
         else: 
           
             f.savefig( CLUST_DISAMBIG_DIR + '\Contour_Cell' + cell_ID + '_CLUSID_' + str(CLUSTERID) + '__Cond_' + str(cell_df['Condition_shortlabel'].iloc[0]) + 
@@ -2001,17 +1936,21 @@ def disambiguate_timepoint_dev(df,  exemps, scaled_df, top_dictionary, XYRange=1
                 '__R'+str(XYRange)+'_'+str(n)+'.png', scale = 1) 
 
         ######
-        print("Saving to" + CLUST_DISAMBIG_DIR + '\Disambiguated_ClusterID_'+str(CLUSTERID)+'_'+str(n))
+            print("Saving to" + CLUST_DISAMBIG_DIR + '\Disambiguated_ClusterID_'+str(CLUSTERID)+'_'+str(n))
         # f.savefig( CLUST_DISAMBIG_DIR + '\ClusterID__'+str(ClusterID)+'__disambiguated__R'+str(XYRange)+'_'+str(n)  ,dpi=300,bbox_inches="tight")
 
     return   
 
-##########
+########## 10-6-2023 ##########
 
-def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, cluster_colors, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): 
+def plot_cell_metrics_timepoint(cell_df, i_step, scaled_cell_df, XYRange,boxoff, top_dictionary, Cluster_ID, cluster_colors, do_trajectory, mig_display_factors=MIG_DISPLAY_FACTORS,shape_display_factors=SHAPE_DISPLAY_FACTORS, dr_factors=DR_FACTORS): 
     '''
     For a selected cell, at a selected step of its trajectory, make a plot
     '''
+    if do_trajectory == 'DoingTrajectories':
+        print('This is running the trajectory version of the function')
+    else:
+        print('Not doing trajectories')
 
     # Using the same sample cell trajectory, print out some measurements
     fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
@@ -2022,7 +1961,10 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
     plt.rcParams['mathtext.default'] = 'regular'
 
     ax.title.set_text('Cell contour: xy space')
-    ax.plot(cell_df['x_pix'],cell_df['y_pix'],'-o',markersize=3,c='black')
+    if do_trajectory == 'DoingTrajectories':
+        ax.plot(cell_df['x_pix'],cell_df['y_pix'],'-o',markersize=3,c='black')
+    else:
+        print('Not doing trajectories so not drawing all contours')
 
     #######################
     # cluster_colors = []
@@ -2050,26 +1992,31 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
 
     contour_list = get_cell_contours(cell_df)
     # Draw all contours faintly as image BG
-    for i,contour in enumerate(contour_list):
+    if do_trajectory == 'DoingTrajectories':
+        for i,contour in enumerate(contour_list):
 
-        rgb = np.random.rand(3,)
-        this_colour = rgb#'red' # Eventually calculate color along colormap
-        contour_arr = np.asarray(contour).T
+            rgb = np.random.rand(3,)
+            this_colour = rgb#'red' # Eventually calculate color along colormap
+            contour_arr = np.asarray(contour).T
 
 
-        if not np.isnan(np.sum(contour_arr)): # If the contour is not nan
+            if not np.isnan(np.sum(contour_arr)): # If the contour is not nan
 
-            x = cell_df['x_pix'].values[i]# - window / 2
-            y = cell_df['y_pix'].values[i]# - window / 2
-            # Cell contour relative to x,y positions
-            '''Want to double check that the x,y positions not mirrored from the contour function'''
-            ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='gray', alpha=0.2)
+                x = cell_df['x_pix'].values[i]# - window / 2
+                y = cell_df['y_pix'].values[i]# - window / 2
+                # Cell contour relative to x,y positions
+                '''Want to double check that the x,y positions not mirrored from the contour function'''
+                ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c='gray', alpha=0.2)
+    else:
+        print('Not doing trajectories so not drawing all contours')
+        
 
     # Draw this contour, highlighted.
     contour = contour_list[i_step]
     contour_arr = np.asarray(contour).T
     x = cell_df['x_pix'].values[i_step]# - window / 2
     y = cell_df['y_pix'].values[i_step]# - window / 2
+    
 
     # Cell contour relative to x,y positions
     '''Want to double check that the x,y positions not mirrored from the contour function'''
@@ -2088,11 +2035,33 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
     text_y = ymid
 
     display_factors = top_dictionary[Cluster_ID]
+    # reverse the display factors so they display properly on the plot
+    display_factors = display_factors[::-1]
 
     for n, fac in enumerate(display_factors): #Positioning is currently relative to data. Can it be relative to plot?
         facwithoutunderscores = fac.replace('_',' ')
         text_str = facwithoutunderscores +': '+ format(cell_df.iloc[i_step][fac], '.1f')
         text_str_2 = format(scaled_cell_df.iloc[i_step][fac], '.1f')
+
+        ############# Adds a category for low, med, high ############
+        # Q1 = scaled_df[column_name].quantile(0.33)
+        # Q2 = scaled_df[column_name].quantile(0.5)
+        # Q3 = scaled_df[column_name].quantile(0.66)
+
+        # # q1 = quartiles.xs(column_name, level=1).xs(cluster_id, level=0)[0.25]
+        # # q3 = quartiles.xs(column_name, level=1).xs(cluster_id, level=0)[0.75]
+        # if scaled_column_value < Q1:
+        #     c = 'L'
+        # elif scaled_column_value <= Q3:
+        #     c = 'M'
+        # elif scaled_column_value > Q3:
+        #     c = 'H'
+        # else:
+        #     c = 'O'
+
+        # text_str_2 = format(scaled_cell_df.iloc[i_step][fac], '.1f') + ' (' + c + ')'
+
+        ################
 
         ax.text(text_x + 0.5*XYRange, text_y - (0.3*XYRange) + (0.08*XYRange) + (n*(0.08*XYRange)), 
                 text_str, #These weird numbers were worked out manually
@@ -2124,7 +2093,7 @@ def plot_cell_metrics_timepoint_dev_dev(cell_df, i_step, scaled_cell_df, XYRange
     # sns.despine(left=True)
 
     # ax.set_yticklabels(['eNK','eNK+CytoD'])
-    return fig#delete?
+    return fig
 
 ### Function to take ANY exemplar df or df of chosen cells (from single timepoints), and find the full tracks from an input dataframe, outputting those as a dataframe
 
@@ -2275,3 +2244,424 @@ def plot_trajectories(df, global_y=True, global_x=True):
         # fig.write_image(TRAJECTORY_DISAMBIG_DIR + f'trajectory_{trajectory_id}_plots.png')
 
     plt.show()  # If you want to display the plots
+
+
+    ######
+
+
+def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, scalingmethod = SCALING_METHOD): #New function 21-14-2022
+
+    ### 10-6-2023 ##### 
+
+    '''
+    Steps:
+    1. Take the metrics and center scales them, then puts them back into a DF
+    2. Find the median value per cluster for each metric using groupby
+    3. Makes some iterables for the parts below.
+    4. Makes a Variance DF that describes the variance of each metric BETWEEN CLUSTERS
+    5. Makes a boolean mask of variances based on that threshold value, and a dataframe that contains values if true, and NaN if not
+    6. exports a df that can be used to select what metrics you want to show?
+
+    '''
+
+    # from sklearn.feature_selection import VarianceThreshold
+    from sklearn.preprocessing import MinMaxScaler
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.preprocessing import PowerTransformer
+
+    # df_in = tptlabel_dr_df
+    # threshold_value = 0.0001
+    CLUSTERON = dr_factors
+
+    # Part 1: take the metrics and center scales them, then puts them back into a DF
+    sub_set = df_in[CLUSTERON]
+    Z = sub_set.values
+    if scalingmethod == 'minmax': #log2minmax minmax powertransformer
+        X = MinMaxScaler().fit_transform(Z)
+        correctcolumns = CLUSTERON
+    elif scalingmethod == 'log2minmax':
+        negative_FACTORS = []
+        positive_FACTORS = []
+        for factor in dr_factors:
+            if np.min(df_in[factor]) < 0:
+                print('factor ' + factor + ' has negative values')
+                negative_FACTORS.append(factor)
+                
+            else:
+                print('factor ' + factor + ' has no negative values')
+                positive_FACTORS.append(factor)
+        
+        pos_df = df_in[positive_FACTORS]
+        pos_x = pos_df.values
+        neg_df = df_in[negative_FACTORS]
+        neg_x = neg_df.values
+        neg_x_ = MinMaxScaler().fit_transform(neg_x)
+        pos_x_constant = pos_x + 0.000001
+        pos_x_log = np.log2(pos_x + pos_x_constant)
+        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
+        X = np.concatenate((pos_x_, neg_x_), axis=1)
+        correctcolumns=positive_FACTORS + negative_FACTORS
+
+    elif scalingmethod == 'powertransformer':    
+        
+        pt = PowerTransformer(method='yeo-johnson')
+        X = pt.fit_transform(Z)
+        correctcolumns=CLUSTERON
+
+    elif scalingmethod == 'choice': 
+        print('Factors to be scaled using log2 and then minmax:')
+        FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
+        FactorsNottotransform_actual=[]
+        FactorsToTransform_actual=[]
+        for factor in dr_factors:
+            if factor in FactorsNOTtotransform:
+                print('Factor: ' + factor + ' will not be transformed')
+                FactorsNottotransform_actual.append(factor)
+            else:
+                print('Factor: ' + factor + ' will be transformed')
+                FactorsToTransform_actual.append(factor)
+        trans_df = df_in[FactorsToTransform_actual]
+        trans_x=trans_df.values
+        nontrans_df = df_in[FactorsNottotransform_actual]
+        nontrans_x=nontrans_df.values
+        trans_x_constant=trans_x + 0.000001
+        
+        trans_x_log = np.log2(trans_x_constant) # This is what it should be.
+        trans_x_=MinMaxScaler().fit_transform(trans_x_log)
+        nontrans_x_=MinMaxScaler().fit_transform(nontrans_x)
+        x_=np.concatenate((trans_x_, nontrans_x_), axis=1)
+        newcols=FactorsToTransform_actual + FactorsNottotransform_actual
+        scaled_df_here = pd.DataFrame(x_, columns = newcols)
+        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        plt.tight_layout()
+        plt.title('Transformed data')
+        X=x_
+        correctcolumns=newcols
+
+    elif scalingmethod == None:
+        X = Z
+        correctcolumns=CLUSTERON
+
+    thelabels = df_in['label']
+    scaled_df_in = pd.DataFrame(data=X, columns = correctcolumns)
+    df_out = pd.concat([scaled_df_in,thelabels], axis=1)#Put this back into a DF, with the col names and labels.
+
+    ####### Here starts the new bit for the scaled numbers on the disambiguates #######
+
+    # Isolate the columsn of the cell_df that are not the newcols as a list
+    cols_to_keep = [col for col in df_in.columns if col not in correctcolumns]
+    # Extract a sub df from the cell_df that contains only the columns in cols_to_keep
+    scaled_df = pd.concat([df_in[cols_to_keep], scaled_df_in], axis=1)
+
+    # Part 2: Find the median value per cluster for each metric using groupby
+    clusteraverage_df = df_out.groupby('label').median()#.reset_index(drop=True)
+    ###
+
+    # Part 3: Makes some iterables for the parts below.
+    numberofclusters=len(clusteraverage_df.axes[0])
+    iterable_clusters=np.arange(len(clusteraverage_df.axes[0])) # Iterable across rows
+    iterable_metrics=np.arange(len(clusteraverage_df.axes[1])) # Iterable across columns (metrics)
+    metric_means = clusteraverage_df.mean(axis=0).tolist()
+
+    # Part 4: Makes a Variance DF that describes the variance of each metric BETWEEN CLUSTERS
+    variance_between_clusters=[]
+    variance_between_clusters_array = []
+    variance_between_clusters_array_total=[]
+
+    ###############################################################################
+    # Calculates the variance of each value compared to the other values (discounting current value in calculation of mean) ((x - mean)^2)/numberofvalues
+    # for metric in iterable_metrics:
+    #     # print(metric)
+    #     variance_between_clusters_array=[]
+    #     for cluster in iterable_clusters:
+    #         list1 = clusteraverage_df.iloc[cluster,metric]
+    #         list2=clusteraverage_df.iloc[:,metric].tolist()
+    #         list2.remove(list1)
+    #         meanminusthatvalue=np.mean(list2)
+    #         variance_between_clusters = ((clusteraverage_df.iloc[cluster,metric] - meanminusthatvalue)**2)/(numberofclusters)
+    #         variance_between_clusters_array.append(variance_between_clusters)
+    #     variance_between_clusters_array_total.append(variance_between_clusters_array)
+    # variance_df = pd.DataFrame(data = variance_between_clusters_array_total, columns = clusteraverage_df.index, index = CLUSTERON )
+
+
+    ###############################################################################
+    # CONSIDERS ALL THE VALUES FOR CALCULATING THE MEAN
+
+    for metric in iterable_metrics:
+        # print(metric)
+        variance_between_clusters_array=[]
+        for cluster in iterable_clusters:
+            variance_between_clusters = ((clusteraverage_df.iloc[cluster,metric] - metric_means[metric])**2)/(numberofclusters)
+            variance_between_clusters_array.append(variance_between_clusters)
+        variance_between_clusters_array_total.append(variance_between_clusters_array)
+    variance_df = pd.DataFrame(data = variance_between_clusters_array_total, columns = clusteraverage_df.index, index = CLUSTERON )
+    #############################################################################
+
+    # This part then makes the top factors into a dictionary
+    trans_variance_df=variance_df.T
+    df= trans_variance_df
+
+    topfactors = []
+    contributors=[]
+
+    for ind in df.index:
+        col=trans_variance_df.loc[ind,:]
+        sortedcol=col.sort_values(ascending=False)
+        # Get the top factors and their variances
+        topfactor_variances = sortedcol[0:howmanyfactors]
+        # Convert the series to a list of tuples where each tuple is (factor, variance)
+        contributors = [(factor, variance) for factor, variance in topfactor_variances.items()]
+        topfactors.append(contributors)
+
+    #Make a dictionary of these results
+    top_dictionary = {}
+    keys = df.index.tolist()
+    for i in keys:
+        top_dictionary[i] = topfactors[i]
+
+    # Part 5: Makes a boolean mask of variances based on that threshold value, and a dataframe that contains values if true, and NaN if not
+    high_mask = variance_df > threshold_value
+    trueones=variance_df[high_mask]
+
+    # Part 6: Prints the names of the important values per cluster. 
+    for clusterlabel in iterable_clusters:
+        clusteryeah=trueones.iloc[:,clusterlabel]
+        clusterboolean=clusteryeah.notnull()
+        highmetrics=clusteryeah[clusterboolean]
+        clusternames=trueones.columns.tolist()
+
+    # Part 8: exports a df that can be used to select what metrics you want to show?
+    return top_dictionary, clusteraverage_df, scaled_df
+
+
+
+def plot_cluster_averages_dev_deprecated(top_dictionary, df, scaled_df): # New 3-7-2023
+    num_plots = len(top_dictionary)
+    # print(top_dictionary)
+    # Reverse the order of the values in the dictionary so that the biggest contributor to variability is on top
+    # top_dictionary = {k: v[::-1] for k, v in top_dictionary.items()}
+    # print(top_dictionary)
+    ### Make a totally non-normalized version of the clusteraverage_df
+    cluster_average_df = df.groupby('label').median()#.reset_index(drop=True)
+    cluster_average_scaled_df = scaled_df.groupby('label').median()#.reset_index(drop=True)
+
+    # Create a grid of subplots with one row and num_plots columns
+    fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(15*num_plots,10))
+
+    ##################
+    for i, (cluster_id, value) in enumerate(top_dictionary.items()):
+        # Rest of your code...
+        # Get the row in the dataframe that corresponds to the current cluster ID
+        cluster_row = cluster_average_df.loc[cluster_id]
+        scaled_cluster_row=cluster_average_scaled_df.loc[cluster_id]
+        # Loop over the column names for the current key and create a text string
+        text_str = ""
+        scaled_text_str = ""
+
+        for column_name, variance in value:
+            column_value = round(cluster_row[column_name], 4)
+            scaled_column_value = round(scaled_cluster_row[column_name], 1)
+
+            # Include the variance in the text string
+            text_str += f"{column_name.title()}: {column_value} (s={scaled_column_value})\n" #v={variance}
+            text_str = text_str.replace('_',' ')
+
+    ######################
+
+    # old:
+    
+    # Loop over the cluster IDs and corresponding values in the dictionary
+    # for i, (cluster_id, value) in enumerate(top_dictionary.items()):
+    #     # Get the row in the dataframe that corresponds to the current cluster ID
+    #     cluster_row = cluster_average_df.loc[cluster_id]
+    #     scaled_cluster_row=cluster_average_scaled_df.loc[cluster_id]
+        
+    #     # Loop over the column names for the current key and create a text string
+    #     text_str = ""
+    #     scaled_text_str = ""
+    #     for column_name in value:
+    #         # Get the value in the specified column for the current cluster
+    #         column_value = round(cluster_row[column_name], 4)
+    #         scaled_column_value = round(scaled_cluster_row[column_name], 1)
+            
+    #         # Add the string and the corresponding value to the text string
+    #         text_str += f"{column_name.title()}: {column_value} (s={scaled_column_value})\n"
+    #         text_str = text_str.replace('_',' ')
+    ########################
+
+            # scaled_text_str += f"{column_name.title()}: {scaled_column_value}\n"
+            # scaled_text_str = f"{scaled_column_value}\n"
+            # scaled_text_str = scaled_text_str.replace('_',' ')
+        
+        # Plot the text string as text in the current subplot
+        axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
+        # axs[i].text(0.8, 0.5, scaled_text_str.strip(), ha='center', va='center', fontsize=30)
+        
+        # Set the title of the current subplot to the current cluster ID
+        axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
+
+        axs[i].set_xticks([])
+        axs[i].set_yticks([])
+        # Remove the lines around the subplot
+        axs[i].spines['top'].set_visible(False)
+        axs[i].spines['right'].set_visible(False)
+        axs[i].spines['bottom'].set_visible(False)
+        axs[i].spines['left'].set_visible(False)
+    
+    
+    # Add an overall title to the figure
+    fig.suptitle("Average of top contributors per cluster ID", fontsize=36)
+    # Save figure as a png
+    # plt.savefig("cluster_average.png")
+    fig.savefig( CLUST_DISAMBIG_DIR + '\cluster_average.png',dpi=300,bbox_inches="tight") 
+ 
+    
+    plt.show()
+
+def plot_cluster_averages(top_dictionary, df, scaled_df): 
+
+    '''
+    This calculated the quartiles, splitting scaled data into 3 parts around the median, and then labels each metric as 'low', 'medium', or 'high'.
+    It also spits out median values for each metric, and the scaled median values for each metric.
+    '''
+    num_plots = len(top_dictionary)
+
+    cluster_average_df = df.groupby('label').median()
+    cluster_average_scaled_df = scaled_df.groupby('label').median()
+
+    # Calculate the quartiles for each metric
+    quartiles = df.groupby('label').quantile([0.25, 0.5, 0.75])
+
+    fig, axs = plt.subplots(nrows=1, ncols=num_plots, figsize=(15*num_plots,10))
+    
+    for i, (cluster_id, value) in enumerate(top_dictionary.items()):
+        cluster_row = cluster_average_df.loc[cluster_id]
+        scaled_cluster_row=cluster_average_scaled_df.loc[cluster_id]
+        
+        text_str = ""
+        for column_name, variance in value:  # We still get the variance but don't use it
+            column_value = round(cluster_row[column_name], 4)
+            scaled_column_value = round(scaled_cluster_row[column_name], 1)
+            
+            # Calculate the quartiles for the current metric
+            Q1 = scaled_df[column_name].quantile(0.33)
+            Q2 = scaled_df[column_name].quantile(0.5)
+            Q3 = scaled_df[column_name].quantile(0.66)
+
+            if scaled_column_value < Q1:
+                c = 'L'
+            elif scaled_column_value <= Q3:
+                c = 'M'
+            elif scaled_column_value > Q3:
+                c = 'H'
+            else:
+                c = 'O'
+
+            text_str += f"{column_name.title()}: {column_value} (s={scaled_column_value}, c={c})\n"
+            text_str = text_str.replace('_',' ')
+
+        axs[i].text(0.5, 0.5, text_str.strip(), ha='center', va='center', fontsize=30)
+        axs[i].set_title(f"Cluster {cluster_id}", fontsize = 30)
+
+        axs[i].set_xticks([])
+        axs[i].set_yticks([])
+        axs[i].spines['top'].set_visible(False)
+        axs[i].spines['right'].set_visible(False)
+        axs[i].spines['bottom'].set_visible(False)
+        axs[i].spines['left'].set_visible(False)
+
+    fig.suptitle("Average of top contributors per cluster ID", fontsize=36)
+    fig.savefig( CLUST_DISAMBIG_DIR + '\cluster_average.png',dpi=300,bbox_inches="tight") 
+
+    plt.show()
+
+def create_cluster_averages_table(top_dictionary, df, scaled_df): 
+
+    '''
+    Makes a nice table showing the median values for each metric 
+    '''
+
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.table import Table
+    from matplotlib.font_manager import FontManager, FontProperties
+    # Calculate the quartiles for each metric
+    quartiles = df.groupby('label').quantile([0.25, 0.5, 0.75])
+
+    cluster_average_df = df.groupby('label').median()
+    cluster_average_scaled_df = scaled_df.groupby('label').median()
+
+    # Initialize an empty DataFrame to store the results
+    # result_df = pd.DataFrame(columns=['ClusterID', 'Metric', 'Median', 'Scaled', 'Category'])
+    result_df = pd.DataFrame(columns=['ClusterID', 'Metric', 'Median', 'Category'])
+
+    # Loop over each cluster and metric
+    for cluster_id, value in top_dictionary.items():
+        cluster_row = cluster_average_df.loc[cluster_id]
+        scaled_cluster_row=cluster_average_scaled_df.loc[cluster_id]
+
+        for column_name, variance in value:
+            column_value = round(cluster_row[column_name], 4)
+            scaled_column_value = round(scaled_cluster_row[column_name], 1)
+
+            # Calculate the quartiles for the current metric
+            Q1 = scaled_df[column_name].quantile(0.33)
+            Q3 = scaled_df[column_name].quantile(0.66)
+
+            # Classify the median value as 'low', 'medium', or 'high'
+            if scaled_column_value < Q1:
+                category = 'Low'
+            elif scaled_column_value <= Q3:
+                category = 'Medium'
+            else:
+                category = 'High'
+
+            # Remove underscores from the column name
+            column_name = column_name.replace('_', ' ')
+            # Capitalize the first letter of each word
+            column_name = column_name.title()
+            # If the column name is MSD, capitazlie all letters
+            if column_name == 'Msd':
+                column_name = column_name.upper()
+
+            # Append the result to the DataFrame
+            # result_df = result_df.append({'ClusterID': cluster_id, 'Metric': column_name, 
+            #                               'Median': column_value, 'Scaled': scaled_column_value, 
+            #                               'Category': category}, ignore_index=True)
+            result_df = result_df.append({'ClusterID': cluster_id, 'Metric': column_name, 
+                                          'Median': column_value, #'Scaled': scaled_column_value, 
+                                          'Category': category}, ignore_index=True)
+
+    fig, ax = plt.subplots()
+    ax.axis('off')
+    ax.axis('tight')
+
+    font = FontProperties(family='DejaVu Sans', size=12)
+    bold_font = FontProperties(family='DejaVu Sans', size=12, weight='bold')
+
+
+    # Create a table
+    table = ax.table(cellText=result_df.values, colLabels=result_df.columns, loc='center', cellLoc='center') #fontproperties=font
+
+    table.auto_set_column_width(col=list(range(result_df.shape[1])))
+
+    # # Set the font properties of each cell THAT WORKS
+    for cell in table._cells.values():
+        cell.set_text_props(fontproperties=font)
+        cell.set_height(0.07)
+
+    # These are the dictionary keys for the column heads. They are OK hardcoded because they will always be the same
+    colhead_dict_keys = [(0, 0), (0, 1), (0, 2), (0, 3)] 
+    # Makes the column heads bold
+    for cell in colhead_dict_keys:
+        ok = table._cells[cell]
+        print(ok)
+        ok.set_text_props(fontproperties=bold_font)
+
+    # Add the table to the axes
+    ax.add_table(table)
+
+    # Save the figure as a PNG image
+    plt.savefig(CLUST_DISAMBIG_DIR + 'clusterIDtable.png', dpi=300, bbox_inches="tight")
+
+    return result_df
