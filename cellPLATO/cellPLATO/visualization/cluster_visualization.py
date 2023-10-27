@@ -2364,6 +2364,7 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
         ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
     elif cluster_label == 'trajectory_id':
+
         ax1 = fig.add_subplot(1, 2, 1)
         x = 'UMAP_traj_1'
         y = 'UMAP_traj_2'
@@ -2395,10 +2396,23 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     labels = list(set(df[cluster_label].unique())) #changed
     print('first you make this one')
     print(labels)
+    if -1 in labels:
+        labels.remove(-1)
+        # add -1 to the start of the list
+        labels.insert(0, -1)
+    print(labels)
     cmap = cm.get_cmap(CLUSTER_CMAP) #Changes made here
     numlabelcolors= len(labels)
     for i in range(numlabelcolors):
         cluster_colors.append(cmap(i))
+
+    print(f'These are the cluster colors: {cluster_colors}')
+
+    # cluster_colors = []
+    # cmap = cm.get_cmap(CLUSTER_CMAP) 
+    # numcolors=len(df['trajectory_id'].unique())
+    # for i in range(numcolors):
+    #     cluster_colors.append(cmap(i))    
     # set x axis as 'Condition' column
     x = df2['Condition']
     # set the number of ClusterID columns to plot
@@ -2417,6 +2431,10 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
         if all(y == 0):
             continue
         # Create a bar plot for the ith ClusterID column
+        # if 'color' in df.columns:
+        #     bars = ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=df['color'])
+        # else:
+        #     bars = ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
         bars = ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
         
         # Calculate the positions for text labels

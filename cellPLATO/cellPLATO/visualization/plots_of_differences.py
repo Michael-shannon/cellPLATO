@@ -317,7 +317,7 @@ def plots_of_differences_sns_saved(df_in,factor='Value', ctl_label=CTL_LABEL,cus
     if(len(df) > 1000):
         pt_size = 1
     else:
-        pt_size = 3
+        pt_size = 10
 
     # Get the bootstrapped sample as a dataframe
     bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
@@ -419,6 +419,10 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     elif(numberoftotalpoints > 10000 and numberoftotalpoints < 20000):
         pt_size=3
         alphavalue = 0.6
+    elif(numberoftotalpoints > 10 and numberoftotalpoints < 500):
+        pt_size = 10
+        alphavalue = 0.8
+    
     else:
         pt_size = 2
         alphavalue = 0.3

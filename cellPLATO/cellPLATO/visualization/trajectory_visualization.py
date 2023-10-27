@@ -2174,14 +2174,17 @@ def filter_exemplars(whole_df, exemplar_df, numberofdesiredtimepoints = 200, num
 ################################################
 
 def plot_trajectories(df, global_y=True, global_x=True):
+
+    
+    # Calculate the 'timeminutes' variable
+    df['timeminutes'] = df['frame'] * SAMPLING_INTERVAL
+    
     # Sort the DataFrame by 'Condition_shortlabel' and 'frame'
     df_sorted = df.sort_values(by=['Condition_shortlabel', 'frame'])
 
     # Group data by 'trajectory_id'
     grouped = df_sorted.groupby('trajectory_id')
 
-    # Calculate the 'timeminutes' variable
-    df['timeminutes'] = df['frame'] * SAMPLING_INTERVAL
 
     if global_y:
 
