@@ -544,6 +544,136 @@ import matplotlib as mpl
 import matplotlib.cm as cm
 from matplotlib.lines import Line2D
 
+# def cluster_sequences_deprecated(df, distance_matrix, do_umap = True, eps=0.1, min_samples=5, min_cluster_size = 5, n_neighbors = 5, dotsize = 10):
+
+
+    
+#     if do_umap:
+#         print('Performing UMAP')
+#         # Apply UMAP for dimensionality reduction
+#         reducer = umap.UMAP(
+#             n_neighbors=n_neighbors,
+#             min_dist=0.0,
+#             n_components=2,
+#             random_state=42,
+#         )
+#         # reduced_data = reducer.fit_transform(distance_matrix)
+#         out_data = reducer.fit_transform(distance_matrix)
+
+#         # Create new columns in the dataframe for UMAP dimensions
+#         print(out_data[:, 0])
+#         print(out_data[:, 1])
+
+            
+#         # # Create a dictionary to map uniq_id to umap traj 1
+#         UMAP1_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 0]))
+#         # Add 'umap traj 1' to the DataFrame 
+#         df['UMAP_traj_1'] = df['uniq_id'].map(UMAP1_mapping)
+#         # # Create a dictionary to map uniq_id to umap traj 1
+#         UMAP2_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 1]))
+#         # Add 'umap traj 1' to the DataFrame 
+#         df['UMAP_traj_2'] = df['uniq_id'].map(UMAP2_mapping)
+
+
+#     else:
+#         print('Skipping UMAP')
+#         out_data = distance_matrix
+
+#     # Cluster using HDBSCAN with adjusted parameters
+#     clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
+#     print(f'Using min_cluster_size = {min_cluster_size} and min_samples = {min_samples}')
+#     cluster_labels = clusterer.fit_predict(out_data)
+
+#     # Calculate the number of clusters
+#     n_clusters = len(np.unique(cluster_labels[cluster_labels != -1]))
+#     print(f'The number of clusters is {n_clusters}')
+
+
+
+#     # # Create a dictionary to map uniq_id to cluster labels
+#     cluster_mapping = dict(zip(df['uniq_id'].unique(), cluster_labels))
+
+#     # Add 'cluster_id' to the DataFrame based on cluster labels
+#     df['trajectory_id'] = df['uniq_id'].map(cluster_mapping)
+
+#     if n_clusters <= 1:
+#         print("Only one cluster was found. Skipping silhouette score calculation.")
+#         silhouette_avg = 'none'
+#     else:
+#         # Calculate Silhouette Score
+#         silhouette_avg = silhouette_score(out_data, cluster_labels)
+#         print(f"Silhouette Score: {silhouette_avg}")
+#         # Calculate Adjusted Rand Index 
+#         adjusted_rand = adjusted_rand_score(df['label'], df['trajectory_id'])
+#         print(f"Adjusted Rand Index: {adjusted_rand}")
+#         # Calculate Adjusted Mutual Information
+#         adjusted_mutual_info = adjusted_mutual_info_score(df['label'], df['trajectory_id'])
+#         print(f"Adjusted Mutual Information: {adjusted_mutual_info}")
+
+#         # Visualize the clusters as a bar plot
+#         cluster_counts = df.groupby('trajectory_id')['uniq_id'].count()
+
+#         # Sort the DataFrame by 'uniq_id' and 'frame'
+#         df = df.sort_values(['trajectory_id', 'uniq_id', 'frame'])
+
+#         ################# PLOTTING CHAOS BEGINS ####################
+#         colors = []
+#         cmap = cm.get_cmap(CLUSTER_CMAP) 
+#         numcolors=len(df['trajectory_id'].unique())
+#         for i in range(numcolors):
+#             colors.append(cmap(i))    
+
+#         # First plot:
+
+#         fig = plt.figure(figsize=(9, 6))
+#         fig.suptitle("Trajectory clusters", fontsize=PLOT_TEXT_SIZE)
+#         mpl.rcParams['font.size'] = PLOT_TEXT_SIZE
+#         plt.bar(cluster_counts.index, cluster_counts.values, color = 'black')
+#         plt.xlabel('Cluster (Trajectory ID)')
+#         plt.ylabel('Number of Trajectories')
+
+#         # Create a dictionary that maps each unique trajectory_id to a color
+#         color_dict = {id: color for id, color in zip(df['trajectory_id'].unique(), colors)}
+
+#         # Create a new column 'color' in the DataFrame that maps each trajectory_id to its color
+#         df['color'] = df['trajectory_id'].map(color_dict) #picasso
+
+#         # Second plot: UMAP
+#         fig2 = plt.figure(figsize=(10, 10))
+#         # scatter = plt.scatter(out_data[:, 0], out_data[:, 1], c=cluster_labels, cmap=CLUSTER_CMAP, s=25, alpha=0.6)
+#         scatter = plt.scatter(df['UMAP_traj_1'], df['UMAP_traj_2'], c=df['color'], cmap=CLUSTER_CMAP, s=dotsize, alpha=0.6)
+#         plt.xlabel('UMAP Dimension 1', fontsize=PLOT_TEXT_SIZE)
+#         plt.ylabel('UMAP Dimension 2', fontsize=PLOT_TEXT_SIZE)
+#         plt.title('UMAP: trajectory ID', fontsize=PLOT_TEXT_SIZE)
+
+#         # Create a custom legend
+#         legend_labels = np.unique(df['trajectory_id'])
+#         legend_elements = []
+
+#         for label in sorted(legend_labels):
+#             color = color_dict[label]  # Use the same color mapping as the scatter plot
+#             legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Trajectory {label}', markerfacecolor=color, markersize=10))
+
+#         legend = plt.legend(handles=legend_elements, title="Trajectory ID", fontsize=PLOT_TEXT_SIZE, bbox_to_anchor=(1.05, 1), loc='upper left')
+#         plt.gca().add_artist(legend)
+
+#         # Save the figure to the chosen directory with the specified name
+#         figure_name = "TrajectoryClustersOnUMAP.png"
+#         output_filename = os.path.join(TRAJECTORY_DISAMBIG_DIR, figure_name)
+#         fig2.savefig(output_filename, dpi=300)  # Adjust dpi as needed
+#         plt.show()
+
+
+# ###########################################
+
+#         # Print DataFrame with trajectory IDs
+#         print("DataFrame with Trajectory IDs:")
+#         print(df[['uniq_id', 'frame', 'label', 'trajectory_id']])
+
+#         # Save the DataFrame to a CSV file
+#         df.to_csv(SAVED_DATA_PATH + f'tptlabel_dr_df_{min_cluster_size}_{min_samples}_silhouette_{silhouette_avg}.csv') #SAVE OPTION
+#         return df
+    
 def cluster_sequences(df, distance_matrix, do_umap = True, eps=0.1, min_samples=5, min_cluster_size = 5, n_neighbors = 5, dotsize = 10):
 
 
@@ -561,138 +691,8 @@ def cluster_sequences(df, distance_matrix, do_umap = True, eps=0.1, min_samples=
         out_data = reducer.fit_transform(distance_matrix)
 
         # Create new columns in the dataframe for UMAP dimensions
-        print(out_data[:, 0])
-        print(out_data[:, 1])
-
-            
-        # # Create a dictionary to map uniq_id to umap traj 1
-        UMAP1_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 0]))
-        # Add 'umap traj 1' to the DataFrame 
-        df['UMAP_traj_1'] = df['uniq_id'].map(UMAP1_mapping)
-        # # Create a dictionary to map uniq_id to umap traj 1
-        UMAP2_mapping = dict(zip(df['uniq_id'].unique(), out_data[:, 1]))
-        # Add 'umap traj 1' to the DataFrame 
-        df['UMAP_traj_2'] = df['uniq_id'].map(UMAP2_mapping)
-
-
-    else:
-        print('Skipping UMAP')
-        out_data = distance_matrix
-
-    # Cluster using HDBSCAN with adjusted parameters
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
-    print(f'Using min_cluster_size = {min_cluster_size} and min_samples = {min_samples}')
-    cluster_labels = clusterer.fit_predict(out_data)
-
-    # Calculate the number of clusters
-    n_clusters = len(np.unique(cluster_labels[cluster_labels != -1]))
-    print(f'The number of clusters is {n_clusters}')
-
-
-
-    # # Create a dictionary to map uniq_id to cluster labels
-    cluster_mapping = dict(zip(df['uniq_id'].unique(), cluster_labels))
-
-    # Add 'cluster_id' to the DataFrame based on cluster labels
-    df['trajectory_id'] = df['uniq_id'].map(cluster_mapping)
-
-    if n_clusters <= 1:
-        print("Only one cluster was found. Skipping silhouette score calculation.")
-        silhouette_avg = 'none'
-    else:
-        # Calculate Silhouette Score
-        silhouette_avg = silhouette_score(out_data, cluster_labels)
-        print(f"Silhouette Score: {silhouette_avg}")
-        # Calculate Adjusted Rand Index 
-        adjusted_rand = adjusted_rand_score(df['label'], df['trajectory_id'])
-        print(f"Adjusted Rand Index: {adjusted_rand}")
-        # Calculate Adjusted Mutual Information
-        adjusted_mutual_info = adjusted_mutual_info_score(df['label'], df['trajectory_id'])
-        print(f"Adjusted Mutual Information: {adjusted_mutual_info}")
-
-        # Visualize the clusters as a bar plot
-        cluster_counts = df.groupby('trajectory_id')['uniq_id'].count()
-
-        # Sort the DataFrame by 'uniq_id' and 'frame'
-        df = df.sort_values(['trajectory_id', 'uniq_id', 'frame'])
-
-        ################# PLOTTING CHAOS BEGINS ####################
-        colors = []
-        cmap = cm.get_cmap(CLUSTER_CMAP) 
-        numcolors=len(df['trajectory_id'].unique())
-        for i in range(numcolors):
-            colors.append(cmap(i))    
-
-        # First plot:
-
-        fig = plt.figure(figsize=(9, 6))
-        fig.suptitle("Trajectory clusters", fontsize=PLOT_TEXT_SIZE)
-        mpl.rcParams['font.size'] = PLOT_TEXT_SIZE
-        plt.bar(cluster_counts.index, cluster_counts.values, color = 'black')
-        plt.xlabel('Cluster (Trajectory ID)')
-        plt.ylabel('Number of Trajectories')
-
-        # Create a dictionary that maps each unique trajectory_id to a color
-        color_dict = {id: color for id, color in zip(df['trajectory_id'].unique(), colors)}
-
-        # Create a new column 'color' in the DataFrame that maps each trajectory_id to its color
-        df['color'] = df['trajectory_id'].map(color_dict) #picasso
-
-        # Second plot: UMAP
-        fig2 = plt.figure(figsize=(10, 10))
-        # scatter = plt.scatter(out_data[:, 0], out_data[:, 1], c=cluster_labels, cmap=CLUSTER_CMAP, s=25, alpha=0.6)
-        scatter = plt.scatter(df['UMAP_traj_1'], df['UMAP_traj_2'], c=df['color'], cmap=CLUSTER_CMAP, s=dotsize, alpha=0.6)
-        plt.xlabel('UMAP Dimension 1', fontsize=PLOT_TEXT_SIZE)
-        plt.ylabel('UMAP Dimension 2', fontsize=PLOT_TEXT_SIZE)
-        plt.title('UMAP: trajectory ID', fontsize=PLOT_TEXT_SIZE)
-
-        # Create a custom legend
-        legend_labels = np.unique(df['trajectory_id'])
-        legend_elements = []
-
-        for label in sorted(legend_labels):
-            color = color_dict[label]  # Use the same color mapping as the scatter plot
-            legend_elements.append(Line2D([0], [0], marker='o', color='w', label=f'Trajectory {label}', markerfacecolor=color, markersize=10))
-
-        legend = plt.legend(handles=legend_elements, title="Trajectory ID", fontsize=PLOT_TEXT_SIZE, bbox_to_anchor=(1.05, 1), loc='upper left')
-        plt.gca().add_artist(legend)
-
-        # Save the figure to the chosen directory with the specified name
-        figure_name = "TrajectoryClustersOnUMAP.png"
-        output_filename = os.path.join(TRAJECTORY_DISAMBIG_DIR, figure_name)
-        fig2.savefig(output_filename, dpi=300)  # Adjust dpi as needed
-        plt.show()
-
-
-###########################################
-
-        # Print DataFrame with trajectory IDs
-        print("DataFrame with Trajectory IDs:")
-        print(df[['uniq_id', 'frame', 'label', 'trajectory_id']])
-
-        # Save the DataFrame to a CSV file
-        df.to_csv(SAVED_DATA_PATH + f'tptlabel_dr_df_{min_cluster_size}_{min_samples}_silhouette_{silhouette_avg}.csv') #SAVE OPTION
-        return df
-    
-def cluster_sequences_dev(df, distance_matrix, do_umap = True, eps=0.1, min_samples=5, min_cluster_size = 5, n_neighbors = 5, dotsize = 10):
-
-
-    
-    if do_umap:
-        print('Performing UMAP')
-        # Apply UMAP for dimensionality reduction
-        reducer = umap.UMAP(
-            n_neighbors=n_neighbors,
-            min_dist=0.0,
-            n_components=2,
-            random_state=42,
-        )
-        # reduced_data = reducer.fit_transform(distance_matrix)
-        out_data = reducer.fit_transform(distance_matrix)
-
-        # Create new columns in the dataframe for UMAP dimensions
-        print(out_data[:, 0])
-        print(out_data[:, 1])
+        # print(out_data[:, 0])
+        # print(out_data[:, 1])
 
             
         # # Create a dictionary to map uniq_id to umap traj 1

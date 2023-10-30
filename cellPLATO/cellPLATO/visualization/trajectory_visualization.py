@@ -2668,3 +2668,268 @@ def create_cluster_averages_table(top_dictionary, df, scaled_df):
     plt.savefig(CLUST_DISAMBIG_DIR + 'clusterIDtable.png', dpi=300, bbox_inches="tight")
 
     return result_df
+
+
+def fingerprintplot_clusters_per_trajectory(df):
+    # Calculate frequencies
+    counts = df.groupby(['trajectory_id', 'label']).size()
+    fontsize = PLOT_TEXT_SIZE
+    plt.rc('font', size=fontsize) 
+    plt.rc('axes', titlesize=fontsize) 
+    plt.rc('axes', labelsize=fontsize) 
+    plt.rc('xtick', labelsize=fontsize)
+    plt.rc('ytick', labelsize=fontsize) 
+    plt.rc('legend', fontsize=fontsize) 
+    plt.rc('figure', titlesize=fontsize)  
+
+    # Convert frequencies to percentages
+    percentages = counts.groupby(level=0).apply(lambda x: 100 * x / x.sum())
+
+    cluster_colors = []
+    labels = list(set(df['label'].unique()))
+    numofcolors = len(labels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        cluster_colors.append(cmap(i))
+
+    # Reset the index of the DataFrame and pivot it for the stacked bar plot
+    percentages = percentages.reset_index().pivot(columns='label', index='trajectory_id', values=0)
+
+    # Create a dictionary mapping labels to colors
+    color_dict = dict(zip(labels, cluster_colors))
+
+    # Create a list of colors for each label in the DataFrame
+    colors = percentages.columns.map(color_dict)
+
+    # Create a stacked bar plot
+    fig, ax = plt.subplots(figsize=(20, 20))
+    percentages.plot(kind='bar', stacked=True, ax=ax, color=colors)
+    # Get the number of unique trajectory IDs
+    num_traj = len(df['trajectory_id'].unique())
+    # print(f'num_traj = {num_traj}')
+
+    # print(f'The length of the ax patches is {len(ax.patches)}' )
+
+    # Make a list to alternate between 0 and 0.5
+    positionmodifier = [0.5 if i % 8 >= 4 else 0 for i in range(len(ax.patches))]
+
+    # print(positionmodifier)
+    # print(len(positionmodifier))
+
+    # Label the percentages with a shift according to positionmodifier
+    for p, pos in zip(ax.patches, positionmodifier):
+        # print(f'The p from the ax.patches is {p}')
+        # print(f'The pos from the positionmodifier is {pos}')
+        width, height = p.get_width(), p.get_height()
+        x, y = p.get_xy()
+        ax.annotate(f'{height:.0f}%', (x + width/2 + pos, y + height/2), ha='center', va='center', fontsize=fontsize)
+
+    # Move the legend to the right-hand side and give it a title
+    ax.legend(bbox_to_anchor=(1.01, 1), loc='upper left', title='Cluster ID')
+    # Label the y-axis percentage
+    ax.set_ylabel('Percentage cluster ID per trajectory ID')
+    # rotate x ticks 90 
+    plt.xticks(rotation=90)
+    # Set the x-axis label
+    ax.set_xlabel('Trajectory ID')
+    # Save the plot in the trajectory disambig dir
+    plt.savefig(TRAJECTORY_DISAMBIG_DIR + 'fingerprint_clusters_per_trajectory.png', dpi=300, bbox_inches="tight")
+
+    plt.show()
+
+    return
+
+def plasticity_per_trajectory(df):
+
+    # Set the style and color palette
+    sns.set_style("whitegrid")
+    max_values = df.groupby(['trajectory_id', 'uniq_id'])['cum_n_changes'].max().reset_index()
+    display(max_values)
+    median_values = max_values.groupby(['trajectory_id'])['cum_n_changes'].median().reset_index()
+
+    colors = []
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    numcolors=len(df['trajectory_id'].unique())
+    for i in range(numcolors):
+        colors.append(cmap(i))    
+
+    plt.figure(figsize=(15,10))  # Adjust the size of the plot
+
+    barplot = sns.barplot(x='trajectory_id', y='cum_n_changes', data=median_values, color='grey', alpha = 0.5)
+    sns.violinplot(x='trajectory_id', y='cum_n_changes', data=max_values, palette=colors)
+
+    # Add the median values to the plot
+    for i, bar in enumerate(barplot.patches):
+        barplot.annotate(format(median_values['cum_n_changes'].values[i], '.2f'), 
+                        (bar.get_x() + bar.get_width() / 2, bar.get_height()), 
+                        ha = 'center', va = 'center', 
+                        xytext = (0, -10),  
+                        textcoords = 'offset points',
+                        fontsize = 35)
+    # Increase the font size
+    plt.xticks(fontsize=35)
+    plt.yticks(fontsize=35)
+    # Increase font size of x and y labels
+    plt.xlabel('Trajectory ID', fontsize=35)
+    plt.ylabel('Cumulative cluster switches', fontsize=35)
+    # save it in the trajectory disambig folder
+    plt.savefig(TRAJECTORY_DISAMBIG_DIR + 'plasticity_per_trajectory.png', dpi=300)
+
+    plt.show()
+    
+    return
+
+import matplotlib.animation as animation
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+import matplotlib.font_manager as fm
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+
+def animate(step, ax, xmin, xmax, ymin, ymax, cell_df, contour_list, unique_id, trajectory_colors, cluster_colors, colormode):
+
+
+    font_size = 60
+    # Update the default text sizes
+    plt.rcParams.update({
+        'font.size': font_size,       # controls default text sizes
+        'axes.titlesize': font_size,  # fontsize of the axes title
+        'axes.labelsize': font_size,  # fontsize of the x and y labels
+        'xtick.labelsize': font_size, # fontsize of the tick labels
+        'ytick.labelsize': font_size, # fontsize of the tick labels
+        'legend.fontsize': font_size, # legend fontsize
+        'figure.titlesize': font_size # fontsize of the figure title
+    })
+    ax.clear()
+    for i in range(step+1):  # loop over all preceding steps
+        contour = contour_list[i]
+        contour_arr = np.asarray(contour).T
+        x = cell_df['x_pix'].values[i]
+        y = cell_df['y_pix'].values[i]   
+        Cluster_ID = cell_df['label'].iloc[i]
+        traj_id = cell_df['trajectory_id'].iloc[0]
+        '''Want to double check that the x,y positions not mirrored from the contour function'''
+        if not np.isnan(np.sum(contour_arr)):
+            # Check the colormode and set the color accordingly
+            if colormode == 'trajectory':
+                if i == step:
+                    color = trajectory_colors[traj_id]
+                    alpha = 1
+                else:
+                    color = trajectory_colors[traj_id]
+                    alpha = 0.3
+            elif colormode == 'cluster':
+                if i == step:
+                    color = cluster_colors[Cluster_ID]
+                    alpha = 1
+                else:
+                    color = cluster_colors[Cluster_ID]
+                    alpha = 0.3
+            elif colormode == 'singlecluster':
+                if i == step:
+                    color = cluster_colors[Cluster_ID]
+                    alpha = 1
+                else:
+                    color = 'gray'
+                    alpha = 0.3
+            ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=color,linewidth=5, alpha=alpha)
+            if i > 0:
+                x_seg = cell_df['x_pix'].values[i-1:i+1]# - window / 2
+                y_seg = cell_df['y_pix'].values[i-1:i+1]# - window / 2
+                ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    # Add a scale bar
+    scaleinmicrons = 20
+    scalebar = AnchoredSizeBar(ax.transData,
+                               scaleinmicrons / MICRONS_PER_PIXEL, f'', 'lower left', 
+                               pad=0.1,
+                               color='black',
+                               borderpad=0,
+                               frameon=False,
+                               size_vertical=5,
+                               fontproperties=fm.FontProperties(size=font_size))
+    ax.add_artist(scalebar)
+    # Add a text box for the scale bar text
+    text = ax.text(xmin, ymin, f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
+    # Add a title with the trajectory ID
+    ax.set_title('Trajectory ID: ' + str(traj_id) +'   Cell ID: ' + str(unique_id))
+    # Add a timer in the top right corner
+    ax.text(xmax, ymin, f'Time: {step*SAMPLING_INTERVAL:.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
+    ax.axis('off')
+    return ax,
+
+def make_trajectory_animations(df, exemplar_df_trajectories, number_of_trajectories=3, colormode='cluster', XYRange =300):
+    trajectory_ids = df['trajectory_id'].unique()
+    # repeat each element of trajectory_ids by the number_of_trajectories and make that a list
+    trajectory_ids = np.repeat(trajectory_ids, number_of_trajectories).tolist()
+    
+    cluster_colors = []
+    labels = list(set(df['label'].unique()))
+    numofcolors = len(labels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        cluster_colors.append(cmap(i))
+    # match the cluster colors to each cluster ID
+    cluster_colors = dict(zip(labels, cluster_colors))
+
+    # Trajectory_IDs = tptlabel_dr_df_filt_clusteredtrajectories['trajectory_id'] 
+    # depending on the cluster ID, make a list of colors for each cluster that is the same length of the list of the labels
+    trajectory_colors = []
+    trajlabels = list(set(df['trajectory_id'].unique()))
+    numofcolors = len(trajlabels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        trajectory_colors.append(cmap(i))
+    # match the cluster colors to each cluster ID
+    trajectory_colors = dict(zip(trajlabels, trajectory_colors))
+
+    redundancy_list = []
+
+    for trajectory_id_choice in trajectory_ids:
+        uniq_id_choices = exemplar_df_trajectories[exemplar_df_trajectories['trajectory_id']==trajectory_id_choice]['uniq_id'].values
+        uniq_id_choice = np.random.choice(uniq_id_choices)
+
+        while uniq_id_choice in redundancy_list:
+            uniq_id_choice = np.random.choice(uniq_id_choices)
+            
+        # append each choice to a redundancy list
+        redundancy_list.append(uniq_id_choice)
+
+
+
+        cell_df = df[df['uniq_id']==uniq_id_choice]
+        contour_list = []
+        contour_list=get_cell_contours(cell_df) # CHANGE CP 
+
+        ### This part makes sure each plot is going to be on the same scale ###
+        xminimum=cell_df['x_pix'].min() 
+        xmaximum=cell_df['x_pix'].max()
+        xmid = np.median([xmaximum, xminimum])
+        xmin=xmid-XYRange/2
+        xmax=xmid+XYRange/2
+
+        yminimum=cell_df['y_pix'].min()
+        ymaximum=cell_df['y_pix'].max()
+        ymid = np.median([ymaximum, yminimum])
+        ymin=ymid-XYRange/2
+        ymax=ymid+XYRange/2
+
+        ##############################
+
+        # print(contour_list)
+
+        print(f'The colour mode is {colormode}')
+
+        fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
+        unique_id=cell_df['uniq_id'].iloc[0]
+        traj_id=cell_df['trajectory_id'].iloc[0]
+        ani = animation.FuncAnimation(fig, animate, fargs=(ax, xmin, xmax, ymin, ymax, cell_df, contour_list, unique_id, trajectory_colors, cluster_colors, colormode,), frames=len(cell_df), interval=200)
+        writer = animation.PillowWriter(fps=15)
+        ani.save(TRAJECTORY_DISAMBIG_DIR + f'{colormode}_animation_traj_ID_{traj_id}_cellID_{unique_id}_.gif', writer=writer)
+
+    return
+    
+
+
+
+

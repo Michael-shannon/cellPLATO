@@ -2321,8 +2321,7 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     # Create a Subplot figure that shows the effect of clustering between conditions
     fig = plt.figure(figsize=(25, 10))
     fig.suptitle("How much each condition occupies each cluster", fontsize=fontsize)
-    # Making the first figure: UMAP colored by condition
-    # dotsize = 0.1
+
     alpha = 0.5
     markerscale = 5
     markerscale2 = 100
@@ -2394,8 +2393,8 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
     #defining a colormap for the clusters
     cluster_colors = []
     labels = list(set(df[cluster_label].unique())) #changed
-    print('first you make this one')
-    print(labels)
+    # print('first you make this one')
+    # print(labels)
     if -1 in labels:
         labels.remove(-1)
         # add -1 to the start of the list
@@ -2448,15 +2447,7 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
         
         # Update the bottom values of each bar to include the current y values
         bottoms += y
-########################################################################
-    # for i, clus in enumerate(labels):
-    #     # set y values as the ith ClusterID column
-    #     y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)]
-    #     # create a bar plot for the ith ClusterID column
-    #     ax2.bar(x, y, bottom=bottoms, label='Cluster ID ' + str(clus), color=cluster_colors[i])
-    #     # update the bottom values of each bar to include the current y values
-    #     bottoms += y
-##########################################################################
+
     #rotate the xticklabels 90 degrees
     ax2.set_xticklabels(x, rotation=90)    
     ax2.set_ylabel('Percent condition per cluster', fontsize = fontsize)
@@ -2474,8 +2465,10 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
 
     # show the plot
     plt.show()
-    fig.savefig(CLUST_DISAMBIG_DIR+'PurityPlotConditionsinClusters.png', dpi=300, bbox_inches='tight')
-
+    if cluster_label == 'trajectory_id': 
+        fig.savefig(TRAJECTORY_DISAMBIG_DIR+'PurityPlotConditionsinClusters.png', dpi=300, bbox_inches='tight')
+    elif cluster_label == 'label':
+        fig.savefig(CLUST_DISAMBIG_DIR+'PurityPlotClustersinConditions.png', dpi=300, bbox_inches='tight')
     return fig
 
 
