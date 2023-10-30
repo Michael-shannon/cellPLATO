@@ -1,12 +1,28 @@
 # cellPLATO: cell PLasticity Analysis TOol
 
+An unsupervised method for identifying cell behaviour in heterogeneous cell trajectory data
+
+cellPLATO workflow:
+
+1. takes tracking and segmentation data as input
+2. measures morphology and migration at each timepoint for every cell
+3. clusters cells with similar morphology and migration using UMAP and HDBSCAN
+4. measures the similarity of behavioural sequences for each cell over time, and clusters them to form 'trajectories of behaviour'
+5. de-abstractifies the clustered behaviours using graphics of exemplar cells, readouts of plasticity and comparisons between conditions
+
+![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c8f28934-18ae-4e36-8853-563c39391b53)
+
+## Updates
+
+On the 29th of October 2023 we uploaded cellPLATO as a [preprint](https://www.biorxiv.org/content/10.1101/2023.10.28.564355v1) on BioRxiv
+
 On the 14th of May 2023 at Journal of Cell Science's 'Imaging Cell Dynamics' conference in Lisbon, we presented cellPLATO's UMAP and HDBSCAN module to produce a fingerprint of cell behaviours in a heterogeneous population. Go [here](https://drive.google.com/drive/folders/1_f2GmdqbaF15FyesgxnsotuAu_XGh10o?usp=sharing) to see the poster!
 
 [![DOI](https://zenodo.org/badge/588728402.svg)](https://zenodo.org/badge/latestdoi/588728402)
 
-A Python data analysis package for time-lapse cell migration experiments written in collaboration with [Tyler Sloan](https://github.com/tsloan1377) at [Quorumetrix](https://github.com/Quorumetrix). Used after segmention (eg. [Cellpose](https://github.com/MouseLand/cellpose)) and tracking (eg. [Bayesian Tracker](https://github.com/quantumjot/btrack)) of large timelapse microscopy datasets, cellPLATO measures morphokinetic information about each cell per timepoint and automatically makes statistical plots (plots of difference in python, inspired by those in R by [Joachim Goedhart](https://github.com/JoachimGoedhart)). Users can pool/compare multiple replicates from multiple experimental conditions. Next, dimensionality reduction and cluster analysis is used to segregate cells into behavioural subtypes and produce a fingerprint for each condition (cells per behaviour subtype). Finally, exemplar cells are automatically selected and graphically displayed to disambiguate the nature of each quanitfied cell behavioural subtype.
+## Description
 
-![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c8f28934-18ae-4e36-8853-563c39391b53)
+A Python data analysis package for time-lapse cell migration experiments written in collaboration with [Tyler Sloan](https://github.com/tsloan1377) at [Quorumetrix](https://github.com/Quorumetrix). Used after segmention (eg. [Cellpose](https://github.com/MouseLand/cellpose)) and tracking (eg. [Bayesian Tracker](https://github.com/quantumjot/btrack)) of large timelapse microscopy datasets, cellPLATO measures morphokinetic information about each cell per timepoint and automatically makes statistical plots (plots of difference in python, inspired by those in R by [Joachim Goedhart](https://github.com/JoachimGoedhart)). Users can pool/compare multiple replicates from multiple experimental conditions. Next, dimensionality reduction and cluster analysis is used to segregate cells into behavioural subtypes and produce a fingerprint for each condition (cells per behaviour subtype). Finally, exemplar cells are automatically selected and graphically displayed to disambiguate the nature of each quanitfied cell behavioural subtype.
 
 ## Installation instructions
 
@@ -28,55 +44,45 @@ conda install -c conda-forge matplotlib
 
 ## How to use cellPLATO:
 
-cellPLATO is made to be used downstream of cell segmentation and tracking. We used cellpose and then bayesian tracker, with files organized as below in the 'file organization' section.
+cellPLATO is made to be used downstream of cell segmentation and tracking, and can currently be used with several tracking methodologies. The default is btrack.
 
-With jupyter notebook installed, type jupyter notebook in the terminal to begin, and select one of the notebooks to begin running cellPLATO.
+### Step 1:
 
-## Description: 
+Organize your data into the following heirarchal format:
 
-A collection of Jupyter notebooks allows user to process through the analysis step by step, or using pre-assembled pipelines.
+- 📁 **Master folder** `[Folder_path]`
+  - 🌿 **Condition_1** `[‘condition’ is derived from this folder name]`
+    - 🔄 **Rep1** `[‘repeat’ is derived from this folder name]`
+      - 📄 `Replicate_1.h5`
+    - 🔄 **Rep2**
+      - 📄 `Replicate_2.h5`
+    - 🔄 **Repn**
+      - 📄 `Replicate_n.h5`
+  - 🌿 **Condition_2**
+    - 🔄 **Rep1**
+    - 🔄 **Rep2**
+    - 🔄 **Repn**
+  - 🌿 **Condition_n**
+    - 🔄 **Repn**
 
-All experimental constants and filepaths are contained within the config.py file. This will inform the active Python kernel where to find the data files (.h5) files, where to export plots, and ey parameters to control the analysis. Each time the analysis is run, it generates a time-stamped analysis output folder, with a copy of the config file as a record for future verification.
+📁 represents the main folder or directory.
+🌿 represents the condition folders.
+🔄 represents the repeat folders.
+📄 represents the individual H5 files.
 
-The experimental conditions and replicates are indicated in the config.py file as the EXPERIMENTS_TO_INCLUDE = []. The data_processing module will automatically extract the replicates from the following file folder structure:
+### Step 2:
 
-my_data_path
-    condition 1
-        Replicate 1
-          Replicate 1.h5
-        Replicate 2
-          Replicate 2.h5
-        ...
-        Replicate n
-          Replicate n.h5
-     Condition 2
-        Replicate 1
-          Replicate 1.h5
-        Replicate 2
-          Replicate 2.h5
-        ...
-        Replicate n
-          Replicate n.h5
-     ...
-     Condition N
-        Replicate 1
-          Replicate 1.h5
-        ...
-        Replicate n
-          Replicate n.h5
-       
+Open the config.py file, and edit as directed. 
 
-The data_processing submodule is designed to sequentially process the cell tracks and shape measurements from the btracker-generated h5 files, and combine them into a Pandas dataframe for further processing, filtering and visualization. 
+As a minimum fill in the master directory, experiments to include, pixel size and sampling interval.
 
-The functionality of the subsequent processing steps are defined below;
+Experiments to include getsf filled with the folder names of the conditions you are measuring:
 
-Pre-preprocessed data is are combined into a single dataframe (comb_df), maininging labels for the Condition and replicate_ID. For plotting, optionally Condition_shortlabel is also used to have more succinct plot labels. The comb_df both cell shape and cell migration-related factors. 
+EXPERIMENTS_TO_INCLUDE = ['Condition_1', 'Condition_2', 'Condition_n']
 
-At this stage, additional measurements are performed, such as the aspect ratio and Ripleys L and K. The factors are calibrated according to the micron_per_pixel ratio defined in the config.py file. Optionally, data are filtered upstream of dimensionality reduction. 
+### Step 3:
 
-Next, the combined dataframe undergoes dimensionality reduction: initially PCA, followed by both tSNE and UMAP low-dimension embeddings. The lowD representations contain information about both the cell migration and shape characteristics of each cell, at each timepoint, and additional filtering steps following the dimensionality reduction steps are possible.
-
-The low-dimensional embeddings are then clustered using hdbscan to automatically extract density-based clusters from the selected embedding. Cells at a given timepoint are clustered into distinct groups and provided a label for their group. 
+Run cellPLATO through Jupyter Notebooks. Choose the master notebook to run all of the analysis step by step.
 
 
 
