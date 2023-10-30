@@ -16,6 +16,8 @@ cellPLATO workflow:
 
 On the 29th of October 2023 we uploaded cellPLATO as a [preprint](https://www.biorxiv.org/content/10.1101/2023.10.28.564355v1) on BioRxiv
 
+Movies for the paper can be found [here](https://drive.google.com/drive/folders/1wvCbWoywRdk0OWhcwwJhiIdAEz4yTKHt?usp=sharing)
+
 On the 14th of May 2023 at Journal of Cell Science's 'Imaging Cell Dynamics' conference in Lisbon, we presented cellPLATO's UMAP and HDBSCAN module to produce a fingerprint of cell behaviours in a heterogeneous population. Go [here](https://drive.google.com/drive/folders/1_f2GmdqbaF15FyesgxnsotuAu_XGh10o?usp=sharing) to see the poster!
 
 [![DOI](https://zenodo.org/badge/588728402.svg)](https://zenodo.org/badge/latestdoi/588728402)
