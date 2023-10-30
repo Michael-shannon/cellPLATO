@@ -51,24 +51,24 @@ cellPLATO is made to be used downstream of cell segmentation and tracking, and c
 Organize your data into the following heirarchal format:
 
 - 📁 **Master folder** `[Folder_path]`
-  - 🌿 **Condition_1** `[‘condition’ is derived from this folder name]`
-    - 🔄 **Rep1** `[‘repeat’ is derived from this folder name]`
+  - 🌿 **Condition_1** `[Experimental condition 1]`
+    - 🔄 **Rep_1** `[Experimental repeat 1]`
       - 📄 `Replicate_1.h5`
-    - 🔄 **Rep2**
+    - 🔄 **Rep_2**
       - 📄 `Replicate_2.h5`
-    - 🔄 **Repn**
+    - 🔄 **Rep_n**
       - 📄 `Replicate_n.h5`
   - 🌿 **Condition_2**
-    - 🔄 **Rep1**
-    - 🔄 **Rep2**
-    - 🔄 **Repn**
+    - 🔄 **Rep_1**
+    - 🔄 **Rep_2**
+    - 🔄 **Rep_n**
   - 🌿 **Condition_n**
-    - 🔄 **Repn**
+    - 🔄 **Rep_n**
 
 📁 represents the main folder or directory.
 🌿 represents the condition folders.
-🔄 represents the repeat folders.
-📄 represents the individual H5 files.
+🔄 represents the replicate folders.
+📄 represents the individual H5 files containing the segmentations and tracks
 
 ### Step 2:
 
