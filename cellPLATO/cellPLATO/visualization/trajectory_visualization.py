@@ -2927,8 +2927,266 @@ def make_trajectory_animations(df, exemplar_df_trajectories, number_of_trajector
         writer = animation.PillowWriter(fps=15)
         ani.save(TRAJECTORY_DISAMBIG_DIR + f'{colormode}_animation_traj_ID_{traj_id}_cellID_{unique_id}_.gif', writer=writer)
 
-    return
+    return redundancy_list
     
+
+def get_single_cell_raw_image(cell_df, XYRange, cell_follow):
+
+# Step 1) Find the raw data folder and print it
+
+    df_out = cell_df.copy()
+
+    cond = df_out['Condition'].values[0]
+    exp = df_out['Replicate_ID'].values[0]
+    exp = exp.replace('_tracks','') # remove _tracks from exp
+    load_path = os.path.join(DATA_PATH,cond, exp)
+
+
+    # 2) Based on the uniq_id of the cell_df, extract a list of the coordinates of the cell and the frame numbers
+
+    # sort the df by frame first
+    cell_df = cell_df.sort_values(by=['frame'])
+    coordinates = cell_df[['x', 'y']].values.tolist()
+    frame_numbers = cell_df['frame'].values.tolist()
+
+    #3 ) FIRST DEAL WITH OPENING THE IMAGE OF THE RIGHT FRAMES
+
+    # turn the frame_numbers into integers
+    frame_numbers = [int(i) for i in frame_numbers]
+
+    # If any of those frame numbers have less than 3 digits, add a 0 to the front of them
+    frame_numbers = ['0' + str(i) if len(str(i)) == 2 else '00' + str(i) if len(str(i)) == 1 else str(i) for i in frame_numbers]
+
+    # list the files in the load_path
+    files = os.listdir(load_path)
+
+    # basename = files[0].split('_T')[0]
+    basename = files[0].split('T0')[0]
+
+    xstart_list = []
+    ystart_list = []
+    xshift_list = []
+    yshift_list = []
+    xend_list = []
+    yend_list = []
+
+    padding = XYRange // 2
+    # 4) prior to making a cropping loop, make the cropping tings
+
+    if cell_follow == 'follow':
+        print('Following the cell')
+
+        cropped_image_list = []
+
+        for i, currentframe in enumerate(frame_numbers):
+            # print(f' this is i {i}' )
+            # print(f' this is currentframe{currentframe}')
+
+
+            x = coordinates[i][0] # first dim should be i for the i'th image if you want the version that follows the cell!
+            y = coordinates[i][1] # 
+
+
+            # Calculate the top-left corner of the crop region
+            x_start = x - (XYRange // 2)
+            y_start = y - (XYRange // 2)
+            # Also extract an xshift and a yshift
+            xshift = x_start
+            yshift = y_start
+
+            # calculate the end of the crop region
+            x_end = x_start + XYRange
+            y_end = y_start + XYRange
+            # make them all integers
+            x_start = int(x_start+padding)
+            y_start = int(y_start+padding)
+            x_end = int(x_end+padding)
+            y_end = int(y_end+padding)
+
+            xstart_list.append(x_start)
+            ystart_list.append(y_start)
+            xshift_list.append(xshift)
+            yshift_list.append(yshift)
+            xend_list.append(x_end)
+            yend_list.append(y_end)
+            
+
+            # imagename = basename + '_T0{}.tif'.format(currentframe)
+            imagename = basename + 'T0{}.tif'.format(currentframe)
+            image = io.imread(os.path.join(load_path, imagename))
+            image = image[0,:,:] # At the moment, only one channel is imported
+            padded_image = np.pad(image, pad_width=((padding, padding), (padding, padding)), mode='constant')
+            padded_image = padded_image.astype(np.uint16)
+            # Standardize the image to between 
+            crop_img = padded_image[y_start:y_end, x_start:x_end]
+
+            # # Standardize the image to between 
+            # image = image[0,:,:] # At the moment, only one channel is imported
+            # crop_img = image[y_start:y_end, x_start:x_end]
+            # Append this thing to a list
+            cropped_image_list.append(crop_img)
+
+    else:
+        print('Not following the cell')
+        x = coordinates[0][0] # 
+        y = coordinates[0][1] # 
+
+        # Calculate the top-left corner of the crop region
+        x_start = x - (XYRange // 2)
+        y_start = y - (XYRange // 2)
+        # Also extract an xshift and a yshift
+        xshift = x_start
+        yshift = y_start
+
+        # calculate the end of the crop region
+        x_end = x_start + XYRange
+        y_end = y_start + XYRange
+
+        # make them all integers
+        x_start = int(x_start+padding)
+        y_start = int(y_start+padding)
+        x_end = int(x_end+padding)
+        y_end = int(y_end+padding)
+
+        cropped_image_list = []
+    # 4) Now, load the image of the first frame
+
+        for currentframe in frame_numbers:
+
+            imagename = basename + 'T0{}.tif'.format(currentframe)
+            image = io.imread(os.path.join(load_path, imagename))# 
+            image = image[0,:,:] # At the moment, only one channel is imported
+            # Standardize the image to between 0 and 1, using the max val
+            padded_image = np.pad(image, pad_width=((padding, padding), (padding, padding)), mode='constant')
+            padded_image = padded_image.astype(np.uint16)
+            # Crop the image
+            # crop_img = image[y_start:y_end, x_start:x_end]
+            crop_img = padded_image[y_start:y_end, x_start:x_end]
+            # Append this thing to a list
+            cropped_image_list.append(crop_img)
+            # Save the image as a gif
+
+    if cell_follow == 'follow':
+        return cropped_image_list, xshift_list, yshift_list
+    else:
+        return cropped_image_list, xshift, yshift
+
+
+import imageio
+
+def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True):
+    
+    # These uniq_ids are the ones to be used here
+
+    font_size = 15
+    dpi = 150 # This is the resolution of the figure
+    width = 1200 # This is the width of the figure in pixels
+    height = 1200 # This is the height of the figure in pixels
+
+    if follow_cell:
+        cell_follow = 'follow'
+    else:
+        cell_follow = 'no_follow'
+
+    # make a cell df based off a uniq_id
+    for uniq_id in chosen_uniq_ids:
+        print(f'Processing cell {uniq_id}')
+        cell_df = df[df['uniq_id'] == uniq_id]    
+        cropped_cell_list, xshift, yshift = get_single_cell_raw_image(cell_df, XYRange, cell_follow)
+
+        traj_id = cell_df['trajectory_id'].iloc[0]
+
+
+        # element of the list 
+        if follow_cell:
+            nameforfolder = f'followed_cell_{uniq_id}'
+        else:
+            nameforfolder = f'static_cell_{uniq_id}'
+        # Define the directory
+        output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, nameforfolder)
+        os.makedirs(output_dir, exist_ok=True)
+        # Create a new figure with a specific size in inches
+
+        # Get the maximum value across all images
+        if invert:
+            print('Inverting the image')
+            max_value = np.max([np.max(img) for img in cropped_cell_list])
+            # Invert the colors of the images
+            inverted_image_list = [max_value - img for img in cropped_cell_list]
+            cropped_cell_list = inverted_image_list
+            color = 'k'
+
+        else:
+            print('Not inverting the image')
+            color = 'w'
+
+        if follow_cell:
+
+            for i, img in enumerate(cropped_cell_list):
+
+                fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
+                # Apply the 'hot' colormap
+                plt.imshow(img, cmap='Greys_r')
+                ax = plt.gca()
+                # plt.clim(0, 1) # Set the color limits
+                plt.axis('off') # Turn off the axis
+                xcoords = cell_df['x'].values
+                ycoords = cell_df['y'].values
+                shifted_xcoords = xcoords - xshift[i]
+                shifted_ycoords = ycoords - yshift[i]
+
+                if i > 0:
+                    x_seg = shifted_xcoords[i-1:i+1]# - window / 2
+                    y_seg = shifted_ycoords[i-1:i+1]# - window / 2
+                    ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
+
+                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c=color)
+                
+                plt.savefig(os.path.join(output_dir, f'followed_cell_{i}.png'), bbox_inches='tight', pad_inches=0)
+                # imageio.imwrite(os.path.join(output_dir, f'followed_raw_{i}.png'), img.astype(np.uint16))
+                # cv2.imwrite(os.path.join(output_dir, f'followed_raw_{i}.png'), img)
+                plt.close() # Close the figure to free up memory
+                ax.clear()
+
+        else:
+
+            for i, img in enumerate(cropped_cell_list):
+
+                fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
+                # Apply the 'hot' colormap
+                plt.imshow(img, cmap='hot')
+                ax = plt.gca()
+                # plt.clim(0, 1) # Set the color limits
+                plt.axis('off') # Turn off the axis
+                xcoords = cell_df['x'].values
+                ycoords = cell_df['y'].values
+                shifted_xcoords = xcoords - xshift
+                shifted_ycoords = ycoords - yshift
+
+                if i > 0:
+                    x_seg = shifted_xcoords[i-1:i+1]# - window / 2
+                    y_seg = shifted_ycoords[i-1:i+1]# - window / 2
+                    ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
+
+                    xmax = XYRange
+                    ymin = 0
+                    # # Add a timer in the top right corner
+                    # if i == 0:
+                    #     timetext = 0
+                    # else:
+                    #     timetext = i*cp.SAMPLING_INTERVAL
+                    # ax.text(xmax, ymin, f'Time: {timetext.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
+                    # ax.axis('off')
+                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c=color)
+
+                plt.savefig(os.path.join(output_dir, f'static_raw_{i}.png'), bbox_inches='tight', pad_inches=0)
+                # imageio.imwrite(os.path.join(output_dir, f'followed_raw_{i}.png'), img.astype(np.uint16))
+
+                plt.close() # Close the figure to free up memory
+                ax.clear()
+
+
+
 
 
 
