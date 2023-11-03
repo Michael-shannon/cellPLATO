@@ -3136,10 +3136,10 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
                 shifted_xcoords = xcoords - xshift[i]
                 shifted_ycoords = ycoords - yshift[i]
 
-                if i > 0:
-                    x_seg = shifted_xcoords[i-1:i+1]# - window / 2
-                    y_seg = shifted_ycoords[i-1:i+1]# - window / 2
-                    ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
+                for j in range(i+1):
+                    x_seg = shifted_xcoords[j:j+2]
+                    y_seg = shifted_ycoords[j:j+2]
+                    ax.plot(x_seg,y_seg,'-o',markersize=2,c='black', linewidth=1)
 
                 ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c='k')
                 
@@ -3153,6 +3153,8 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
             for i, img in enumerate(cropped_cell_list):
 
+
+
                 fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
                 # Apply the 'hot' colormap
                 plt.imshow(img, cmap='Greys')
@@ -3164,10 +3166,17 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
                 shifted_xcoords = xcoords - xshift
                 shifted_ycoords = ycoords - yshift
 
-                if i > 0:
-                    x_seg = shifted_xcoords[i-1:i+1]# - window / 2
-                    y_seg = shifted_ycoords[i-1:i+1]# - window / 2
-                    ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
+                ###################################
+                for j in range(i+1):
+                    x_seg = shifted_xcoords[j:j+2]
+                    y_seg = shifted_ycoords[j:j+2]
+                    ax.plot(x_seg,y_seg,'-o',markersize=2,c='black', linewidth=1)
+                ####################################
+
+                # if i > 0:
+                #     x_seg = shifted_xcoords[i-1:i+1]# - window / 2
+                #     y_seg = shifted_ycoords[i-1:i+1]# - window / 2
+                #     ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
 
                     xmax = XYRange
                     ymin = 0
@@ -3246,6 +3255,20 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
     for uniq_id in chosen_uniq_ids:
         print(f'Processing cell {uniq_id}')
         cell_df = df[df['uniq_id'] == uniq_id]   
+######################################################
+       # Get the initial x and y coordinates
+        x0 = cell_df['x_pix'].values[0]
+        y0 = cell_df['y_pix'].values[0]
+
+       # Calculate the lower and upper limits
+        x_lower = x0 - XYRange / 2
+        x_upper = x0 + XYRange / 2
+        y_lower = y0 - XYRange / 2
+        y_upper = y0 + XYRange / 2
+
+
+
+###########################################################
         if follow_cell:
             nameforfolder = f'Behaviour_followed_cell_{uniq_id}'
         else:
@@ -3275,9 +3298,18 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
 
             # fig, ax = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
             fig, ax = plt.subplots(1,1, figsize=(width/dpi, height/dpi))
+#######################################
+            # # if step == 0:
+            #     ax.set_xlim([x_lower, x_upper])
+            #     ax.set_ylim([y_lower, y_upper])
+
+
+####################################
+            
             for i in range(step+1):
                 contour = contour_list[i]
                 contour_arr = np.asarray(contour).T
+
                 Cluster_ID = cell_df['label'].iloc[i]
                 traj_id = cell_df['trajectory_id'].iloc[0]
                 if i == step:
@@ -3305,7 +3337,7 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
             ax.set_adjustable("datalim")
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(ymin, ymax)
-            
+
             scaleinmicrons = 20
             scalebar = AnchoredSizeBar(ax.transData,
                                     scaleinmicrons / MICRONS_PER_PIXEL, f'', 'lower left', 
@@ -3317,13 +3349,15 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
                                     fontproperties=fm.FontProperties(size=font_size))
             ax.add_artist(scalebar)
             # Add a text box for the scale bar text
-            text = ax.text(xmin, ymin, f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
+            # text = ax.text(xmin, ymin, f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
+            text = ax.text(xmin, ymax, f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
             # Add a title with the trajectory ID
             ax.set_title('Trajectory ID: ' + str(traj_id) +'   Cell ID: ' + str(uniq_id), x=0.5, y=0.95, pad=-10, fontsize=font_size)
             # Add a timer in the top right corner
-            ax.text(xmax, ymin, f'Time: {step*SAMPLING_INTERVAL:.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
+            # ax.text(xmax, ymin, f'Time: {step*SAMPLING_INTERVAL:.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
+            ax.text(xmax, ymax, f'Time: {step*SAMPLING_INTERVAL:.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
             ax.axis('off')
-
+            ax.invert_yaxis() # CILANTRO
 
             # plt.savefig(os.path.join(output_dir, f'arsebehaviour_{step}.png'), dpi=dpi)
             plt.savefig(os.path.join(output_dir, f'Behaviours_cell_{step}.png'), bbox_inches='tight', pad_inches=0, dpi=dpi)
