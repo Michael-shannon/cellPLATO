@@ -2923,7 +2923,8 @@ def make_trajectory_animations(df, exemplar_df_trajectories, number_of_trajector
         fig, (ax) = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
         unique_id=cell_df['uniq_id'].iloc[0]
         traj_id=cell_df['trajectory_id'].iloc[0]
-        ani = animation.FuncAnimation(fig, animate, fargs=(ax, xmin, xmax, ymin, ymax, cell_df, contour_list, unique_id, trajectory_colors, cluster_colors, colormode,), frames=len(cell_df), interval=200)
+        ani = animation.FuncAnimation(fig, animate, fargs=(ax, xmin, xmax, ymin, ymax, cell_df, contour_list, 
+            unique_id, trajectory_colors, cluster_colors, colormode,), frames=len(cell_df), interval=200)
         writer = animation.PillowWriter(fps=15)
         ani.save(TRAJECTORY_DISAMBIG_DIR + f'{colormode}_animation_traj_ID_{traj_id}_cellID_{unique_id}_.gif', writer=writer)
 
@@ -3099,9 +3100,9 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
         # element of the list 
         if follow_cell:
-            nameforfolder = f'followed_cell_{uniq_id}'
+            nameforfolder = f'Raw_followed_cell_{uniq_id}'
         else:
-            nameforfolder = f'static_cell_{uniq_id}'
+            nameforfolder = f'Raw_static_cell_{uniq_id}'
         # Define the directory
         output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, nameforfolder)
         os.makedirs(output_dir, exist_ok=True)
@@ -3126,7 +3127,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
                 fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
                 # Apply the 'hot' colormap
-                plt.imshow(img, cmap='Greys_r')
+                plt.imshow(img, cmap='Greys')
                 ax = plt.gca()
                 # plt.clim(0, 1) # Set the color limits
                 plt.axis('off') # Turn off the axis
@@ -3140,7 +3141,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
                     y_seg = shifted_ycoords[i-1:i+1]# - window / 2
                     ax.plot(x_seg,y_seg,'-o',markersize=10,c='black', linewidth=4)
 
-                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c=color)
+                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c='k')
                 
                 plt.savefig(os.path.join(output_dir, f'followed_cell_{i}.png'), bbox_inches='tight', pad_inches=0)
                 # imageio.imwrite(os.path.join(output_dir, f'followed_raw_{i}.png'), img.astype(np.uint16))
@@ -3154,7 +3155,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
                 fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
                 # Apply the 'hot' colormap
-                plt.imshow(img, cmap='hot')
+                plt.imshow(img, cmap='Greys')
                 ax = plt.gca()
                 # plt.clim(0, 1) # Set the color limits
                 plt.axis('off') # Turn off the axis
@@ -3177,7 +3178,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
                     #     timetext = i*cp.SAMPLING_INTERVAL
                     # ax.text(xmax, ymin, f'Time: {timetext.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
                     # ax.axis('off')
-                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c=color)
+                ax.set_title(f'Trajectory ID: {traj_id}    Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c='k')
 
                 plt.savefig(os.path.join(output_dir, f'static_raw_{i}.png'), bbox_inches='tight', pad_inches=0)
                 # imageio.imwrite(os.path.join(output_dir, f'followed_raw_{i}.png'), img.astype(np.uint16))
@@ -3185,8 +3186,155 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
                 plt.close() # Close the figure to free up memory
                 ax.clear()
 
+from tqdm import tqdm 
+
+def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True):
+    from tqdm import tqdm 
+    
+    ###  DEV ONE BURT
+
+    font_size = 15
+    dpi = 150 # This is the resolution of the figure
+    width = 1200 # This is the width of the figure in pixels
+    height = 1200 # This is the height of the figure in pixels
+
+    ############################### Plot settings ##############################
+    # font_size = 60
+    # Update the default text sizes
+    plt.rcParams.update({
+        'font.size': font_size,       # controls default text sizes
+        'axes.titlesize': font_size,  # fontsize of the axes title
+        'axes.labelsize': font_size,  # fontsize of the x and y labels
+        'xtick.labelsize': font_size, # fontsize of the tick labels
+        'ytick.labelsize': font_size, # fontsize of the tick labels
+        'legend.fontsize': font_size, # legend fontsize
+        'figure.titlesize': font_size # fontsize of the figure title
+    })
+
+    #####################################
+
+    ############################### Colours common to df, not cell_df #######################
+    cluster_colors = []
+    labels = list(set(df['label'].unique()))
+    numofcolors = len(labels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        cluster_colors.append(cmap(i))
+    # match the cluster colors to each cluster ID
+    cluster_colors = dict(zip(labels, cluster_colors))
+
+    # Trajectory_IDs = tptlabel_dr_df_filt_clusteredtrajectories['trajectory_id'] 
+    # depending on the cluster ID, make a list of colors for each cluster that is the same length of the list of the labels
+    trajectory_colors = []
+    trajlabels = list(set(df['trajectory_id'].unique()))
+    numofcolors = len(trajlabels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        trajectory_colors.append(cmap(i))
+    # match the cluster colors to each cluster ID
+    trajectory_colors = dict(zip(trajlabels, trajectory_colors))
+
+    #################################################################
 
 
+    if follow_cell:
+        cell_follow = 'follow'
+    else:
+        cell_follow = 'no_follow'
+
+    # make a cell df based off a uniq_id
+    for uniq_id in chosen_uniq_ids:
+        print(f'Processing cell {uniq_id}')
+        cell_df = df[df['uniq_id'] == uniq_id]   
+        if follow_cell:
+            nameforfolder = f'Behaviour_followed_cell_{uniq_id}'
+        else:
+            nameforfolder = f'Behaviour_static_cell_{uniq_id}'
+        # Define the directory
+        output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, nameforfolder)
+        os.makedirs(output_dir, exist_ok=True) 
+
+        contour_list=get_cell_contours(cell_df)
+
+        ### This part makes sure each plot is going to be on the same scale ###
+        xminimum=cell_df['x_pix'].min() 
+        xmaximum=cell_df['x_pix'].max()
+        xmid = np.median([xmaximum, xminimum])
+        xmin=xmid-XYRange/2
+        xmax=xmid+XYRange/2
+
+        yminimum=cell_df['y_pix'].min()
+        ymaximum=cell_df['y_pix'].max()
+        ymid = np.median([ymaximum, yminimum])
+        ymin=ymid-XYRange/2
+        ymax=ymid+XYRange/2
+
+        # fig, ax = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
+
+        for step in tqdm(range(len(cell_df))):
+
+            # fig, ax = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
+            fig, ax = plt.subplots(1,1, figsize=(width/dpi, height/dpi))
+            for i in range(step+1):
+                contour = contour_list[i]
+                contour_arr = np.asarray(contour).T
+                Cluster_ID = cell_df['label'].iloc[i]
+                traj_id = cell_df['trajectory_id'].iloc[0]
+                if i == step:
+                    alpha=1
+                else:
+                    alpha=0.1
+                if not np.isnan(np.sum(contour_arr)):
+                    ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=cluster_colors[Cluster_ID],linewidth=1, alpha=alpha) #cilantro
+                if i > 0:
+                    x_seg = cell_df['x_pix'].values[i-1:i+1]
+                    y_seg = cell_df['y_pix'].values[i-1:i+1]
+                    # y_seg = cell_df['y_pix'].values[i:i+2]
+
+                    ax.plot(x_seg,y_seg,'-o',markersize=1,c='black', linewidth=1)
+
+
+
+        ####
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+            ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+            ax.set_ylabel("y (px)", fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+            ax.tick_params(axis='both', labelsize=PLOT_TEXT_SIZE)
+            ax.set_aspect('equal')
+            ax.set_adjustable("datalim")
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(ymin, ymax)
+            
+            scaleinmicrons = 20
+            scalebar = AnchoredSizeBar(ax.transData,
+                                    scaleinmicrons / MICRONS_PER_PIXEL, f'', 'lower left', 
+                                    pad=0.1,
+                                    color='black',
+                                    borderpad=0,
+                                    frameon=False,
+                                    size_vertical=5,
+                                    fontproperties=fm.FontProperties(size=font_size))
+            ax.add_artist(scalebar)
+            # Add a text box for the scale bar text
+            text = ax.text(xmin, ymin, f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
+            # Add a title with the trajectory ID
+            ax.set_title('Trajectory ID: ' + str(traj_id) +'   Cell ID: ' + str(uniq_id), x=0.5, y=0.95, pad=-10, fontsize=font_size)
+            # Add a timer in the top right corner
+            ax.text(xmax, ymin, f'Time: {step*SAMPLING_INTERVAL:.2f} mins', horizontalalignment='right', verticalalignment='bottom', fontsize=font_size)
+            ax.axis('off')
+
+
+            # plt.savefig(os.path.join(output_dir, f'arsebehaviour_{step}.png'), dpi=dpi)
+            plt.savefig(os.path.join(output_dir, f'Behaviours_cell_{step}.png'), bbox_inches='tight', pad_inches=0, dpi=dpi)
+            plt.close()
+            # clear the plot for the next one
+            ax.clear()
+
+            # fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
+
+
+    return
 
 
 
