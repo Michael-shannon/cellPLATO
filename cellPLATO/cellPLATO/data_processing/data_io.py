@@ -183,6 +183,25 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
+    elif(fmt == 'trackmate'):
+        exp_list_df = pd.DataFrame()
+
+        for cond_dir in os.listdir(DATA_PATH):
+            f = os.path.join(DATA_PATH, cond_dir)
+            contents = os.listdir(f)
+
+            print('contents: ', contents)
+
+            pattern = '*' + TRACK_FILENAME    
+
+            for entry in contents:
+                if fnmatch.fnmatch(entry, pattern):
+
+                    exp_name = entry[:-4] # remove the '.csv' extension from the string.
+                    exp_list.append((cond_dir, exp_name))
+
+        exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
+
     # A test to be sure the same Experiment name is not used twice.
     for rep in exp_list_df['Experiment'].unique():
         rep_df = exp_list_df[exp_list_df['Experiment'] == rep]
