@@ -117,7 +117,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                     # Mean-squared displacement (MSD)
                     msd = np.sum(np.power(dist_list,2)) / t_window
 
-                    '''Why??'''
+
                     cumulative_dist_sqrd = cumulative_dist_sqrd + segment_length**2
 
                     # Meandering index
