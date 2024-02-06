@@ -1,7 +1,7 @@
 #statistics.py
 
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 import os
 import numpy as np
@@ -202,6 +202,13 @@ def bootstrap_sample_df(df,factor,ctl_label):
         this_cond =  pd.unique(df['Condition'])[i]
         this_diff_df = pd.DataFrame(data={'Difference':difference, 'Condition':this_cond})
         bootstrap_diff_df = bootstrap_diff_df.append(this_diff_df)
+
+        
+    # Calculate and print mean effect size for each condition
+    mean_effect_sizes = bootstrap_diff_df.groupby('Condition')['Difference'].mean()
+    print("Mean Effect Size for Each Condition Compared to Control:")
+    for condition, mean_effect_size in mean_effect_sizes.items():
+        print(f"The effect size for {condition} compared with control is: {mean_effect_size}")
 
     return bootstrap_diff_df
 

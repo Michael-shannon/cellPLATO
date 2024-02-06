@@ -1,7 +1,7 @@
 #cluster_visualization.py
 
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 from visualization.low_dimension_visualization import colormap_pcs
 

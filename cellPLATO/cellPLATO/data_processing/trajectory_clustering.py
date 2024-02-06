@@ -1,6 +1,7 @@
 #trajectory_clustering.py
-from initialization.config import *
+
 from initialization.initialization import *
+from initialization.config import *
 
 # from visualization.trajectory_visualization import *
 

@@ -1,7 +1,7 @@
 # comparative_visualization.py
 
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 from data_processing.data_wrangling import *
 from data_processing.statistics import *

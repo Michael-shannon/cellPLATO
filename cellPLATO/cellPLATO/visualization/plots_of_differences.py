@@ -411,7 +411,7 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     numberoftotalpoints = len(df)
 
     if(numberoftotalpoints > 1000 and numberoftotalpoints < 5000):
-        pt_size = 5
+        pt_size = 3
         alphavalue = 0.9
     elif(numberoftotalpoints > 5000 and numberoftotalpoints < 10000):
         pt_size = 4

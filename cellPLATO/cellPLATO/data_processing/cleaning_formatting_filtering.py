@@ -1,6 +1,5 @@
 #cleaning_Labeling.py
 
-# from cellPLATO.cellPLATO.initialization.config_trackmate import *
 from initialization.initialization import *
 from initialization.config import *
 

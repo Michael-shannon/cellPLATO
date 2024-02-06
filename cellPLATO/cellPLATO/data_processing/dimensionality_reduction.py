@@ -1,6 +1,7 @@
 #dimensionality_reduction.py
-from initialization.config import *
+
 from initialization.initialization import *
+from initialization.config import *
 
 from data_processing.clustering import *
 from data_processing.data_wrangling import get_data_matrix

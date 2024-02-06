@@ -1,5 +1,5 @@
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 import numpy as np
 import pandas as pd
