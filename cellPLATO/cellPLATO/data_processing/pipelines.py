@@ -1,7 +1,7 @@
 # pipelines.py
 
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 from data_processing.cell_identifier import *
 from data_processing.cleaning_formatting_filtering import *
@@ -43,15 +43,23 @@ def measurement_pipeline(comb_df, mixed=MIXED_SCALING, factors_to_timeaverage = 
 
 
     # Calculate the cells aspect ratio
-    calc_aspect_ratio(comb_df, drop=True)# if there are resulting nans
-
+    if INPUT_FMT != 'trackmate':
+        calc_aspect_ratio(comb_df, drop=True)# if there are resulting nans
+    else:
+        print('Skipping aspect ratio calculation for trackmate input data.')
     # Clean up remaining dataframe, and calibrate the micron-dependent values
     cleaned_df = clean_comb_df(comb_df, deduplicate=False)
     # comb_df = factor_calibration(cleaned_df)
-
     print('Calibrating with mixed_scaling = ', MIXED_SCALING)
-    comb_df = factor_calibration(cleaned_df,mixed_calibration=mixed)
-    apply_unique_id(comb_df)
+    if INPUT_FMT != 'trackmate':
+        comb_df = factor_calibration(cleaned_df,mixed_calibration=mixed)
+    else:
+        comb_df = cleaned_df
+        
+    if INPUT_FMT != 'trackmate':
+        apply_unique_id(comb_df)
+    else:
+        print('Unique ID is already applied for trackmate data')
 
     if(SELF_STANDARDIZE):
         print('Self-standardizing factors: ',FACTORS_TO_STANDARDIZE)
@@ -196,7 +204,7 @@ def dr_pipeline_dev(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSN
 
     return dr_df
 
-def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD, do_tsne = True): #SPIDERDEV
+def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD, do_tsne = True): 
 
     component_list=np.arange(1, n_components+1,1).tolist()
     from sklearn.preprocessing import PowerTransformer
@@ -368,7 +376,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     # Create Dimension-reduced dataframe by adding PCA and tSNE columns.
     dr_df = pd.concat([df, pca_df, tsne_df, umap_df], axis=1)
 
-    assert list(df.index) == list(dr_df.index), 'dr_df should be the same length as input dataframe. Check indexing of input dataframe.'
+    assert list(df.index) == list(dr_df.index), 'dr_df should be the same length as input dataframe. Check indexing of input dataframe.' #trackmate removed
 
     return dr_df
 

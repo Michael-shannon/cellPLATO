@@ -1,8 +1,9 @@
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 from data_processing.cleaning_formatting_filtering import *
 from data_processing.migration_calculations import *
+from data_processing.load_trackmate import *
 # from data_processing.shape_calculations import * # rah
 
 import os
@@ -190,15 +191,28 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
             f = os.path.join(DATA_PATH, cond_dir)
             contents = os.listdir(f)
 
-            print('contents: ', contents)
+            # print('contents: ', contents)
+            # print(f'The cond dir is {cond_dir}')
 
-            pattern = '*' + TRACK_FILENAME    
+            pattern = '*spots' + TRACK_FILENAME    
+            # print(f'The pattern is {pattern}')
 
-            for entry in contents:
-                if fnmatch.fnmatch(entry, pattern):
+            # Go another level down to get the trackmate file experiment names because structure is a little different
 
-                    exp_name = entry[:-4] # remove the '.csv' extension from the string.
-                    exp_list.append((cond_dir, exp_name))
+            for rep in contents:
+                # print(f'The rep is {rep}')
+                rep_dir = os.path.join(DATA_PATH, cond_dir, rep)
+                # print(f'The rep dir is {rep_dir}')
+                rep_contents = os.listdir(rep_dir)
+                # print(f'The rep contents are {rep_contents}')
+                #test
+
+                for entry in rep_contents:
+                    if fnmatch.fnmatch(entry, pattern):
+
+                        exp_name = entry[:-4]
+                        # print(f'The exp name is {exp_name}')
+                        exp_list.append((cond_dir, exp_name))
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
@@ -375,6 +389,15 @@ def combine_dataframes(exp_list_df, fmt=INPUT_FMT, dedup_columns=True): #, paths
 
                 combined_df =  pd.concat([combined_df,mig_df])
                 combined_df.reset_index(inplace=True, drop=True)
+    elif(fmt=='trackmate'):
+
+        print('Loading data from trackmate format.')
+
+        merged_spots_df, tracks_metadata = load_and_populate(r'.*spots.*\.csv', Folder_path = DATA_PATH)
+
+        combined_df = merged_spots_df
+        #################################
+
 
     else:
 
@@ -400,6 +423,8 @@ def combine_dataframes(exp_list_df, fmt=INPUT_FMT, dedup_columns=True): #, paths
 
     # Renamed the old index value for returning to the raw input downstream.
     combined_df.rename(columns={'Unnamed: 0': 'rep_row_ind'}, inplace=True)
+
+
     return combined_df
 
 

@@ -1,7 +1,7 @@
 # time_calculations.py
 
-from initialization.config import *
 from initialization.initialization import *
+from initialization.config import *
 
 from data_processing.clustering import cluster_purity
 
@@ -51,10 +51,13 @@ def time_average(df):
     unique_id = 0 # Create a unique cell id
     rep_list = df['Replicate_ID'].unique()
 
+
     for this_rep in rep_list:
 
         rep_df = df[df['Replicate_ID']==this_rep]
+        print(f'Replicate: {this_rep}')
         cell_ids = rep_df['particle'].unique() # Particle ids only unique for replicate, not between.
+        print(f'cell_ids: {cell_ids} ')
 
         # For each cell, calculate the average value and add to new DataFrame
         for cid in cell_ids:
@@ -77,6 +80,59 @@ def time_average(df):
             avg_df.loc['unique_id'] = unique_id # Add Unique cell ID for the analysis
             time_avg_df = time_avg_df.append(avg_df,ignore_index=True)
             unique_id += 1
+
+    time_avg_df['frame'] = 'timeaverage' # Replace the meaningless average frame values with a string desciption
+
+    return time_avg_df
+
+def time_average_trackmate(df):
+
+    '''
+    Needs a more descriptive name?
+        average_across_time()?
+
+    Function to generate a time-averaged dataframe,
+    where the average value for each factor across all timepoints
+    is calculated for each cell.
+
+    Input:
+        df: DataFrame [N * T * X]
+
+
+    Returns:
+        avg_df: DataFrame [N * X]
+    '''
+
+    time_avg_df = pd.DataFrame()
+    unique_id = 0 # Create a unique cell id
+
+
+    cell_ids = df['uniq_id'].unique() # Just use unique ids
+
+    # For each cell, calculate the average value and add to new DataFrame
+    for cid in cell_ids:
+
+        cell_df = df[df['uniq_id'] == cid]
+
+        # A test to ensure there is only one replicate label included.
+        assert len(cell_df['Rep_label'].unique()) == 1, 'check reps'
+
+        avg_df = cell_df.mean() # Returns a series that is the mean value for each numerical column. Non-numerical columns are dropped.
+
+        # Add back non-numeric data
+        dropped_cols = list(set(cell_df.columns) - set(avg_df.index))
+
+        for col in dropped_cols:
+
+            # assert len(cell_df[col].unique()) == 1, 'Invalid assumption: uniqueness of non-numerical column values'
+            # print the number of columns with the same column name in cell_df
+            print(f'The column named {col} has this number of occurrences in cell_df: {len(cell_df[col].unique())}')
+
+            avg_df.loc[col] = cell_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
+
+        avg_df.loc['unique_id'] = unique_id # Add Unique cell ID for the analysis
+        time_avg_df = time_avg_df.append(avg_df,ignore_index=True)
+        unique_id += 1
 
     time_avg_df['frame'] = 'timeaverage' # Replace the meaningless average frame values with a string desciption
 

@@ -1,6 +1,7 @@
 #migration_calculations.py
 
 from initialization.config import *
+from initialization.initialization import *
 
 import os
 import numpy as np
@@ -44,15 +45,49 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
 
         # Enumerate across the range of frames
         for i, t in enumerate(range(init_f, final_f)): # Because we need a count and an index, for cases where cells arent included throughout
+                
+                # Adding actual window size
+                # actual_window_size = min(t - init_f + 1, final_f - t, t_window) #trackmate
 
                 # Extract separate arrays for the timepoints and window of interest
                 prev_frame_arr = np.squeeze(cell_tarray[np.where(cell_tarray[:,0] == t-1)])
                 this_frame_arr = np.squeeze(cell_tarray[np.where(cell_tarray[:,0] == t)])
+
+                # if INPUT_FMT == 'trackmate':
+                    
+                #     #### trackmate
+                #     # Extract the time window array considering the actual window size
+                #     t_window_arr = np.squeeze(cell_tarray[np.where((cell_tarray[:,0] >= t - actual_window_size//2) &
+                #                                                     (cell_tarray[:,0] < t + actual_window_size//2))])
+                #     size_of_window = actual_window_size
+
+
+                #     # Check if the t_window_arr is not empty
+                #     if t_window_arr.size > 0 and t_window_arr.shape[0] == actual_window_size:
+                #         # Access the first row of the window
+                #         init_frame_arr = t_window_arr[0,:]
+
+                #         # ... [rest of your calculations]
+                #     else:
+                #         # Handle the case where t_window_arr is empty
+                #         # For example, you can continue to the next iteration of the loop
+                #         continue
+
+
+
+                # else:
+                #     t_window_arr = np.squeeze(cell_tarray[np.where((cell_tarray[:,0] >= t - t_window/2) &
+                #                                                     (cell_tarray[:,0] < t + t_window/2))])
+                #     size_of_window = t_window
                 t_window_arr = np.squeeze(cell_tarray[np.where((cell_tarray[:,0] >= t - t_window/2) &
-                                                                  (cell_tarray[:,0] < t + t_window/2))])
-                init_frame_arr = t_window_arr[0,:] # Use the first row of the window
+                                                                (cell_tarray[:,0] < t + t_window/2))])
+                # size_of_window = t_window # Redundant, equivalent to t_window
+
+                #####
+                init_frame_arr = t_window_arr[0,:] # MOVED THIS INTO LOOP Use the first row of the window
 
 #                 segment_length = np.nan # default value
+
 
                 # Only process calculations for which we have the entire window
                 if(t_window_arr.shape[0] == t_window):
@@ -108,7 +143,13 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                         glob_turn = np.arctan((y__ - y_) / (x__ - x_)) # Equivalent to turn_angle_radians
                         turn_list.append(glob_turn)
 
-                    assert len(dist_list) == t_window-1, 'length of computed distances doesnt match time window'
+
+                    if INPUT_FMT == 'trackmate':
+                        actual_window_size = len(window_traj)
+                        assert len(dist_list) == actual_window_size - 1, 'length of computed distances does not match actual window size'
+                    else:
+
+                        assert len(dist_list) == t_window-1, 'length of computed distances doesnt match time window'
 
                     # Summary measurements across the time window
                     cumulative_length = np.sum(dist_list)
@@ -237,6 +278,7 @@ def migration_calcs(df_in):#, calibrate=CALIBRATE_MIG):
 
         # If a combined dataframe is provided, it will have duplicate particle(cell)
         # numbers, therefore we must treat them separately
+        
         exp_reps = cond_df['Replicate_ID'].unique()
 
         '''
@@ -262,10 +304,14 @@ def migration_calcs(df_in):#, calibrate=CALIBRATE_MIG):
 
             # print('n_frames: ',n_frames )
             # print('n_cells: ',n_cells )
+            if INPUT_FMT != 'trackmate':
+                thing_to_iterate = 'particle'
+            elif INPUT_FMT == 'trackmate':
+                thing_to_iterate = 'uniq_id'
 
-            for n in tqdm(exp_subdf['particle'].unique()):
+            for n in tqdm(exp_subdf[thing_to_iterate].unique()): #put in thing_to_iterate
                 # For each cell, get another subset of the dataframe
-                cell_subdf = exp_subdf[exp_subdf['particle'] == n]
+                cell_subdf = exp_subdf[exp_subdf[thing_to_iterate] == n] # was 'particle', now thing_to_iterate
                 assert len(cell_subdf.index)==len(cell_subdf.index.unique()), 'exp_subdf indexes not unique'
 
                 tarray = cell_subdf[['frame', 'x_um', 'y_um']].to_numpy()#cell_subdf['frame', 'x', 'y']
