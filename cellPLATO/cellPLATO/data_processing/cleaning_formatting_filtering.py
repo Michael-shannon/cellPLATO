@@ -1,7 +1,8 @@
 #cleaning_Labeling.py
 
-from initialization.config import *
+# from cellPLATO.cellPLATO.initialization.config_trackmate import *
 from initialization.initialization import *
+from initialization.config import *
 
 import os
 import numpy as np
@@ -101,6 +102,140 @@ def apply_unique_id(df):
             df.at[df_inds,'uniq_id'] = cell_uniq_ident
             df.at[df_inds,'ntpts'] = ntpts
 
+def apply_unique_id_trackmate(df):
+
+    '''
+    Add column to dataframe indicating a unique id for each cell, constructed as a concatenation of
+    a numerical representation of the cells experimental replicate and the particle (cell) if.
+    Of the form: XX_xx
+
+    Additionally, adds column 'ntpts' to the dataframe, to make it easier to filter by track length.
+
+    Input:
+        df: DataFrame
+
+
+    Returns:
+        None. (Change is made directly to the passed dataframe.)
+
+    '''
+    for filename in df['File_name'].unique():
+         
+        for cell_id in df[df['File_name'] == filename]['TRACK_ID'].unique():
+            
+            rep_ind = list(df['File_name'].unique()).index(filename)
+            # print(f' The rep_ind is {rep_ind}')
+            cell_uniq_ident = str(rep_ind) + '_' + str(int(cell_id))
+            
+
+            cell_df = df[(df['File_name']==filename) &
+                            (df['TRACK_ID']==cell_id)]
+            df_inds = list(df.index[(df['File_name']==filename)
+                            & (df['TRACK_ID']==cell_id)])
+            ntpts = len(cell_df)
+            # Add unique ID back into the original dataframe
+            df.at[df_inds,'uniq_id'] = cell_uniq_ident
+            df.at[df_inds,'ntpts'] = ntpts
+
+
+
+
+    # # in trackmate data, you can get a cell_df by minimally using the TRACK_ID, which is unique for each File_name
+
+    # # for filename in df['File_name'].unique():
+    # #     # extract a df
+    # #     df_file = df[df['File_name'] == filename]
+    # #     # then get the TRACK_IDs present in that df
+    # #     for trackmate_id in df_file['TRACK_ID'].unique():
+
+    # #         cell_df = df_file[df_file['TRACK_ID'] == trackmate_id]
+    # #         # so you've got a cell_df, with the columns of trackmate
+
+    # #         # now, create a unique cell ID
+    # #         rep_ind = 
+
+
+    #                     rep_ind = list(df['Replicate_ID'].unique()).index(rep)
+
+    #         cell_uniq_ident = str(rep_ind) + '_' + str(int(cell_id))
+
+    #         cell_df = df[(df['Replicate_ID']==rep) &
+    #                     (df['Replicate_ID']==rep) &
+    #                     (df['Replicate_ID']==rep) &
+    #                         (df['particle']==cell_id)]
+
+    #         df_inds = list(df.index[(df['Replicate_ID']==rep)
+    #                     & (df['particle']==cell_id)])
+            
+    #         ntpts = len(cell_df)
+    #         # Add unique ID back into the original dataframe
+    #         df.at[df_inds,'uniq_id'] = cell_uniq_ident
+    #         df.at[df_inds,'ntpts'] = ntpts      
+
+
+
+
+    #         # then get the cell_ids present in that df
+    #         for cell_id in df_file[df_file['TRACK_ID'] == trackmate_id]['particle'].unique():
+
+    #             # Create a unique cell identifier
+    #             trackmate_ind = list(df_file['TRACK_ID'].unique()).index(trackmate_id)
+
+    #             cell_uniq_ident = str(trackmate_ind) + '_' + str(int(cell_id))
+
+    #             cell_df = df_file[(df_file['TRACK_ID']==trackmate_id) &
+    #                             (df_file['particle']==cell_id)]
+
+    #             df_inds = list(df_file.index[(df_file['TRACK_ID']==trackmate_id)
+    #                         & (df_file['particle']==cell_id)])
+    #             ntpts = len(cell_df)
+    #             # Add unique ID back into the original dataframe
+    #             df.at[df_inds,'uniq_id'] = cell_uniq_ident
+    #             df.at[df_inds,'ntpts'] = ntpts
+
+    # for trackmate_id in df['Track_ID'].unique():
+            
+    #         for cell_id in df[df['Track_ID'] == trackmate_id]['particle'].unique():
+    
+    #             # Create a unique cell identifier
+    #             trackmate_ind = list(df['Track_ID'].unique()).index(trackmate_id)
+    
+    #             cell_uniq_ident = str(trackmate_ind) + '_' + str(int(cell_id))
+    
+    #             cell_df = df[(df['Track_ID']==trackmate_id) &
+    #                             (df['particle']==cell_id)]
+    
+    #             df_inds = list(df.index[(df['Track_ID']==trackmate_id)
+    #                         & (df['particle']==cell_id)])
+    #             ntpts = len(cell_df)
+    #             # Add unique ID back into the original dataframe
+    #             df.at[df_inds,'uniq_id'] = cell_uniq_ident
+    #             df.at[df_inds,'ntpts'] = ntpts
+
+
+
+    # for rep in df['Replicate_ID'].unique():
+
+    #     for cell_id in df[df['Replicate_ID'] == rep]['particle'].unique():
+
+    #         # Create a unique cell identifier
+    #         rep_ind = list(df['Replicate_ID'].unique()).index(rep)
+
+    #         cell_uniq_ident = str(rep_ind) + '_' + str(int(cell_id))
+
+    #         cell_df = df[(df['Replicate_ID']==rep) &
+    #                      (df['Replicate_ID']==rep) &
+    #                      (df['Replicate_ID']==rep) &
+    #                         (df['particle']==cell_id)]
+
+    #         df_inds = list(df.index[(df['Replicate_ID']==rep)
+    #                        & (df['particle']==cell_id)])
+            
+    #         ntpts = len(cell_df)
+    #         # Add unique ID back into the original dataframe
+    #         df.at[df_inds,'uniq_id'] = cell_uniq_ident
+    #         df.at[df_inds,'ntpts'] = ntpts            
+
 
 def replace_labels_shortlabels(df):
 
@@ -133,7 +268,7 @@ def apply_filters(df, filter_cell=True, how = 'all', filter_dict=DATA_FILTERS):
     Apply the filters defines as FILTERS dictionary in config.py
     Apply in subsequent steps, and visualize the loss.
 
-    Adds the 'included' column to the inputted datafra,me
+    Adds the 'included' column to the inputted dataframe
 
     Returns:
         Filtered dataframe

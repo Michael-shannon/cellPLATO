@@ -2,6 +2,7 @@
 # Functions for finding cells that meet a criteria, or random ones.
 #test#
 
+# from cellPLATO.cellPLATO.initialization.config_trackmate import *
 from initialization.config import *
 from initialization.initialization import *
 
@@ -121,4 +122,4 @@ def get_cell_id(cell_df):
 
 
 
-0
+
