@@ -57,7 +57,8 @@ def get_cell_contours(data_in, fmt=INPUT_FMT):
         xyzt_arr = df_out[['x', 'y', 'z', 'frame']].to_numpy()
         assert xyzt_arr.shape[0] == len(df_out), 'Wrong shape'
 
-        for i in tqdm(range(len(df_out))):
+        # for i in tqdm(range(len(df_out))):
+        for i in range(len(df_out)): # REMOVING TQDM
 
             # Extract cell position from the data volume
             x,y,z,t = xyzt_arr[i,:]

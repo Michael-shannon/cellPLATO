@@ -1840,6 +1840,8 @@ def disambiguate_timepoint(df,  exemps, scaled_df, top_dictionary, XYRange=100,b
     This function uses several other functions to make plots of single cells. 
     If trajectory is True, it plots the whole cell trajectory. If trajectory is False, it plots a single timepoint.
 
+    Expansion: make an option to also output a corresponding raw cell image with contour overlaid.
+
     Inputs:
     The main df, with at least 'label' which is the cluster ID. 
     Exemps is a dataframe with the same columns as the main df, but with only one row per cell because it denotes exemplar cells at given timepoints.
@@ -3028,7 +3030,7 @@ def get_single_cell_raw_image(cell_df, XYRange, cell_follow):
             cropped_image_list.append(crop_img)
 
     else:
-        print('Not following the cell')
+        # print('Not following the cell')
         x = coordinates[0][0] # 
         y = coordinates[0][1] # 
 
@@ -3118,7 +3120,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
             color = 'k'
 
         else:
-            print('Not inverting the image')
+            # print('Not inverting the image')
             color = 'w'
 
         if follow_cell:
@@ -3371,5 +3373,157 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
     return
 
 
+###### THIS ONE is DEV ###### AND IT WORKS ######
 
+def make_raw_cell_png_overlaidwith_behaviourcontourandtrack(df, exemplar_df,XYRange = 300, LUTlow = 100, LUThi=1000, follow_cell = False, invert=False):
+    from tqdm import tqdm
+    from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+    import matplotlib.font_manager as fm
+
+    chosen_uniq_ids = exemplar_df['uniq_id'].values
+
+    font_size = 15
+    dpi = 150 # This is the resolution of the figure
+    width = 1200 # This is the width of the figure in pixels
+    height = 1200 # This is the height of the figure in pixels
+
+    plt.rcParams.update({
+    'font.size': font_size,       # controls default text sizes
+    'axes.titlesize': font_size,  # fontsize of the axes title
+    'axes.labelsize': font_size,  # fontsize of the x and y labels
+    'xtick.labelsize': font_size, # fontsize of the tick labels
+    'ytick.labelsize': font_size, # fontsize of the tick labels
+    'legend.fontsize': font_size, # legend fontsize
+    'figure.titlesize': font_size # fontsize of the figure title
+    })
+
+
+    cell_follow = 'no_follow'
+    # Define the directory
+    nameforfolder = f'Exemplars_de-abstractified'
+    output_dir = os.path.join(CLUST_DISAMBIG_DIR, nameforfolder)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Make the cluster colors
+    cluster_colors = []
+    labels = list(set(df['label'].unique()))
+    numofcolors = len(labels)
+    cmap = cm.get_cmap(CLUSTER_CMAP)
+    for i in range(numofcolors):
+        cluster_colors.append(cmap(i))
+    # match the cluster colors to each cluster ID
+    cluster_colors = dict(zip(labels, cluster_colors))
+
+    # make a cell df based off a uniq_id
+    for uniq_id in tqdm(chosen_uniq_ids):
+        # print(f'Processing cell {uniq_id}')
+        exemplar_row = exemplar_df[exemplar_df['uniq_id'] == uniq_id] #THERE ARE MANY, LOL. NOT JUST 1 EXEMPLAR FROM EACH CELL.
+        if len(exemplar_row) == 0:
+            print(f'No exemplar exists for {uniq_id} so moving on to the next one')
+            continue
+        # Get the frame number
+        frame_number = exemplar_row['frame'].values[0]
+        # Use the frame number to get the correct row from the df
+        cell_df = df[(df['uniq_id'] == uniq_id) & (df['frame'] == frame_number)]
+        # Get the raw image as a numpy array and output the xshift and yshift
+        cropped_cell_list, xshift, yshift = get_single_cell_raw_image(cell_df, XYRange, cell_follow)   
+        # Get the contour list
+        contour_list=get_cell_contours(cell_df) 
+        # Calculate some min and max values for the cell_df
+        x0 = cell_df['x_pix'].values[0]
+        y0 = cell_df['y_pix'].values[0]
+        xminimum=cell_df['x_pix'].min() 
+        xmaximum=cell_df['x_pix'].max()
+        xmid = np.median([xmaximum, xminimum])
+        xmin=xmid-XYRange/2
+        xmax=xmid+XYRange/2
+        yminimum=cell_df['y_pix'].min()
+        ymaximum=cell_df['y_pix'].max()
+        ymid = np.median([ymaximum, yminimum])
+        ymin=ymid-XYRange/2
+        ymax=ymid+XYRange/2
+        # Make some adjustments for inverting the image if that options is selected
+        if invert:
+            print('Inverting the image')
+            max_value = np.max([np.max(img) for img in cropped_cell_list])
+            # Invert the colors of the images
+            inverted_image_list = [max_value - img for img in cropped_cell_list]
+            cropped_cell_list = inverted_image_list
+            color = 'k'
+        else:
+            # print('Not inverting the image')
+            color = 'w'
+
+        # Here you extract the next previous row from the exemplar cell, in order to plot the track
+        cell_df_row1 = df[(df['uniq_id'] == uniq_id) & (df['frame'] == frame_number)] # you look in the main df for this
+        cell_df_row2 = df[(df['uniq_id'] == uniq_id) & (df['frame'] == frame_number - 1)] # then take the previous row
+        cell_df_plus = pd.concat([cell_df_row2, cell_df_row1]) # concatenate them
+        # Now you start displaying images and plotting:
+        fig, ax = plt.subplots(1, 1, figsize=(width / dpi, height / dpi), dpi=dpi)
+        # Get the raw image
+        img = cropped_cell_list[0]
+        # Compensate for inversion if its done and plot the image
+        if invert:
+            max_value = np.max(img)  # Assuming img is the inverted image here
+            min_value = np.min(img)
+            print(f'The max value is {max_value} and the min value is {min_value}')
+            ax.imshow(img, cmap='gray', vmin=max_value - LUThi, vmax=max_value - LUTlow)
+        else:
+            ax.imshow(img, cmap='gray', vmin=LUTlow, vmax=LUThi)
+        # Plot the contour on top of the raw image
+        contour = contour_list[0]
+        contour_arr = np.asarray(contour).T
+        contour_arr = contour_arr - np.array([xshift, yshift]) # Shifts the contour to align with the raw image
+        Cluster_ID = cell_df['label'].iloc[0]
+        # Hide axes and ticks
+        ax.axis('off')
+        Cluster_ID = cell_df['label'].iloc[0]
+        ax.plot(contour_arr[:, 0], contour_arr[:, 1], '-o', markersize=1, linewidth=3, alpha=1, color=cluster_colors[Cluster_ID])
+        
+        # Finally plot the track on top of the raw image
+        xcoords = cell_df_plus['x'].values
+        ycoords = cell_df_plus['y'].values
+        shifted_xcoords = xcoords - xshift
+        shifted_ycoords = ycoords - yshift
+        x_seg = shifted_xcoords
+        y_seg = shifted_ycoords  
+        ax.plot(x_seg,y_seg,'-o',markersize=2,c='k', linewidth=3)     
+
+        # Now do some labelling of the plot:
+        ax.set_title(f'Cluster ID {Cluster_ID} + Cell_ID: {uniq_id}', x=0.5, y=0.95, pad=-10, fontsize=font_size, c='k')
+        #crucial: the section makes new mins and maxes to align the raw and contour images
+        xmin=xmin-xshift
+        xmax=xmax-xshift
+        ymin=ymin-yshift
+        ymax=ymax-yshift
+        #crucial: aligns the raw and contour images
+        # aaaaand this sets them:
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_xlabel('x (px)', fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+        ax.set_ylabel("y (px)", fontname="Arial",fontsize=PLOT_TEXT_SIZE)
+        ax.tick_params(axis='both', labelsize=PLOT_TEXT_SIZE)
+        ax.set_aspect('equal')
+        ax.set_adjustable("datalim")
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        #make it tight
+        plt.tight_layout()
+        # Makes a scale bar:
+        scaleinmicrons = 20
+        scalebar = AnchoredSizeBar(ax.transData,
+                                scaleinmicrons / MICRONS_PER_PIXEL, f'', 'lower left', 
+                                pad=0.1,
+                                color='black',
+                                borderpad=0,
+                                frameon=False,
+                                size_vertical=5,
+                                fontproperties=fm.FontProperties(size=font_size))
+        ax.add_artist(scalebar)
+        # Add a text box for the scale bar text
+        ax.text(xmin, ymin+(XYRange*0.05), f'{scaleinmicrons} um', fontproperties=fm.FontProperties(size=font_size))
+        #saves the figure
+        plt.savefig(os.path.join(output_dir, f'RawContourTrack_{uniq_id}_Cluster_{Cluster_ID}.png'), bbox_inches='tight', pad_inches=0)
+        plt.close() # Close the figure to free up memory
+        ax.clear()
 
