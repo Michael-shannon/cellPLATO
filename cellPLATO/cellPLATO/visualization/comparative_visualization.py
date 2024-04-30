@@ -275,7 +275,7 @@ def marginal_xy(df, pair, plot_type='scatter', renderer='plotly', save_path=MARG
             else:
                 fig =  sns.jointplot(data=df, x=pair[0], y=pair[1], hue = df[cond_grouping],
                       joint_kws={'s': 1}, alpha=0.5)
-                plt.legend(loc='best')
+                plt.legend(loc='best', bbox_to_anchor=(1.05, 1), borderaxespad=0.)
 
         elif plot_type == 'contour':
 

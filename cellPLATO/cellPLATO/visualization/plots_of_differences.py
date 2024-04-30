@@ -427,17 +427,6 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
         pt_size = 2
         alphavalue = 0.3
 
-    # Resize points based on number of samples to reduce overplotting.
-    # if(len(df) > 1000 and len(df) < 5000):
-    #     pt_size = 3
-    #     alphavalue = 0.08
-    # elif(len(df) > 5000 and len(df) < 10000):
-    #     pt_size = 2
-    #     alphavalue = 0.04
-    # else:
-    #     pt_size = 1
-    #     alphavalue = 0.01
-
     
     print('There are ' + str(len(df)) + ' points, so using point size: ' + str(pt_size))
     # Get the bootstrapped sample as a dataframe
@@ -450,60 +439,138 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     for i in range(numcolors):
         colors.append(cmap(i))
 
-    # colors=[]
-    # if CONDITION_CMAP != 'Dark24':
-    #     cmap = cm.get_cmap(CONDITION_CMAP, len(df['Condition_shortlabel'].unique()))
-    #     for i in range(cmap.N):
-    #         colors.append(cmap(i))
-    # else:
-    #     colors = plotlytomatplotlibcolors()
-    #     colors=colors[:len(df['Condition_shortlabel'].unique())]   
-    #     print("This is the format for the colors:")
-    #     print(colors)
+    #### VERSION 2 #####
+    gax=axes[0]
+    sns.violinplot(ax=axes[0], x=factor, y="Condition",kind="violin", palette=colors, inner='box', data=df, split=False, ci = 'sd',linewidth=2)
+    sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, medianprops={'color': 'k', 'ls': '-', 'lw': 2},whiskerprops={'visible': False},
+                showbox=False, notch=True, showcaps=False, showfliers=False,
+                flierprops={"marker": "x", "markeredgecolor": "black","markersize": "3","fillstyle": "none" },)
+    for collection in gax.collections:
+        if isinstance(collection, matplotlib.collections.PolyCollection):
+            collection.set_edgecolor('none')
+            collection.set_facecolor('none')
+            collection.set_zorder(10)
+        
+    plt.setp(gax.lines, zorder=100)
+    sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=alphavalue)   
+
+    ######### VERSION 2 ENDS #####
 
     #
-    # Left subplot: horizontal scatter
-    # ORiginal: 
-    # sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=0.1)
-    # sns.pointplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df,color='black', ci = 95, join=False, errwidth=10.0) #calamansi kind="swarm",
-    # g=axes[0]
-    # plt.setp(g.lines, zorder=100)
-    # plt.setp(g.collections, zorder=100, )
+    # Right subplot: differences
+    #
 
-    # # Draw confidence intervalswith point plot onto scatter plot and make this overlay the other plot
-    # plt.setp(g.lines, zorder=100)
-    # plt.setp(g.collections, zorder=100, )   
-    ################ VERSION 1 #####
-    # gax=axes[0]
-    # #######
-    # # Draw boxplot on top
-    # sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, 
-    #             # meanline=True,
-    #             # meanprops={'color': 'k', 'ls': '-', 'lw': 5},
-    #             medianprops={'color': 'k', 'ls': '-', 'lw': 2},
-    #             # medianprops={'visible': False},
-    #             whiskerprops={'visible': True,'color': 'k', 'ls': '-', 'lw': 2},
-    #             # showmeans=True,
-    #             # meanprops={"marker": "|", "markeredgecolor": "black","markersize": "50"},
-    #             showfliers=True,
-    #             flierprops={"marker": "x", "markeredgecolor": "black","markersize": "2","fillstyle": "none" },
-    #             showbox=True,
-    #             # make the boxes a bit transparent
-    #             # alpha=0.01,
-    #             # make the box width smaller
-    #             # width=0.5,
-    #             notch=True,
-    #             showcaps=True,
-    #             palette=colors) #calamansi kind="swarm",
-    # for patch in gax.patches:
-    #     r, g, b, a = patch.get_facecolor()
-    #     patch.set_facecolor((r, g, b, .3))
-    #     patch.set_edgecolor((0, 0, 0, 1))
-    #     patch.set_zorder(10) #This did it.
+    sns.violinplot(ax=axes[1], x="Difference", y="Condition",kind="violin", palette=colors, inner='box', data=bootstrap_diff_df, split=True, ci = 'sd',linewidth=2)
+    axes[1].axvline(0, ls='-', color='black')
+    axes[1].set(ylabel=None)
+    axes[1].set(yticklabels=[])
+    # axes[0].set(yticklabels=[])
+    axes[0].set(ylabel=None)
 
-    # plt.setp(gax.lines, zorder=100)
-    # sns.stripplot(ax=axes[0], x=factor, y="Condition_shortlabel",size=pt_size,jitter=0.25, palette=colors, data=df, alpha=alphavalue)   
-    ##### VERSION 1 ENDS #####
+    axes[1].set(xlabel='Effect size')
+    axes[0].set(xlabel=factor_) # SPIDERMAN #
+
+    # change the font size of the x label on axes[1]
+    axes[1].xaxis.label.set_size(PLOT_TEXT_SIZE)
+    axes[0].xaxis.label.set_size(PLOT_TEXT_SIZE)
+
+    # set the font size of the y ticks
+    axes[1].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
+    axes[0].tick_params(axis='y', labelsize=PLOT_TEXT_SIZE)
+    axes[1].tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
+    axes[0].tick_params(axis='x', labelsize=PLOT_TEXT_SIZE)
+
+    # Invert both y axis to be consistent with original plots of difference
+    axes[0].invert_yaxis()
+    axes[1].invert_yaxis() #scallywag
+
+    # set the font size for the xticks
+
+    
+
+    fig.tight_layout(rect=[0, 0, 1, 0.96])
+    fig.savefig(save_path+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
+    # make it tight
+    
+
+    # fig.savefig(PLOT_OUTPUT+cust_txt+factor+'_plots_of_differences_sns.png', dpi=300)#plt.
+
+    return fig
+
+
+
+def plots_of_differences_sns_donors(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt='', save_path=DIFFPLOT_DIR):
+
+    '''
+    A function to create the plots of differences plots with bootstrapping CIs on sample data.
+    Based on the method and code from Joachim Goedhart doi: https://doi.org/10.1101/578575
+        https://www.biorxiv.org/content/10.1101/578575v1.full.pdf+html
+        and related coe in R:
+        https://github.com/JoachimGoedhart/PlotsOfDifferences/blob/master/app.R
+
+    **NOT Adapted to allow comparisons between tSNE-derived subgroups**
+
+    '''
+
+
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    plt.rcParams.update({'font.size': PLOT_TEXT_SIZE})
+    plt.clf()
+
+    assert ctl_label in df_in['Condition'].values, ctl_label + ' is not in the list of conditions'
+    assert ctl_label != -1, 'Not yet adapted to compare between cluster groups, use plots_of_differences_plotly() instead'
+
+    df = df_in.copy()
+
+    # Sort values according to custom order for drawing plots onto graph
+    df['Condition'] = pd.Categorical(df['Condition'], CONDITIONS_TO_INCLUDE)
+    df.sort_values(by='Condition', inplace=True, ascending=True)
+
+    # Use Matplotlib to create subplot and set some properties
+    fig_width = 15#11 # Inches
+    aspect = 2
+
+    fig, axes = plt.subplots(1, 2, figsize=(fig_width,fig_width/aspect))
+#     plt.rcParams['savefig.facecolor'] = 'w'
+    # Remove the underscore from factor
+    factor_ = factor.replace('_',' ')
+    if factor == 'rip_L': # SPIDERMAN #
+        rip_r_microns= RIP_R*MICRONS_PER_PIXEL
+        factor_ = factor + '(' + str(rip_r_microns) + ')' # Add the value of the rip to the label
+        factor_ = factor_.replace('_',' ')
+    fig.suptitle('Plots of data and effect size: '+ factor_, fontsize= PLOT_TEXT_SIZE)
+
+    numberoftotalpoints = len(df)
+
+    if(numberoftotalpoints > 1000 and numberoftotalpoints < 5000):
+        pt_size = 3
+        alphavalue = 0.9
+    elif(numberoftotalpoints > 5000 and numberoftotalpoints < 10000):
+        pt_size = 4
+        alphavalue = 0.7
+    elif(numberoftotalpoints > 10000 and numberoftotalpoints < 20000):
+        pt_size=3
+        alphavalue = 0.6
+    elif(numberoftotalpoints > 10 and numberoftotalpoints < 500):
+        pt_size = 10
+        alphavalue = 0.8
+    
+    else:
+        pt_size = 2
+        alphavalue = 0.3
+
+    
+    print('There are ' + str(len(df)) + ' points, so using point size: ' + str(pt_size))
+    # Get the bootstrapped sample as a dataframe
+    bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
+
+
+    colors=[]
+    cmap = cm.get_cmap(CONDITION_CMAP)
+    numcolors = len(df['Condition_shortlabel'].unique())
+    for i in range(numcolors):
+        colors.append(cmap(i))
 
     #### VERSION 2 #####
     gax=axes[0]
