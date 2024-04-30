@@ -104,6 +104,9 @@ def superplots_plotly(df_in, factor, t=FRAME_END, grid=False, save_path=SUPERPLO
     colors = np.asarray(sns.color_palette(PALETTE, n_colors=len(replicates)))
 
     sp_df = format_for_superplots(df, factor,t)
+    # print(sp_df)
+    # print(sp_df['Replicate'].unique())
+    # print('Check this is correct!')
 
     if(USE_SHORTLABELS): # Must instead sort by shortlabel list order
         # Sort the dataframe by custom category list to set draw order

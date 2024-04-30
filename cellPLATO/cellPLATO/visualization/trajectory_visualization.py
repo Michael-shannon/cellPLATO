@@ -3077,7 +3077,7 @@ def get_single_cell_raw_image(cell_df, XYRange, cell_follow):
 
 import imageio
 
-def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True):
+def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True, LUTlow=10, LUThi=140): #cluster or trajectory
     
     # These uniq_ids are the ones to be used here
 
@@ -3123,13 +3123,20 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
             # print('Not inverting the image')
             color = 'w'
 
+        max_value = np.max([np.max(img) for img in cropped_cell_list])
+        min_value = np.min([np.min(img) for img in cropped_cell_list])
+
         if follow_cell:
 
             for i, img in enumerate(cropped_cell_list):
 
                 fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
                 # Apply the 'hot' colormap
-                plt.imshow(img, cmap='Greys')
+                # plt.imshow(img, cmap='Greys')
+                if LUTlow is not None and LUThi is not None:
+                    plt.imshow(img, cmap='gray', vmin=max_value - LUThi, vmax=max_value - LUTlow)
+                else:
+                    plt.imshow(img, cmap='gray')
                 ax = plt.gca()
                 # plt.clim(0, 1) # Set the color limits
                 plt.axis('off') # Turn off the axis
@@ -3159,7 +3166,12 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
                 fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
                 # Apply the 'hot' colormap
-                plt.imshow(img, cmap='Greys')
+
+                # plt.imshow(img, cmap='Greys')
+                if LUTlow is not None and LUThi is not None:
+                    plt.imshow(img, cmap='gray', vmin=max_value - LUThi, vmax=max_value - LUTlow)
+                else:
+                    plt.imshow(img, cmap='gray')
                 ax = plt.gca()
                 # plt.clim(0, 1) # Set the color limits
                 plt.axis('off') # Turn off the axis
@@ -3199,7 +3211,7 @@ def make_raw_cell_pngstacks(df,chosen_uniq_ids,XYRange = 300, follow_cell = Fals
 
 from tqdm import tqdm 
 
-def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True):
+def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cell = False, invert=True, colormode='trajectory', snapshot=False):
     from tqdm import tqdm 
     
     ###  DEV ONE BURT
@@ -3232,6 +3244,7 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
     for i in range(numofcolors):
         cluster_colors.append(cmap(i))
     # match the cluster colors to each cluster ID
+        
     cluster_colors = dict(zip(labels, cluster_colors))
 
     # Trajectory_IDs = tptlabel_dr_df_filt_clusteredtrajectories['trajectory_id'] 
@@ -3256,7 +3269,12 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
     # make a cell df based off a uniq_id
     for uniq_id in chosen_uniq_ids:
         print(f'Processing cell {uniq_id}')
-        cell_df = df[df['uniq_id'] == uniq_id]   
+        # if snapshot then extract the last 8 frames of the cell_df only
+        if snapshot:
+            cell_df = df[df['uniq_id'] == uniq_id]
+            cell_df = cell_df.iloc[-8:]
+        else:
+            cell_df = df[df['uniq_id'] == uniq_id]   
 ######################################################
        # Get the initial x and y coordinates
         x0 = cell_df['x_pix'].values[0]
@@ -3267,14 +3285,16 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
         x_upper = x0 + XYRange / 2
         y_lower = y0 - XYRange / 2
         y_upper = y0 + XYRange / 2
+        # get the 
+        traject_id = cell_df['trajectory_id'].iloc[0]
 
 
 
 ###########################################################
         if follow_cell:
-            nameforfolder = f'Behaviour_followed_cell_{uniq_id}'
+            nameforfolder = f'{colormode}_followed_cell_{uniq_id}_traj_{traject_id}'
         else:
-            nameforfolder = f'Behaviour_static_cell_{uniq_id}'
+            nameforfolder = f'{colormode}_static_cell_{uniq_id}_traj_{traject_id}'
         # Define the directory
         output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, nameforfolder)
         os.makedirs(output_dir, exist_ok=True) 
@@ -3295,9 +3315,9 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
         ymax=ymid+XYRange/2
 
         # fig, ax = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
-
-        for step in tqdm(range(len(cell_df))):
-
+        total_steps=len(cell_df)
+        for step in tqdm(range(total_steps)):
+            # if not snapshot or (snapshot and step == total_steps - 1):  # Check for the last step if snapshot is True
             # fig, ax = plt.subplots(1,1, figsize=(0.08*XYRange,0.08*XYRange))
             fig, ax = plt.subplots(1,1, figsize=(width/dpi, height/dpi))
 #######################################
@@ -3319,7 +3339,12 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
                 else:
                     alpha=0.1
                 if not np.isnan(np.sum(contour_arr)):
-                    ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=cluster_colors[Cluster_ID],linewidth=1, alpha=alpha) #cilantro
+                    #### dev added 3-20-2024 ####
+                    if colormode == 'trajectory':
+                        # print('Colouring whole track by trajectory')
+                        ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=trajectory_colors[traj_id],linewidth=1, alpha=alpha) #cilantro
+                    else:
+                        ax.plot(contour_arr[:,0],contour_arr[:,1],'-o',markersize=1,c=cluster_colors[Cluster_ID],linewidth=1, alpha=alpha) #cilantro
                 if i > 0:
                     x_seg = cell_df['x_pix'].values[i-1:i+1]
                     y_seg = cell_df['y_pix'].values[i-1:i+1]

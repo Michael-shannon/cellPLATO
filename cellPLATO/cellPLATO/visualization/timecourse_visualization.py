@@ -242,6 +242,8 @@ def timeplot_sample(fig_data, factor, fac_array, n_frames, color_rgb, label):#, 
         y=fac_array[:,0],
         mode='lines',
         line=dict(color='rgb'+str(color_rgb))))
+        # line=dict(color=color_rgb) # MJS changed this 3-13-2024
+    
 
     # Second and third plot the error bands.
     fig_data.append(go.Scatter(
