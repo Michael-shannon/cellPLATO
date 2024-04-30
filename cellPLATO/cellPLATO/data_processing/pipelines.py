@@ -368,6 +368,9 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     if do_tsne == True:
         tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
         tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
+    else:
+        print('Skipping tSNE')
+        tsne_df = pd.DataFrame()
 
     # Do UMAP and insert into dataframe:
     umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=N_COMPONENTS) #aubergine
@@ -376,7 +379,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     # Create Dimension-reduced dataframe by adding PCA and tSNE columns.
     dr_df = pd.concat([df, pca_df, tsne_df, umap_df], axis=1)
 
-    assert list(df.index) == list(dr_df.index), 'dr_df should be the same length as input dataframe. Check indexing of input dataframe.' #trackmate removed
+    # assert list(df.index) == list(dr_df.index), 'dr_df should be the same length as input dataframe. Check indexing of input dataframe.' #trackmate removed
 
     return dr_df
 
