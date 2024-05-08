@@ -15,6 +15,8 @@ import plotly
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
+import os
+from PIL import Image
 
 plt.rcParams.update({
     "figure.facecolor":  (1.0, 1.0, 1.0, 1.0),
@@ -2781,6 +2783,49 @@ def plasticity_per_trajectory(df):
     
     return
 
+
+def plasticity_per_condition(df):
+
+    # Set the style and color palette
+    sns.set_style("whitegrid")
+    max_values = df.groupby(['Condition_shortlabel', 'uniq_id'])['cum_n_changes'].max().reset_index()
+    display(max_values)
+    median_values = max_values.groupby(['Condition_shortlabel'])['cum_n_changes'].median().reset_index()
+
+    colors = []
+    cmap = cm.get_cmap(cp.CONDITION_CMAP)
+    numcolors=len(df['Condition_shortlabel'].unique())
+    for i in range(numcolors):
+        colors.append(cmap(i))    
+
+    plt.figure(figsize=(15,10))  # Adjust the size of the plot
+
+    barplot = sns.barplot(x='Condition_shortlabel', y='cum_n_changes', data=median_values, color='grey', alpha = 0.5)
+    sns.violinplot(x='Condition_shortlabel', y='cum_n_changes', data=max_values, palette=colors)
+
+    # Add the median values to the plot
+    for i, bar in enumerate(barplot.patches):
+        barplot.annotate(format(median_values['cum_n_changes'].values[i], '.2f'), 
+                        (bar.get_x() + bar.get_width() / 2, bar.get_height()), 
+                        ha = 'center', va = 'center', 
+                        xytext = (0, -10),  
+                        textcoords = 'offset points',
+                        fontsize = 35)
+    # Increase the font size
+    plt.xticks(fontsize=35)
+    plt.yticks(fontsize=35)
+    # Increase font size of x and y labels
+    plt.xlabel('', fontsize=35)
+    plt.ylabel('Cumulative cluster switches', fontsize=35)
+    # set the ylim
+    plt.ylim(-10, 150)
+    # save it in the trajectory disambig folder
+    plt.savefig(TRAJECTORY_DISAMBIG_DIR + 'plasticity_per_condition.png', dpi=300)
+
+    plt.show()
+    
+    return
+
 import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import matplotlib.font_manager as fm
@@ -3287,6 +3332,8 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
         y_upper = y0 + XYRange / 2
         # get the 
         traject_id = cell_df['trajectory_id'].iloc[0]
+        # make trajectory specific folder
+        trajectory_folder_name = f'Trajectory_{traject_id}'
 
 
 
@@ -3296,7 +3343,7 @@ def make_png_behaviour_trajectories(df,chosen_uniq_ids,XYRange = 300, follow_cel
         else:
             nameforfolder = f'{colormode}_static_cell_{uniq_id}_traj_{traject_id}'
         # Define the directory
-        output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, nameforfolder)
+        output_dir = os.path.join(TRAJECTORY_DISAMBIG_DIR, trajectory_folder_name,nameforfolder)
         os.makedirs(output_dir, exist_ok=True) 
 
         contour_list=get_cell_contours(cell_df)
@@ -3552,3 +3599,65 @@ def make_raw_cell_png_overlaidwith_behaviourcontourandtrack(df, exemplar_df,XYRa
         plt.close() # Close the figure to free up memory
         ax.clear()
 
+
+
+def stitch_and_save_image_sequence_varying_sizes(master_folder, output_folder, reduce_size=False):
+    # Ensure the output folder exists
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    
+    subfolders = [os.path.join(master_folder, f) for f in os.listdir(master_folder) if os.path.isdir(os.path.join(master_folder, f))]
+    subfolders.sort()  # Ensure consistent order
+    
+    # Load all images to determine individual sizes
+    all_images = {}
+    for subfolder in subfolders:
+        images = [f for f in os.listdir(subfolder) if f.endswith('.png')]
+        images.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))  # Sorting by time point
+        all_images[subfolder] = [Image.open(os.path.join(subfolder, img)) for img in images]
+    
+    # Determine the number of images (time points) based on the first subfolder
+    num_images = len(all_images[subfolders[0]])
+
+    for i in range(num_images):
+        row_heights = []
+        max_width = 0
+        images_to_stitch = []
+
+        for row in range(0, len(subfolders), 4):
+            row_images = []
+            row_max_height = 0
+            row_width = 0
+
+            for col in range(4):
+                idx = row + col
+                if idx < len(subfolders):
+                    images = all_images[subfolders[idx]]
+                    if i < len(images):
+                        img = images[i]
+                        row_images.append(img)
+                        row_max_height = max(row_max_height, img.height)
+                        row_width += img.width
+            
+            max_width = max(max_width, row_width)
+            row_heights.append(row_max_height)
+            images_to_stitch.append(row_images)
+
+        # Calculate total grid height
+        total_height = sum(row_heights)
+        final_image = Image.new('RGB', (max_width, total_height))
+
+        y_offset = 0
+        for row_idx, row_images in enumerate(images_to_stitch):
+            x_offset = 0
+            for img in row_images:
+                final_image.paste(img, (x_offset, y_offset))
+                x_offset += img.width
+            y_offset += row_heights[row_idx]
+
+        if reduce_size:
+            # Reduce the size to a quarter (half the width and half the height)
+            final_image = final_image.resize((final_image.width // 2, final_image.height // 2))
+
+        output_filename = os.path.join(output_folder, f"stitched_{i+1:04d}.png")
+        final_image.save(output_filename)
