@@ -18,7 +18,7 @@ CTL_LABEL = 'CONTROL_CONDITION' # Input the name of the control condition here
 CONDITIONS_TO_INCLUDE = ['CONTROL_CONDITION',
                         'CONDITION_2',
                          'CONDITION_3',
-                         'CONDITION_4']
+                         'CONDITION_4'] #test
                          
 
 CONDITION_SHORTLABELS = ['Ctrl','One','Two','Three',] # Short labels for the conditions, for plotting purposes
