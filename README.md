@@ -1,4 +1,4 @@
-# cellPLATO: cell PLasticity Analysis TOol
+![CPLogo](https://github.com/Michael-shannon/cellPLATO/blob/main/cellPLATO/images/cellPLATOlogo.png)
 
 An unsupervised method for identifying cell behaviour in heterogeneous cell trajectory data
 
@@ -10,12 +10,9 @@ cellPLATO workflow:
 4. measures the similarity of behavioural sequences for each cell over time, and clusters them to form 'trajectories of behaviour'
 5. de-abstractifies the clustered behaviours using graphics of exemplar cells, readouts of plasticity and comparisons between conditions
 
-![CPLogo](https://github.com/Michael-shannon/cellPLATO/blob/main/cellPLATO/images/cellPLATOlogo.png)
-
-
 ## Updates
 
-On the 29th of October 2023 we uploaded cellPLATO as a [preprint](https://www.biorxiv.org/content/10.1101/2023.10.28.564355v1) on BioRxiv
+Published in the Journal of Cell Science on the 24th of June, 2024 [here](https://journals.biologists.com/jcs/article/137/20/jcs261887/352628)
 
 Movies for the paper can be found [here](https://drive.google.com/drive/folders/1wvCbWoywRdk0OWhcwwJhiIdAEz4yTKHt?usp=sharing)
 
