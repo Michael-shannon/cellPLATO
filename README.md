@@ -10,7 +10,8 @@ cellPLATO workflow:
 4. measures the similarity of behavioural sequences for each cell over time, and clusters them to form 'trajectories of behaviour'
 5. de-abstractifies the clustered behaviours using graphics of exemplar cells, readouts of plasticity and comparisons between conditions
 
-![GraphicalAbstractForGithub](https://github.com/Michael-shannon/cellPLATO/assets/37793157/c8f28934-18ae-4e36-8853-563c39391b53)
+![CPLogo](https://github.com/Michael-shannon/cellPLATO/blob/main/cellPLATO/images/cellPLATOlogo.png)
+
 
 ## Updates
 
