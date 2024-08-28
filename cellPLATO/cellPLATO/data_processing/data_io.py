@@ -216,7 +216,20 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
-        #### Insert ###
+    elif(fmt == 'csv'):
+        exp_list_df = pd.DataFrame()
+
+        for cond_dir in os.listdir(DATA_PATH):
+            f = os.path.join(DATA_PATH, cond_dir)
+            contents = os.listdir(f)
+            pattern = '*.csv' # Assuming the TRACK_FILENAME is just the extension '.csv'
+
+            for entry in contents:
+                if fnmatch.fnmatch(entry, pattern):
+                    exp_name = entry[:-4] # remove the '.csv' extension from the string.
+                    exp_list.append((cond_dir, exp_name))
+
+        exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
     # A test to be sure the same Experiment name is not used twice.
     for rep in exp_list_df['Experiment'].unique():
@@ -400,6 +413,66 @@ def combine_dataframes(exp_list_df, fmt=INPUT_FMT, dedup_columns=True): #, paths
         combined_df = merged_spots_df
         #################################
 
+    elif(fmt == 'csv'):
+        cond_list = exp_list_df['Condition'].unique()
+        exp_list = exp_list_df['Experiment']
+
+        for i, cond in enumerate(cond_list):
+            cond_exp_list = exp_list_df[exp_list_df['Condition'] == cond]['Experiment']
+
+            for j, rep in enumerate(cond_exp_list):
+                csv_path = os.path.join(DATA_PATH, cond, rep + '.csv')
+
+                if os.path.exists(csv_path) and not OVERWRITE:
+                    if DEBUG:
+                        print(f'Loading existing CSV file: {csv_path}')
+                    csv_df = pd.read_csv(csv_path)
+                else:
+                    print(f'CSV file {csv_path} not found or OVERWRITE is enabled.')
+                    continue
+
+                # Ensure consistency by adding and renaming columns to match btrack format
+                csv_df['Condition'] = cond
+                csv_df['Experiment'] = rep
+                csv_df['Replicate_ID'] = csv_df['Experiment']
+
+                # Rename or add columns to match the btrack format
+                if 'x' not in csv_df.columns and 'x_pix' in csv_df.columns:
+                    csv_df.rename(columns={'x_pix': 'x'}, inplace=True)
+                if 'y' not in csv_df.columns and 'y_pix' in csv_df.columns:
+                    csv_df.rename(columns={'y_pix': 'y'}, inplace=True)
+
+                # Example: Ensure time is in the correct format
+                if 'time_seconds' in csv_df.columns:
+                    csv_df['time'] = csv_df['time_seconds']
+
+                combined_df = pd.concat([combined_df, csv_df])
+                combined_df.reset_index(inplace=True, drop=True)
+                # rename frame_i to frame
+                # if 'frame_i' in combined_df.columns:
+                # combined_df.rename(columns={'frame_i': 'frame'})
+            #     combined_df['frame'] = combined_df['frame_i']
+            # # if 'x_centroid' in combined_df.columns:
+            #     combined_df.rename(columns={'x_centroid': 'x'})
+            # # if 'y_centroid' in combined_df.columns:
+            #     combined_df.rename(columns={'y_centroid': 'y'})
+
+                combined_df['frame'] = combined_df['frame_i']
+                combined_df['x'] = combined_df['x_centroid']
+                combined_df['y'] = combined_df['y_centroid']
+
+                if MIXED_SCALING:
+                    combined_df['x_um'] = combined_df['x'] * MICRONS_PER_PIXEL_LIST[i]
+                    combined_df['y_um'] = combined_df['y'] * MICRONS_PER_PIXEL_LIST[i]
+                else:
+                    combined_df['x_um'] = combined_df['x'] * MICRONS_PER_PIXEL
+                    combined_df['y_um'] = combined_df['y'] * MICRONS_PER_PIXEL
+
+
+                combined_df['x_pix'] = combined_df['x']
+                combined_df['y_pix'] = combined_df['y']
+                combined_df['particle'] = combined_df['Cell_ID']
+
 
     else:
 
@@ -424,7 +497,8 @@ def combine_dataframes(exp_list_df, fmt=INPUT_FMT, dedup_columns=True): #, paths
         combined_df = add_shortlabels(combined_df)
 
     # Renamed the old index value for returning to the raw input downstream.
-    combined_df.rename(columns={'Unnamed: 0': 'rep_row_ind'}, inplace=True)
+    if 'Unnamed: 0' in combined_df.columns:
+        combined_df.rename(columns={'Unnamed: 0': 'rep_row_ind'}, inplace=True)
 
 
     return combined_df

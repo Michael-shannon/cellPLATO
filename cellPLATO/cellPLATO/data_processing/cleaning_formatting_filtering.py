@@ -361,7 +361,67 @@ def apply_filters(df, filter_cell=True, how = 'all', filter_dict=DATA_FILTERS):
 
 
 
-def factor_calibration(df, mixed_calibration=False):
+# def factor_calibration(df, mixed_calibration=False):
+
+#     if mixed_calibration:
+#         print('Using mixed_calibration.')
+#         df_list = []
+
+#         # Make sure the lists of calibration factors are the correct length
+#         assert len(CONDITIONS_TO_INCLUDE) == len(MICRONS_PER_PIXEL_LIST), 'MICRONS_PER_PIXEL_LIST must be same sized list as CONDITIONS_TO_INCLUDE'
+#         assert len(CONDITIONS_TO_INCLUDE) == len(SAMPLING_INTERVAL_LIST),'SAMPLING_INTERVAL_LIST must be same sized list as CONDITIONS_TO_INCLUDE'
+
+#         for i, cond in enumerate(list(df['Condition'].unique())):
+
+#             microns_per_pixel = MICRONS_PER_PIXEL_LIST[i]
+#             sampling_interval = SAMPLING_INTERVAL_LIST[i]
+#             print(cond, microns_per_pixel,sampling_interval)
+
+#             sub_df = df[df['Condition'] == cond]
+
+#             for factor in FACTORS_TO_CONVERT:
+
+#                 if(factor == 'area' or factor == 'filled_area' or factor == 'bbox_area'):
+#                     sub_df[factor] = sub_df[factor] * microns_per_pixel ** 2
+
+#                 else:
+
+#                     sub_df[factor] = sub_df[factor] * microns_per_pixel
+
+#             # Special case for speed:
+
+#             ''' Be extra careful with speed
+#             May also need a correction relative to the base pixel calibration'''
+#             sub_df['speed'] = sub_df['speed'] * sampling_interval / SAMPLING_INTERVAL
+
+#             df_list.append(sub_df)
+
+#         df_out = pd.concat(df_list)
+
+
+#     else:
+
+#         df_out = df.copy()
+
+#         for factor in FACTORS_TO_CONVERT:
+
+#             if(factor == 'area' or factor == 'filled_area' or factor == 'bbox_area'):
+
+#                 df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL ** 2
+
+#             else:
+
+
+#                 df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL
+
+#     return df_out
+
+
+def factor_calibration(df, mixed_calibration=False, apply_conversion=True):
+
+    if not apply_conversion:
+        print("Skipping calibration conversion.")
+        return df
 
     if mixed_calibration:
         print('Using mixed_calibration.')
@@ -375,43 +435,46 @@ def factor_calibration(df, mixed_calibration=False):
 
             microns_per_pixel = MICRONS_PER_PIXEL_LIST[i]
             sampling_interval = SAMPLING_INTERVAL_LIST[i]
-            print(cond, microns_per_pixel,sampling_interval)
+            print(cond, microns_per_pixel, sampling_interval)
 
             sub_df = df[df['Condition'] == cond]
 
             for factor in FACTORS_TO_CONVERT:
-
-                if(factor == 'area' or factor == 'filled_area' or factor == 'bbox_area'):
-                    sub_df[factor] = sub_df[factor] * microns_per_pixel ** 2
-
+                if factor in sub_df.columns:
+                    if factor in ['area', 'filled_area', 'bbox_area']:
+                        sub_df[factor] = sub_df[factor] * microns_per_pixel ** 2
+                    else:
+                        sub_df[factor] = sub_df[factor] * microns_per_pixel
                 else:
-
-                    sub_df[factor] = sub_df[factor] * microns_per_pixel
+                    print(f"Warning: '{factor}' not found in the dataframe. Skipping conversion for this factor.")
 
             # Special case for speed:
-
-            ''' Be extra careful with speed
-            May also need a correction relative to the base pixel calibration'''
-            sub_df['speed'] = sub_df['speed'] * sampling_interval / SAMPLING_INTERVAL
+            if 'speed' in sub_df.columns:
+                sub_df['speed'] = sub_df['speed'] * sampling_interval / SAMPLING_INTERVAL
+            else:
+                print("Warning: 'speed' not found in the dataframe. Skipping conversion for speed.")
 
             df_list.append(sub_df)
 
         df_out = pd.concat(df_list)
 
-
     else:
-
         df_out = df.copy()
 
         for factor in FACTORS_TO_CONVERT:
-
-            if(factor == 'area' or factor == 'filled_area' or factor == 'bbox_area'):
-
-                df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL ** 2
-
+            if factor in df_out.columns:
+                if factor in ['area', 'filled_area', 'bbox_area']:
+                    df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL ** 2
+                else:
+                    df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL
             else:
+                print(f"Warning: '{factor}' not found in the dataframe. Skipping conversion for this factor.")
 
-
-                df_out[factor] = df_out[factor] * MICRONS_PER_PIXEL
+        # Special case for speed:
+        if 'speed' in df_out.columns:
+            df_out['speed'] = df_out['speed'] * SAMPLING_INTERVAL
+        else:
+            print("Warning: 'speed' not found in the dataframe. Skipping conversion for speed.")
 
     return df_out
+
