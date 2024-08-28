@@ -216,6 +216,8 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
+        #### Insert ###
+
     # A test to be sure the same Experiment name is not used twice.
     for rep in exp_list_df['Experiment'].unique():
         rep_df = exp_list_df[exp_list_df['Experiment'] == rep]
