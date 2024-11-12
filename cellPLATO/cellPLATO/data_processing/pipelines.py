@@ -333,6 +333,39 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         # plt.show()
         plt.savefig(savedir+ str(scalingmethod) +'.png')
 
+    elif scalingmethod == 'edelblum_choice':
+        print('Factors to be scaled using log2 and then minmax:')
+
+        
+        FactorsNOTtotransform = ['Displacement_X','Displacement_Y','Displacement_Z','Velocity_X','Velocity_Y','Velocity_Z',]
+        FactorsNottotransform_actual=[]
+        FactorsToTransform_actual=[]
+        for factor in dr_factors:
+            if factor in FactorsNOTtotransform:
+                print('Factor: ' + factor + ' will not be transformed')
+                FactorsNottotransform_actual.append(factor)
+            else:
+                print('Factor: ' + factor + ' will be transformed')
+                FactorsToTransform_actual.append(factor)
+
+        trans_df = df[FactorsToTransform_actual]
+        trans_x=trans_df.values
+        nontrans_df = df[FactorsNottotransform_actual]
+        nontrans_x=nontrans_df.values
+        trans_x_constant=trans_x + 0.000001
+        # trans_x_log = np.log2(trans_x + trans_x_constant) # Wait, this might be a mistake. You have already added the constant to the data. Here you are adding the data plus constant to the data without constant...
+        trans_x_log = np.log2(trans_x_constant) # This is what it should be.
+        trans_x_=MinMaxScaler().fit_transform(trans_x_log)
+        nontrans_x_=MinMaxScaler().fit_transform(nontrans_x)
+        x_=np.concatenate((trans_x_, nontrans_x_), axis=1)
+        newcols=FactorsToTransform_actual + FactorsNottotransform_actual
+        scaled_df_here = pd.DataFrame(x_, columns = newcols)
+        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        plt.tight_layout()
+        plt.title('Transformed data')
+        # plt.show()
+        plt.savefig(savedir+ str(scalingmethod) +'.png')
+
 
 
         
