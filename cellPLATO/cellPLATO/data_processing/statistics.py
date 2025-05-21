@@ -65,9 +65,9 @@ def average_per_condition(df, avg_per_rep=False):
                     rep_n_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
 
 
-                avg_df = avg_df.append(rep_avg_df,ignore_index=True)
-                std_df = std_df.append(rep_std_df,ignore_index=True)
-                n_df = n_df.append(rep_n_df,ignore_index=True)
+                avg_df = pd.concat([avg_df,pd.DataFrame(rep_avg_df)],ignore_index=True)
+                std_df = pd.concat([std_df,pd.DataFrame(rep_std_df)],ignore_index=True)
+                n_df = pd.concat([n_df,pd.DataFrame(rep_n_df)],ignore_index=True)
 
 
         else:
@@ -89,9 +89,9 @@ def average_per_condition(df, avg_per_rep=False):
                     cond_std_df.loc[col] = 'NA'
                     cond_n_df.loc[col] = 'NA'
 
-            avg_df = avg_df.append(cond_avg_df,ignore_index=True)
-            std_df = std_df.append(cond_std_df,ignore_index=True)
-            n_df = n_df.append(cond_n_df,ignore_index=True)
+            avg_df = pd.concat([avg_df,pd.DataFrame(cond_avg_df)],ignore_index=True)
+            std_df = pd.concat([std_df,pd.DataFrame(cond_std_df)],ignore_index=True)
+            n_df = pd.concat([n_df,pd.DataFrame(cond_n_df)],ignore_index=True)
 
 
     avg_std_n = (avg_df, std_df, n_df)
@@ -201,7 +201,7 @@ def bootstrap_sample_df(df,factor,ctl_label):
         difference = bootstrap - ctl_bootstrap
         this_cond =  pd.unique(df['Condition'])[i]
         this_diff_df = pd.DataFrame(data={'Difference':difference, 'Condition':this_cond})
-        bootstrap_diff_df = bootstrap_diff_df.append(this_diff_df)
+        bootstrap_diff_df = pd.concat([bootstrap_diff_df, this_diff_df], ignore_index=True)
 
         
     # Calculate and print mean effect size for each condition

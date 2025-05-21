@@ -98,8 +98,8 @@ def apply_unique_id(df):
                            & (df['particle']==cell_id)])
             ntpts = len(cell_df)
             # Add unique ID back into the original dataframe
-            df.at[df_inds,'uniq_id'] = cell_uniq_ident
-            df.at[df_inds,'ntpts'] = ntpts
+            df.loc[df_inds,'uniq_id'] = cell_uniq_ident
+            df.loc[df_inds,'ntpts'] = ntpts
 
 def apply_unique_id_trackmate(df):
 
@@ -133,8 +133,8 @@ def apply_unique_id_trackmate(df):
                             & (df['TRACK_ID']==cell_id)])
             ntpts = len(cell_df)
             # Add unique ID back into the original dataframe
-            df.at[df_inds,'uniq_id'] = cell_uniq_ident
-            df.at[df_inds,'ntpts'] = ntpts
+            df.loc[df_inds,'uniq_id'] = cell_uniq_ident
+            df.loc[df_inds,'ntpts'] = ntpts
 
 
 
@@ -338,12 +338,12 @@ def apply_filters(df, filter_cell=True, how = 'all', filter_dict=DATA_FILTERS):
             if all(incl_list):
 
                 # Add included flag if true
-                df.at[df_inds,'included'] = True
+                df.loc[df_inds,'included'] = True
 
             else:
 
                 # Add unique ID back into the original dataframe
-                df.at[df_inds,'included'] = False
+                df.loc[df_inds,'included'] = False
 
     filt_df = df[df['included'] == True]
 
