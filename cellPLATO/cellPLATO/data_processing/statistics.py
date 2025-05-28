@@ -79,7 +79,7 @@ def average_per_condition(df, avg_per_rep=False):
             for col in dropped_cols:
 
                 # Since we are averaging without considering replicates, we expect the list of Replicates_IDs to not be unique.
-                if col != 'Replicate_ID' and col != 'Replicate_shortlabel':
+                if col != 'Replicate_ID' and col != 'Replicate_shortlabel' and col != 'File_name':
                     assert len(this_cond_df[col].unique()) == 1, f'Invalid assumption: uniqueness of non-numerical column values'
                     cond_avg_df.loc[col] = this_cond_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
                     cond_std_df.loc[col] = this_cond_df[col].values[0]
