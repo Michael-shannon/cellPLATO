@@ -118,7 +118,7 @@ def time_average(df):
                 avg_df.loc[col] = cell_df[col].values[0]
 
         avg_df.loc['uniq_id'] = uid  # Add the unique_id back to the dataframe
-        time_avg_df = pd.concat([time_avg_df,pd.DataFrame(avg_df)], ignore_index=True)
+        time_avg_df = pd.concat([time_avg_df,pd.DataFrame([avg_df])], ignore_index=True)
 
     time_avg_df['frame'] = 'timeaverage'  # Replace the meaningless average frame values with a string description
 
