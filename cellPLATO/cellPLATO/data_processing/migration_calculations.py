@@ -84,13 +84,21 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                 # size_of_window = t_window # Redundant, equivalent to t_window
 
                 #####
-                init_frame_arr = t_window_arr[0,:] # MOVED THIS INTO LOOP Use the first row of the window
+                # Handle both 1D and 2D cases for t_window_arr
+                if t_window_arr.ndim == 1:
+                    # If only one frame in window, t_window_arr is 1D
+                    init_frame_arr = t_window_arr
+                else:
+                    # If multiple frames in window, t_window_arr is 2D
+                    init_frame_arr = t_window_arr[0,:] # Use the first row of the window
 
 #                 segment_length = np.nan # default value
 
 
                 # Only process calculations for which we have the entire window
-                if(t_window_arr.shape[0] == t_window):
+                # Check if we have enough frames in the window
+                window_size = t_window_arr.shape[0] if t_window_arr.ndim > 1 else 1
+                if(window_size == t_window):
 
                     # Extract the critical coordinates for making mnigration calculations
                     x0, y0 = init_frame_arr[1:3]
@@ -98,7 +106,12 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                     xf, yf = this_frame_arr[1:3]
 
                     # Extract the xy-track across the window
-                    window_traj = t_window_arr[:,1:3]
+                    if t_window_arr.ndim == 1:
+                        # Single frame case - reshape to 2D for consistency
+                        window_traj = t_window_arr[1:3].reshape(1, -1)
+                    else:
+                        # Multiple frames case
+                        window_traj = t_window_arr[:,1:3]
 
                     # Use the index of the row of the subdf to insert value into original df
                     ind = this_frame_arr[3]

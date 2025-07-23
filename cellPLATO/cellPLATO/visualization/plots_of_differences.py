@@ -190,9 +190,10 @@ def plots_of_differences_plotly(df_in,factor='Value', ctl_label=CTL_LABEL,plot_t
 #                 yshift=i*20, row=1, col=2)
 
             # Print p-value to the console
-            print(str(cond_label) + ' vs ' + str(ctl_label) + ': P = ' + str(round(tP,3)))
-            print('P = ', tP, ' (Using t-test without multiple comparison correction)')
-            print("------")
+            # P-values are saved to the plot annotation and CSV output
+            # print(str(cond_label) + ' vs ' + str(ctl_label) + ': P = ' + str(round(tP,3)))
+            # print('P = ', tP, ' (Using t-test without multiple comparison correction)')
+            # print("------")
 
         # Calculate the confidence interval
         sample = df[factor][df[grouping] == pd.unique(df[grouping])[i]]
@@ -428,7 +429,7 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
         alphavalue = 0.3
 
     
-    print('There are ' + str(len(df)) + ' points, so using point size: ' + str(pt_size))
+    # print('There are ' + str(len(df)) + ' points, so using point size: ' + str(pt_size))
     # Get the bootstrapped sample as a dataframe
     bootstrap_diff_df = bootstrap_sample_df(df,factor,ctl_label)
 

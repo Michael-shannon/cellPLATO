@@ -216,20 +216,41 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
 
-    elif(fmt == 'csv'):
+    # elif(fmt == 'csv'):
+    #     exp_list_df = pd.DataFrame()
+
+    #     for cond_dir in os.listdir(DATA_PATH):
+    #         f = os.path.join(DATA_PATH, cond_dir)
+    #         contents = os.listdir(f)
+    #         pattern = '*.csv' # Assuming the TRACK_FILENAME is just the extension '.csv'
+
+    #         for entry in contents:
+    #             if fnmatch.fnmatch(entry, pattern):
+    #                 exp_name = entry[:-4] # remove the '.csv' extension from the string.
+    #                 exp_list.append((cond_dir, exp_name))
+
+    #     exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
+    elif fmt == 'csv':
         exp_list_df = pd.DataFrame()
-
         for cond_dir in os.listdir(DATA_PATH):
-            f = os.path.join(DATA_PATH, cond_dir)
-            contents = os.listdir(f)
-            pattern = '*.csv' # Assuming the TRACK_FILENAME is just the extension '.csv'
+            cond_path = os.path.join(DATA_PATH, cond_dir)
+            if not os.path.isdir(cond_path):
+                continue
 
-            for entry in contents:
-                if fnmatch.fnmatch(entry, pattern):
-                    exp_name = entry[:-4] # remove the '.csv' extension from the string.
-                    exp_list.append((cond_dir, exp_name))
+            # each condition has one or more replicate sub-folders
+            for rep in os.listdir(cond_path):
+                rep_path = os.path.join(cond_path, rep)
+                if not os.path.isdir(rep_path):
+                    continue
+
+                # now look for .csv files in the rep folder
+                for entry in os.listdir(rep_path):
+                    if fnmatch.fnmatch(entry, '*_surfaces.csv'):
+                        exp_name = entry[:-4]  # strip “.csv”
+                        exp_list.append((cond_dir, exp_name))
 
         exp_list_df = pd.DataFrame(exp_list, columns=['Condition', 'Experiment'])
+    
 
     # A test to be sure the same Experiment name is not used twice.
     for rep in exp_list_df['Experiment'].unique():

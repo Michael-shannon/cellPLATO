@@ -20,7 +20,7 @@ import hdbscan
 from matplotlib import cm
 
 '''
-K. Chaudhuri and S. Dasgupta. “Rates of convergence for the cluster tree.”
+K. Chaudhuri and S. Dasgupta. "Rates of convergence for the cluster tree."
 In Advances in Neural Information Processing Systems, 2010.
 '''
 
@@ -634,6 +634,9 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
     if scalingmethod == 'minmax': #log2minmax minmax powertransformer
         X = MinMaxScaler().fit_transform(Z)
         correctcolumns = CLUSTERON
+    elif scalingmethod == 'standardscaler':
+        X = StandardScaler().fit_transform(Z)
+        correctcolumns = CLUSTERON
     elif scalingmethod == 'log2minmax':
 
         negative_FACTORS = []
@@ -925,10 +928,10 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
 #     selected_clusters = clusterer.condensed_tree_._select_clusters()
 #     raw_condensed_tree = clusterer.condensed_tree_._raw_tree
-
+#
 #     exemplars = []
 #     for cluster in selected_clusters:
-
+#
 #         cluster_exemplars = np.array([], dtype=np.int64)
 #         for leaf in clusterer._prediction_data._recurse_leaf_dfs(cluster):
 #             leaf_max_lambda = raw_condensed_tree['lambda_val'][
@@ -1310,51 +1313,315 @@ def exemplar_df_check(df, exemp_df):
 ##########
 
 ### VARIANCE THRESHOLDER #######
-def variance_threshold(df_in, threshold_value, dr_factors=ALL_FACTORS): #Added 12-14-2022
-    # df_in = comb_df
-    # threshold_value = 0.06
-
+def variance_threshold(df_in, threshold_value=0.03, dr_factors=ALL_FACTORS, 
+                      scaling_method='choice', factors_to_transform=None, 
+                      factors_not_to_transform=None, verbose=True):
+    """
+    Enhanced variance threshold that applies proper scaling before variance calculation.
+    
+    Parameters:
+    -----------
+    df_in : pandas.DataFrame
+        Input dataframe
+    threshold_value : float
+        Variance threshold (default 0.03)
+    dr_factors : list
+        List of factors to consider for dimensionality reduction
+    scaling_method : str
+        Scaling method to use before variance calculation
+        Options: 'choice', 'minmax', 'standard', 'log2minmax', 'none'
+    factors_to_transform : list, optional
+        For 'choice' scaling: factors that should receive log2 + minmax scaling
+    factors_not_to_transform : list, optional  
+        For 'choice' scaling: factors that should receive only minmax scaling
+    verbose : bool
+        Whether to print detailed information
+        
+    Returns:
+    --------
+    list : List of factors that passed the variance threshold
+    """
     from sklearn.feature_selection import VarianceThreshold
-    # Made a subset df containing only the metrics
-    CLUSTERON=dr_factors
-    subset_df=df_in[CLUSTERON]
-    subset_df.head()
+    from sklearn.preprocessing import MinMaxScaler, StandardScaler
+    import numpy as np
+    
+    if verbose:
+        print(f"=== VARIANCE THRESHOLD WITH {scaling_method.upper()} SCALING ===")
+        print(f"Threshold value: {threshold_value}")
+        print(f"Input factors: {len(dr_factors)}")
+    
+    # Create subset dataframe with only the specified factors
+    CLUSTERON = dr_factors
+    subset_df = df_in[CLUSTERON].copy()
+    
+    if verbose:
+        print(f"Original data shape: {subset_df.shape}")
+    
+    # Apply the same scaling that will be used later in the pipeline
+    if scaling_method == 'none':
+        # No scaling - use raw data
+        scaled_data = subset_df.values
+        scaled_columns = CLUSTERON
+        if verbose:
+            print("Using raw data (no scaling)")
+            
+    elif scaling_method == 'minmax':
+        # MinMax scaling only
+        scaled_data = MinMaxScaler().fit_transform(subset_df.values)
+        scaled_columns = CLUSTERON
+        if verbose:
+            print("Applied MinMax scaling")
+            
+    elif scaling_method == 'standard':
+        # Standard scaling only  
+        scaled_data = StandardScaler().fit_transform(subset_df.values)
+        scaled_columns = CLUSTERON
+        if verbose:
+            print("Applied Standard scaling")
+            
+    elif scaling_method == 'log2minmax':
+        # Log2 + MinMax for positive factors, MinMax for negative factors
+        negative_factors = []
+        positive_factors = []
+        
+        for factor in dr_factors:
+            if np.min(df_in[factor]) < 0:
+                negative_factors.append(factor)
+            else:
+                positive_factors.append(factor)
+        
+        if verbose:
+            print(f"Positive factors (log2+minmax): {len(positive_factors)}")
+            print(f"Negative factors (minmax only): {len(negative_factors)}")
+        
+        # Process positive factors
+        if positive_factors:
+            pos_df = subset_df[positive_factors]
+            pos_x = pos_df.values
+            pos_x_constant = pos_x + 0.000001
+            pos_x_log = np.log2(pos_x_constant)
+            pos_x_scaled = MinMaxScaler().fit_transform(pos_x_log)
+        else:
+            pos_x_scaled = np.empty((len(subset_df), 0))
+            
+        # Process negative factors
+        if negative_factors:
+            neg_df = subset_df[negative_factors]
+            neg_x = neg_df.values
+            neg_x_scaled = MinMaxScaler().fit_transform(neg_x)
+        else:
+            neg_x_scaled = np.empty((len(subset_df), 0))
+            
+        # Combine
+        scaled_data = np.concatenate((pos_x_scaled, neg_x_scaled), axis=1)
+        scaled_columns = positive_factors + negative_factors
+        
+    elif scaling_method == 'choice':
+        # Use the sophisticated choice method
+        if verbose:
+            print("Using 'choice' scaling method")
+            
+        # Determine which factors to transform
+        if factors_to_transform is not None and factors_not_to_transform is not None:
+            # User provided custom lists
+            FactorsToTransform_actual = [f for f in dr_factors if f in factors_to_transform]
+            FactorsNottotransform_actual = [f for f in dr_factors if f in factors_not_to_transform]
+            
+            # Check for unassigned factors
+            unassigned_factors = [f for f in dr_factors if f not in factors_to_transform and f not in factors_not_to_transform]
+            if unassigned_factors:
+                if verbose:
+                    print(f"Warning: Unassigned factors will be log-transformed by default: {unassigned_factors}")
+                FactorsToTransform_actual.extend(unassigned_factors)
+                
+        elif factors_not_to_transform is not None:
+            # User only provided factors NOT to transform
+            FactorsNottotransform_actual = [f for f in dr_factors if f in factors_not_to_transform]
+            FactorsToTransform_actual = [f for f in dr_factors if f not in factors_not_to_transform]
+            
+        elif factors_to_transform is not None:
+            # User only provided factors TO transform
+            FactorsToTransform_actual = [f for f in dr_factors if f in factors_to_transform]
+            FactorsNottotransform_actual = [f for f in dr_factors if f not in factors_to_transform]
+            
+        else:
+            # Use default hardcoded lists (same as in your pipeline)
+            FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 
+                                   'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
+            FactorsNottotransform_actual = []
+            FactorsToTransform_actual = []
+            
+            for factor in dr_factors:
+                if factor in FactorsNOTtotransform:
+                    FactorsNottotransform_actual.append(factor)
+                else:
+                    FactorsToTransform_actual.append(factor)
+        
+        if verbose:
+            print(f"Factors TO transform (log2+minmax): {len(FactorsToTransform_actual)}")
+            print(f"  {FactorsToTransform_actual}")
+            print(f"Factors NOT to transform (minmax only): {len(FactorsNottotransform_actual)}")
+            print(f"  {FactorsNottotransform_actual}")
+        
+        # Apply transformations
+        if FactorsToTransform_actual:
+            trans_df = subset_df[FactorsToTransform_actual]
+            trans_x = trans_df.values
+            trans_x_constant = trans_x + 0.000001
+            trans_x_log = np.log2(trans_x_constant)
+            trans_x_scaled = MinMaxScaler().fit_transform(trans_x_log)
+        else:
+            trans_x_scaled = np.empty((len(subset_df), 0))
+            
+        if FactorsNottotransform_actual:
+            nontrans_df = subset_df[FactorsNottotransform_actual]
+            nontrans_x = nontrans_df.values
+            nontrans_x_scaled = MinMaxScaler().fit_transform(nontrans_x)
+        else:
+            nontrans_x_scaled = np.empty((len(subset_df), 0))
+            
+        # Combine scaled data
+        scaled_data = np.concatenate((trans_x_scaled, nontrans_x_scaled), axis=1)
+        scaled_columns = FactorsToTransform_actual + FactorsNottotransform_actual
+        
+    else:
+        raise ValueError(f"Unknown scaling method: '{scaling_method}'. "
+                        f"Available methods: ['choice', 'minmax', 'standard', 'log2minmax', 'none']")
+    
+    # Now apply variance threshold to the properly scaled data
+    if verbose:
+        print(f"\nApplying variance threshold...")
+        print(f"Scaled data shape: {scaled_data.shape}")
+    
+    # Create scaled DataFrame for easier handling
+    scaled_df = pd.DataFrame(scaled_data, columns=scaled_columns)
+    
+    # Apply variance threshold
+    vt = VarianceThreshold(threshold_value)
+    vt.fit(scaled_df)
+    mask = vt.get_support()
+    
+    # Get the factors that passed the threshold
+    passed_factors = [scaled_columns[i] for i, passed in enumerate(mask) if passed]
+    removed_factors = [scaled_columns[i] for i, passed in enumerate(mask) if not passed]
+    
+    if verbose:
+        print(f"\n=== VARIANCE THRESHOLD RESULTS ===")
+        print(f"Factors that passed threshold ({len(passed_factors)}):")
+        for factor in passed_factors:
+            variance = np.var(scaled_df[factor])
+            print(f"  ✅ {factor}: variance = {variance:.6f}")
+            
+        print(f"\nFactors removed due to low variance ({len(removed_factors)}):")
+        for factor in removed_factors:
+            variance = np.var(scaled_df[factor])
+            print(f"  ❌ {factor}: variance = {variance:.6f} (< {threshold_value})")
+    
+    return passed_factors
 
-    #Variance threshold
-    vt = VarianceThreshold(threshold_value) #make the thresholder
-    _ = vt.fit(subset_df)
-    mask = vt.get_support() #Give a boolean array: True if the variance of each column exceeds the threshold.
-    masked_df=subset_df.iloc[:,mask]
+
+def variance_threshold_with_analysis(df_in, threshold_value=0.03, dr_factors=ALL_FACTORS,
+                                   scaling_method='choice', show_analysis=True):
+    """
+    Convenience function that first runs factor analysis, then applies variance threshold.
+    
+    Parameters:
+    -----------
+    df_in : pandas.DataFrame
+        Input dataframe
+    threshold_value : float
+        Variance threshold
+    dr_factors : list
+        List of factors to consider
+    scaling_method : str
+        Scaling method ('choice' recommended)
+    show_analysis : bool
+        Whether to show factor analysis plots
+        
+    Returns:
+    --------
+    tuple : (selected_factors, analysis_results)
+    """
+    print("=== STEP 1: FACTOR ANALYSIS ===")
+    
+    # Import the analysis function (assuming it's in the same module or available)
+    try:
+        from data_processing.pipelines import analyze_factors_for_choice_scaling
+        
+        # Run factor analysis to get suggestions
+        analysis_results = analyze_factors_for_choice_scaling(
+            df=df_in, 
+            factors_list=dr_factors,
+            show_distributions=show_analysis
+        )
+        
+        print(f"\n=== STEP 2: VARIANCE THRESHOLD WITH ANALYSIS-INFORMED SCALING ===")
+        
+        # Use the analysis results for better scaling
+        if scaling_method == 'choice':
+            selected_factors = variance_threshold(
+                df_in=df_in,
+                threshold_value=threshold_value,
+                dr_factors=dr_factors,
+                scaling_method='choice',
+                factors_to_transform=analysis_results['suggested_to_transform'],
+                factors_not_to_transform=analysis_results['suggested_not_to_transform'],
+                verbose=True
+            )
+        else:
+            selected_factors = variance_threshold(
+                df_in=df_in,
+                threshold_value=threshold_value,
+                dr_factors=dr_factors,
+                scaling_method=scaling_method,
+                verbose=True
+            )
+            
+        return selected_factors, analysis_results
+        
+    except ImportError:
+        print("Warning: Could not import analyze_factors_for_choice_scaling function")
+        print("Using variance threshold without factor analysis...")
+        
+        selected_factors = variance_threshold(
+            df_in=df_in,
+            threshold_value=threshold_value,
+            dr_factors=dr_factors,
+            scaling_method=scaling_method,
+            verbose=True
+        )
+        
+        return selected_factors, None
 
 
-    ###
+def between_condition_variance(df_in, factor_cols, condition_col='condition'):
+    """
+    Computes the variance of feature means across different conditions.
+    """
+    # Compute mean of each feature per condition
+    means_by_condition = df_in.groupby(condition_col)[factor_cols].mean()
+    # Compute variance of those condition means
+    var_across_conditions = means_by_condition.var()
+    
+    return var_across_conditions.sort_values(ascending=False)
 
-    # threshold_low = threshold_value
-    # threshold_mid = threshold_value * 1.25
-    # threshold_high = threshold_value * 1.5 #A big threshold number, such that only the most variable columns are include in the dr
-    #
-    # vt = VarianceThreshold(threshold_low) #make the thresholder
-    # _ = vt.fit(subset_df)
-    # lowmask = vt.get_support() #Give a boolean array: True if the variance of each column exceeds the threshold.
-    # lowmasked_df=subset_df.iloc[:,lowmask]
-    # inverse_lowmask = np.invert(lowmask)
-    # inverse_lowmasked_df=subset_df.iloc[0,inverse_mask]
-    # print("Metrics that vary a the most and were kept are " + str(lowmasked_df.columns.tolist()))
-    # print("Metrics that are very constant and so were removed are " + str(inverse_lowmasked_df.index.tolist()))
-    ####
+# import matplotlib.pyplot as plt
 
-    # Print the metrics that are kept and the metrics that are removed
-    print("Metrics that vary are " + str(masked_df.columns.tolist()))
-    inverse_mask = np.invert(mask)
-    inverse_masked_df=subset_df.iloc[0,inverse_mask]
-    inverse_masked_df
-    print("Metrics that are constant and so were removed are " + str(inverse_masked_df.index.tolist()))
+def plot_feature_variances(var_dict, top_n=20, title='Feature Variance Across Conditions'):
+    """
+    Plots top_n features based on their variance across conditions.
+    """
+    var_sorted = var_dict.sort_values(ascending=False).head(top_n)
+    plt.figure(figsize=(10, 5))
+    var_sorted.plot(kind='bar')
+    plt.ylabel("Variance of mean values across conditions")
+    plt.title(title)
+    plt.xticks(rotation=90)
+    plt.tight_layout()
+    plt.show()
 
-    # Make a new DR_FACTORS to be used down the pipeline
 
-    DR_FACTORS = masked_df.columns.tolist()
 
-    return DR_FACTORS
 
 def optics_clustering(df_in, min_samples=MIN_SAMPLES,cluster_by='tsne', plot=False, save_path=CLUST_DIR):
 
@@ -1478,7 +1745,7 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
 
     cond_list = df['Condition_shortlabel'].unique()
     clusters = list(set(df[cluster_label].dropna())) # DropNA to also handle trajectory_ids where some are NaN
-
+    print(clusters)
     # Create a new dataframe to hold the cluster summary info.
     cond_sum_df = pd.DataFrame()
      # Add -1 as the new first element of list clusters
@@ -1496,10 +1763,16 @@ def purity_pointsinclusterspercondition(df, cluster_label='label'):
         for cluster_id in clusters: # Skip last one that is noise (-1)
             #Extract a dataframe for this cluster
             # cond_clust_sub_df = cond_sub_df[cond_sub_df['label'] == cluster_id] #old version
+            # print('SERRANO: cluster_id:', cluster_id)
             cond_clust_sub_df = cond_sub_df[cond_sub_df[cluster_label] == cluster_id] #new version
-
-            totaldatapointsincluster = len(cond_clust_sub_df)
-            percentdatapointsincluster=totaldatapointsincluster/totaldatapointsincondition*100
+            # display(cond_clust_sub_df.head())
+            # if there are no datapoints in the cluster, set percentage to 0.0 instead of skipping
+            if len(cond_clust_sub_df) == 0:
+                percentdatapointsincluster = 0.0
+            else:
+                totaldatapointsincluster = len(cond_clust_sub_df)
+                percentdatapointsincluster=totaldatapointsincluster/totaldatapointsincondition*100
+            
             rowtoputitin = cond
             columntoputitin = 'Percent_condition_pts_in_ClusterID_'+str(cluster_id)
             cond_sum_df.at[rowtoputitin,columntoputitin] = percentdatapointsincluster
@@ -2100,14 +2373,17 @@ def count_cluster_changes_with_tavg(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_
                               (cell_df['frame']<t + t_window/2)]
 
                 # Apply a cutoff for number of frames, make calculations if satisfies
-                if(len(t_wind_df) >= min_frames):
+                # Use a more lenient threshold: require at least 3 frames for meaningful calculations
+                min_frames_flexible = max(3, min_frames // 3)  # At least 3 frames, or 1/3 of desired window
+                
+                if(len(t_wind_df) >= min_frames_flexible):
 #                     print('Length sufficient')
                     # Count the label changes and total numbers for this window
                     tw_s = t_wind_df['label']
                     twind_label_changes = (np.diff(tw_s)!=0).sum() # Count the number of times it changes
                     twind_n_labels = len(tw_s.unique()) # Count the number of times it changes
 
-                    tw_g = t_wind_df['label']
+                    tw_g = t_wind_df['tavg_label']  # Fixed: was using 'label' instead of 'tavg_label'
                     tavg_twind_label_changes = (np.diff(tw_g)!=0).sum() # Count the number of times it changes
                     tavg_twind_n_labels = len(tw_g.unique()) # Count the number of times it changes
 
@@ -2266,8 +2542,8 @@ def count_time_in_label(df):
                   size=4, hue='Condition', dodge=True, ax=ax, palette=colors,ec='k', linewidth=1, alpha=.5)
     
     # ax= sns.violinplot(x=x_lab, y=timeminutes, data=df, hue='Condition',ax=ax, palette=CONDITION_CMAP,  cut=1, linewidth=2, inner='quartile', scale = 'count') #bw=.2, orient = 'v'
-    #inner{“box”, “quartile”, “point”, “stick”, None}, optional
-    #scale{“area”, “count”, “width”}, optional
+    #inner{"box", "quartile", "point", "stick", None}, optional
+    #scale{"area", "count", "width"}, optional
     # Tweak the visual presentation
     ax.xaxis.grid(True)
     ax.set(ylabel="")

@@ -670,6 +670,21 @@ def interactive_plot_3D_UMAP_chosen_condition(df, chosen_condition, colorby='Con
 
 def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER): #spidey
 
+    # Check for required columns and provide informative error messages
+    required_columns = ['label', 'twind_n_changes', 'twind_n_labels', 'frame', 'Condition_shortlabel']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        print(f"ERROR: Missing required columns: {missing_columns}")
+        print(f"Available columns: {list(df.columns)}")
+        return None
+    
+    print(f"Original dataframe shape: {df.shape}")
+    print(f"NaN counts per column:")
+    for col in required_columns:
+        nan_count = df[col].isna().sum()
+        print(f"  {col}: {nan_count} NaN values")
+    
     # f, axes = plt.subplots(1, 3, figsize=(15, 5)) #sharex=True
     # f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=True) #sharex=True
     f, axes = plt.subplots(3, 1, figsize=(15, 30), sharex=False) #sharex=True
@@ -697,9 +712,14 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t
         maximumy3=maxy
     else:
         minimumy=0
-        maximumy1=np.nanmax(df[whattoplot[0]])
-        maximumy2=np.nanmax(df[whattoplot[1]])
-        maximumy3=np.nanmax(df[whattoplot[2]])
+        # Use safe max calculations with fallback values
+        try:
+            maximumy1=np.nanmax(df[whattoplot[0]]) if not df[whattoplot[0]].isna().all() else 1
+            maximumy2=np.nanmax(df[whattoplot[1]]) if not df[whattoplot[1]].isna().all() else 1
+            maximumy3=np.nanmax(df[whattoplot[2]]) if not df[whattoplot[2]].isna().all() else 1
+        except Exception as e:
+            print(f"Warning: Error calculating max values: {e}")
+            maximumy1 = maximumy2 = maximumy3 = 1
 
     ##
     import seaborn as sns
@@ -710,22 +730,47 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t
     # for i in range(cmap.N):
     #     colors.append(cmap(i))
 
+    # Check if we have valid condition data
+    unique_conditions = df['Condition_shortlabel'].dropna().unique()
+    if len(unique_conditions) == 0:
+        print("ERROR: No valid conditions found in 'Condition_shortlabel' column")
+        return None
+    
+    print(f"Found {len(unique_conditions)} unique conditions: {list(unique_conditions)}")
+
     colors=[]
     if CONDITION_CMAP != 'Dark24':
 
         cmap = cm.get_cmap(CONDITION_CMAP)
-        numcolors= len(df['Condition_shortlabel'].unique())
+        numcolors= len(unique_conditions)
         sns.set_palette(CONDITION_CMAP)
         for i in range(numcolors):
             colors.append(cmap(i))
     else:
         colors = plotlytomatplotlibcolors()
-        colors=colors[:len(df['Condition_shortlabel'].unique())]
+        colors=colors[:len(unique_conditions)]
 
 
 
     # display(df)
-    df=df.dropna(how='any')
+    df_before_dropna = df.copy()
+    
+    # Instead of dropping all rows with any NaN, be more selective
+    # Only drop rows where the columns we're actually plotting have NaN values
+    plotting_columns = whattoplot + ['Condition_shortlabel']
+    df = df.dropna(subset=plotting_columns, how='any')
+    
+    print(f"Dataframe shape after removing NaNs in plotting columns: {df.shape}")
+    print(f"Removed {len(df_before_dropna) - len(df)} rows due to NaN values in plotting columns")
+    
+    if len(df) == 0:
+        print("ERROR: No data remaining after removing NaN values!")
+        print("NaN summary for plotting columns:")
+        for col in plotting_columns:
+            if col in df_before_dropna.columns:
+                nan_count = df_before_dropna[col].isna().sum()
+                print(f"  {col}: {nan_count}/{len(df_before_dropna)} are NaN")
+        return None
     # display(df)
     # Plot the responses for different events and regions
     sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
@@ -755,12 +800,16 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t
     # get the max value of the whattoplot[1] column of df
     max1=np.nanmax(df[whattoplot[1]])
     max2=np.nanmax(df[whattoplot[2]])
+
+    
     tickfrequency1 = int(max1/5)
     tickfrequency2 = int(max2/5)
 
     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), 1)
     the_yticks = [int(x) for x in the_yticks]
     axes[0].set_yticks(the_yticks) # set new tick positions
+
+
     axes[0].margins(y=0) # set tight margins
     the_yticks = np.arange(0, len(df[whattoplot[1]].unique()), tickfrequency1)
     the_yticks = [int(x) for x in the_yticks]
@@ -1295,6 +1344,163 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t
 #     return
 
 
+# def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotametric=None, plotallcells = False): #spidey
+    
+#     if plotallcells:
+#         f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False)
+#     else:
+#         f, axes = plt.subplots(2, 1, figsize=(15, 20), sharex=False)
+#     # f, axes = plt.subplots(2, 1, figsize=(25, 20), sharex=False) #sharex=True
+
+#     if plotametric != None:
+#         whattoplot=[plotametric, plotametric]
+#     else:
+#         whattoplot=['cum_n_changes','cum_n_labels',]
+
+#     time = df['frame']
+
+#     timeminutes=time*SAMPLING_INTERVAL
+
+#     ##
+#     if miny != None or maxy != None:
+#         minimumy=miny
+#         maximumy1=maxy
+#         maximumy2=maxy
+
+#     else:
+#         minimumy=0
+#         maximumy1=np.nanmax(df[whattoplot[0]])
+#         maximumy2=np.nanmax(df[whattoplot[1]])
+
+#     ##
+#     import seaborn as sns
+#     sns.set_theme(style="ticks")
+
+#     colors=[]
+#     if CONDITION_CMAP != 'Dark24':
+
+#         cmap = cm.get_cmap(CONDITION_CMAP)
+#         numcolors= len(df['Condition_shortlabel'].unique())
+#         sns.set_palette(CONDITION_CMAP)
+#         for i in range(numcolors):
+#             colors.append(cmap(i))
+#     else:
+#         colors = plotlytomatplotlibcolors()
+#         colors=colors[:len(df['Condition_shortlabel'].unique())]
+
+#     df=df.dropna(how='any')
+
+#     conditionsindf = df['Condition_shortlabel'].unique()
+
+
+#     if plotallcells == False:
+            
+#         # Plot the responses for different events and regions
+#         sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+
+#         sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+#                     hue="Condition_shortlabel",
+#                     data=df, palette=colors)
+#     else:
+#         # Create a dictionary to map condition_shortlabel to colors
+#         condition_colors = {condition: color for condition, color in zip(df['Condition_shortlabel'].unique(), colors)}
+#         # Make timeminuteslist and get the last element for the annotations
+#         timeminuteslist = timeminutes.tolist()
+#         # x_final = timeminuteslist[-1] # Final entry in x_data
+#         max_x = np.max(timeminutes)
+#         # Create a set to keep track of plotted condition_shortlabels
+#         plotted_labels = set()
+#         # This will be used to offset the x position of the annotations
+#         # x_offsets = np.arange(20, len(df['uniq_id'].unique()), 1)
+#         x_offsets = [20, 100, 180, 260, 340, 420, 500] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+
+#         y_offsets = [0, -40, -80, -120] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+
+#         for offset, uniq_id in enumerate(df['uniq_id'].unique()):
+#             df_uniq = df[df['uniq_id'] == uniq_id]
+#             condition_label = df_uniq['Condition_shortlabel'].iloc[0]  # Get the condition_shortlabel for this 'uniq_id'
+#             line_color = condition_colors[condition_label]  # Get the corresponding color for the condition_shortlabel
+#             if condition_label not in plotted_labels:
+#                 # Plot the line with a label for the legend only if it hasn't been plotted before
+#                 singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color, label=condition_label)
+#                 singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color, label=condition_label)
+#                 plotted_labels.add(condition_label)  # Add the condition_shortlabel to the set of plotted labels
+#             else:
+#                 # If the label has already been plotted, don't add it to the legend again
+#                 singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color)
+#                 singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color) #, label=condition_label
+
+#             x_final_frames = df_uniq['frame'].iloc[-1]  # Final entry in x_data
+#             x_final = x_final_frames*SAMPLING_INTERVAL
+
+#             y_final = df_uniq[whattoplot[0]].iloc[-1]  # Final entry in y_data
+#             y_final1 = df_uniq[whattoplot[1]].iloc[-1]  # Final entry in y_data
+            
+#             uniq_id_label = f'Cell_ID: {uniq_id}'
+#             axes[0].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center', arrowprops=dict(arrowstyle="<-", color='black'))
+#             axes[0].plot([x_final, max_x + x_offsets[offset]], [y_final, y_final], linestyle='dotted', color='gray', transform=axes[0].transData, zorder=4)
+
+#             axes[1].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final1 ), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center',arrowprops=dict(arrowstyle="<-", color='black'))
+#             axes[1].plot([x_final, max_x + x_offsets[offset]], [y_final1, y_final1], linestyle='dotted', color='gray', transform=axes[1].transData, zorder=4)            
+        
+#     timewindowmins = (MIG_T_WIND*t_window_multiplier) * SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
+#     # The actual calculation is done in count_cluster_changes_with_tavg function
+#     timewindowmins = round(timewindowmins, 1)
+
+#     print('Time window mins: ', timewindowmins)
+#     text1 = "Cumulative cluster switches"
+#     text2 = "Cumulative new clusters"
+#     # text3 = "New clusters / " + str(timewindowmins) + " min"
+
+#     x_lab = "Distinct Behaviors"
+#     plottitle = ""
+
+#     # get the max value of the whattoplot[1] column of df
+#     max1=np.nanmax(df[whattoplot[0]])
+#     max2=np.nanmax(df[whattoplot[1]])
+#     tickfrequency1 = int(max1/5)
+#     tickfrequency2 = int(max2/5)
+
+#     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+#     axes[0].set_yticks(the_yticks) # set new tick positions
+#     axes[0].margins(y=0) # set tight margins
+#     the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
+#     the_yticks = [int(x) for x in the_yticks]
+
+
+#     axes[1].set_yticks(the_yticks) # set new tick positions
+#     axes[1].margins(y=0) # set tight margins
+
+#     # Tweak the visual presentation
+#     axes[0].xaxis.grid(True)
+#     axes[1].xaxis.grid(True)
+
+#     axes[0].set_ylabel(text1, fontsize=36)
+#     axes[1].set_ylabel(text2, fontsize=36)
+
+#     axes[0].set_title("", fontsize=36)
+#     axes[1].set_title("", fontsize=36)
+
+#     axes[0].set_xlabel("Time (min)", fontsize=36)
+#     axes[1].set_xlabel("Time (min)", fontsize=36)
+
+#     axes[0].set_ylim(0, max1+1)
+#     axes[1].set_ylim(0, max2+2)
+  
+#     axes[0].tick_params(axis='both', labelsize=36)
+#     axes[1].tick_params(axis='both', labelsize=36)
+
+#     axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+#     axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+
+#     f.tight_layout()
+#     f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+
+#     return
+
 def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotametric=None, plotallcells = False): #spidey
     
     if plotallcells:
@@ -1343,15 +1549,14 @@ def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=No
 
     conditionsindf = df['Condition_shortlabel'].unique()
 
-
     if plotallcells == False:
             
         # Plot the responses for different events and regions
-        sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], #n_labels #n_changes #label
+        sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0],
                     hue="Condition_shortlabel",
                     data=df, palette=colors)
 
-        sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], #n_labels #n_changes #label
+        sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1],
                     hue="Condition_shortlabel",
                     data=df, palette=colors)
     else:
@@ -1364,10 +1569,8 @@ def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=No
         # Create a set to keep track of plotted condition_shortlabels
         plotted_labels = set()
         # This will be used to offset the x position of the annotations
-        # x_offsets = np.arange(20, len(df['uniq_id'].unique()), 1)
-        x_offsets = [20, 100, 180, 260, 340, 420, 500] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
-
-        y_offsets = [0, -40, -80, -120] * int(len(df['uniq_id'].unique()) / 2 + 1) #used for placing labels in readable positions
+        x_offsets = [20, 100, 180, 260, 340, 420, 500] * int(len(df['uniq_id'].unique()) / 2 + 1)
+        y_offsets = [0, -40, -80, -120] * int(len(df['uniq_id'].unique()) / 2 + 1)
 
         for offset, uniq_id in enumerate(df['uniq_id'].unique()):
             df_uniq = df[df['uniq_id'] == uniq_id]
@@ -1381,7 +1584,7 @@ def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=No
             else:
                 # If the label has already been plotted, don't add it to the legend again
                 singleline = sns.lineplot(ax=axes[0], x=timeminutes, y=whattoplot[0], data=df_uniq, color=line_color)
-                singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color) #, label=condition_label
+                singleline2 = sns.lineplot(ax=axes[1], x=timeminutes, y=whattoplot[1], data=df_uniq, color=line_color)
 
             x_final_frames = df_uniq['frame'].iloc[-1]  # Final entry in x_data
             x_final = x_final_frames*SAMPLING_INTERVAL
@@ -1393,37 +1596,35 @@ def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=No
             axes[0].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center', arrowprops=dict(arrowstyle="<-", color='black'))
             axes[0].plot([x_final, max_x + x_offsets[offset]], [y_final, y_final], linestyle='dotted', color='gray', transform=axes[0].transData, zorder=4)
 
-            axes[1].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final1 ), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center',arrowprops=dict(arrowstyle="<-", color='black'))
+            axes[1].annotate(uniq_id_label, xy=(max_x + x_offsets[offset], y_final1 ), xytext=(10, 0), textcoords='offset points', fontsize=14, ha='left', va='center', arrowprops=dict(arrowstyle="<-", color='black'))
             axes[1].plot([x_final, max_x + x_offsets[offset]], [y_final1, y_final1], linestyle='dotted', color='gray', transform=axes[1].transData, zorder=4)            
         
-    timewindowmins = (MIG_T_WIND*t_window_multiplier) * SAMPLING_INTERVAL #Here is just a superficial matching of the time window specified in the config for plotting purposes
-    # The actual calculation is done in count_cluster_changes_with_tavg function
+    timewindowmins = (MIG_T_WIND*t_window_multiplier) * SAMPLING_INTERVAL
     timewindowmins = round(timewindowmins, 1)
 
     print('Time window mins: ', timewindowmins)
     text1 = "Cumulative cluster switches"
     text2 = "Cumulative new clusters"
-    # text3 = "New clusters / " + str(timewindowmins) + " min"
 
     x_lab = "Distinct Behaviors"
     plottitle = ""
 
-    # get the max value of the whattoplot[1] column of df
-    max1=np.nanmax(df[whattoplot[0]])
-    max2=np.nanmax(df[whattoplot[1]])
-    tickfrequency1 = int(max1/5)
-    tickfrequency2 = int(max2/5)
+    # get the max value of the whattoplot columns of df
+    max1 = np.nanmax(df[whattoplot[0]])
+    max2 = np.nanmax(df[whattoplot[1]])
+    # ensure tick frequencies are at least 1
+    tickfrequency1 = max(int(max1/5), 1)
+    tickfrequency2 = max(int(max2/5), 1)
 
-    the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
-    the_yticks = [int(x) for x in the_yticks]
-    axes[0].set_yticks(the_yticks) # set new tick positions
-    axes[0].margins(y=0) # set tight margins
-    the_yticks = np.arange(0, len(df[whattoplot[1]].unique()),tickfrequency2 ) #tickfrequency1)
-    the_yticks = [int(x) for x in the_yticks]
+    the_yticks1 = np.arange(0, len(df[whattoplot[0]].unique()), tickfrequency1)
+    the_yticks1 = [int(x) for x in the_yticks1]
+    axes[0].set_yticks(the_yticks1)
+    axes[0].margins(y=0)
 
-
-    axes[1].set_yticks(the_yticks) # set new tick positions
-    axes[1].margins(y=0) # set tight margins
+    the_yticks2 = np.arange(0, len(df[whattoplot[1]].unique()), tickfrequency2)
+    the_yticks2 = [int(x) for x in the_yticks2]
+    axes[1].set_yticks(the_yticks2)
+    axes[1].margins(y=0)
 
     # Tweak the visual presentation
     axes[0].xaxis.grid(True)
@@ -1444,13 +1645,14 @@ def plot_cumulative_plasticity_changes_main(df, identifier='\_allcells', miny=No
     axes[0].tick_params(axis='both', labelsize=36)
     axes[1].tick_params(axis='both', labelsize=36)
 
-    axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
-    axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left',fontsize=36,markerscale=20,fancybox=True)
+    axes[0].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left', fontsize=36, markerscale=20, fancybox=True)
+    axes[1].legend(title='', bbox_to_anchor=(1, 1.02), loc='upper left', fontsize=36, markerscale=20, fancybox=True)
 
     f.tight_layout()
-    f.savefig(CLUST_DISAMBIG_DIR+identifier+'_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)#plt.
+    f.savefig(CLUST_DISAMBIG_DIR + identifier + '_cumulative_plasticity_cluster_changes_over_time.png', dpi=300)
 
     return
+
 
 # def plot_cumulative_plasticity_changes_multiples(df, identifier='\_allcells', miny=None, maxy=None, t_window_multiplier = T_WINDOW_MULTIPLIER, plotallcells = False): #spidey
 
@@ -2424,7 +2626,13 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
 # Create stacked bar plot and add text labels
     for i, clus in enumerate(labels):
         # Set y values as the ith ClusterID column
-        y = df2['Percent_condition_pts_in_ClusterID_' + str(clus)] # THIS IS A SET COL NAME AND CANT BE CHANGED
+        col_name = 'Percent_condition_pts_in_ClusterID_' + str(clus)
+        
+        # Check if column exists, if not, create it with zeros
+        if col_name not in df2.columns:
+            y = pd.Series([0.0] * len(df2), index=df2.index)
+        else:
+            y = df2[col_name].fillna(0.0)  # Fill any remaining NaN values with 0.0
 
         # Skip bars with 0 percentage
         if all(y == 0):
@@ -2599,6 +2807,16 @@ def plot_UMAP_subplots_coloredbymetricsorconditions(df_in, x= 'UMAP1', y= 'UMAP2
             scaled_df = pd.DataFrame(data=x_, columns = metrics) 
             df_out = pd.concat([scaled_df,df_in[[x,y,z]]], axis=1)
             # fresh_df = pd.concat([df,lab_list_tpt_df['tavg_label']], axis=1)
+
+  
+        elif scalingmethod == 'standard':
+            # apply StandardScaler to all metrics, then re-attach UMAP columns
+            from sklearn.preprocessing import StandardScaler
+            x_std = StandardScaler().fit_transform(Z) 
+            scaled_df = pd.DataFrame(data=x_std, columns=metrics)
+            df_out = pd.concat([scaled_df, df_in[[x, y, z]]], axis=1)
+
+
             
         elif scalingmethod == 'log2minmax':
             
@@ -2832,6 +3050,56 @@ import matplotlib.pyplot as plt
 
 ############################################################
 
+def diagnose_plasticity_data(df):
+    """
+    Diagnostic function to help identify issues with plasticity plotting data.
+    Call this before plot_plasticity_changes to debug issues.
+    """
+    print("=== PLASTICITY DATA DIAGNOSIS ===")
+    print(f"Dataframe shape: {df.shape}")
+    print(f"Dataframe columns: {list(df.columns)}")
+    
+    required_columns = ['label', 'twind_n_changes', 'twind_n_labels', 'frame', 'Condition_shortlabel']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    
+    if missing_columns:
+        print(f"\n❌ MISSING REQUIRED COLUMNS: {missing_columns}")
+        return False
+    else:
+        print(f"\n✅ All required columns present: {required_columns}")
+    
+    print(f"\n=== NaN ANALYSIS ===")
+    for col in required_columns:
+        nan_count = df[col].isna().sum()
+        total_count = len(df)
+        percentage = (nan_count / total_count) * 100 if total_count > 0 else 0
+        print(f"{col}: {nan_count}/{total_count} ({percentage:.1f}%) are NaN")
+    
+    print(f"\n=== DATA TYPE ANALYSIS ===")
+    for col in required_columns:
+        print(f"{col}: {df[col].dtype}")
+    
+    print(f"\n=== UNIQUE VALUE COUNTS ===")
+    for col in required_columns:
+        if col in df.columns:
+            unique_count = df[col].nunique(dropna=False)
+            print(f"{col}: {unique_count} unique values")
+            if col == 'Condition_shortlabel':
+                print(f"  Conditions: {list(df[col].dropna().unique())}")
+    
+    # Check what happens when we remove NaN values
+    plotting_columns = ['label', 'twind_n_changes', 'twind_n_labels', 'Condition_shortlabel']
+    df_clean = df.dropna(subset=plotting_columns, how='any')
+    print(f"\n=== DATA AFTER REMOVING NaN ===")
+    print(f"Rows remaining: {len(df_clean)}/{len(df)} ({len(df_clean)/len(df)*100:.1f}%)")
+    
+    if len(df_clean) == 0:
+        print("❌ NO DATA REMAINS after removing NaN values!")
+        print("This is likely the cause of your plotting error.")
+        return False
+    else:
+        print("✅ Data remains after cleaning")
+        return True
 
 ###############################################################
 

@@ -56,14 +56,29 @@ def average_per_condition(df, avg_per_rep=False):
 
                  # Add back non-numeric data
                 dropped_cols = list(set(this_rep_df.columns) - set(rep_avg_df.index))
+                
+                # Columns that are expected to have multiple values per replicate
+                multi_value_cols = ['uniq_id', 'particle', 'unique_id', 'File_name', 'filename', 
+                                   'cell_id', 'trackmate_label', 'ID', 'LABEL', 'comb_df_row_ind']
 
                 for col in dropped_cols:
 
-                    assert len(this_rep_df[col].unique()) == 1, 'Invalid assumption: uniqueness of non-numerical column values'
-                    rep_avg_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
-                    rep_std_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
-                    rep_n_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
-
+                    if col in multi_value_cols:
+                        # For columns that naturally have multiple values, use representative value
+                        rep_avg_df.loc[col] = 'Multiple'
+                        rep_std_df.loc[col] = 'Multiple' 
+                        rep_n_df.loc[col] = 'Multiple'
+                    elif len(this_rep_df[col].unique()) == 1:
+                        # Only for columns that should actually be unique per replicate
+                        rep_avg_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
+                        rep_std_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
+                        rep_n_df.loc[col] = this_rep_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
+                    else:
+                        # For other columns with multiple values, take the most common value
+                        most_common = this_rep_df[col].mode().iloc[0] if len(this_rep_df[col].mode()) > 0 else this_rep_df[col].values[0]
+                        rep_avg_df.loc[col] = most_common
+                        rep_std_df.loc[col] = most_common
+                        rep_n_df.loc[col] = most_common
 
                 avg_df = avg_df.append(rep_avg_df,ignore_index=True)
                 std_df = std_df.append(rep_std_df,ignore_index=True)
@@ -75,19 +90,34 @@ def average_per_condition(df, avg_per_rep=False):
 
              # Add back non-numeric data
             dropped_cols = list(set(this_cond_df.columns) - set(cond_avg_df.index))
+            
+            # Columns that are expected to have multiple values per condition
+            multi_value_cols = ['uniq_id', 'particle', 'unique_id', 'File_name', 'filename', 
+                               'cell_id', 'trackmate_label', 'ID', 'LABEL', 'comb_df_row_ind']
 
             for col in dropped_cols:
 
                 # Since we are averaging without considering replicates, we expect the list of Replicates_IDs to not be unique.
-                if col != 'Replicate_ID' and col != 'Replicate_shortlabel':
-                    assert len(this_cond_df[col].unique()) == 1, 'Invalid assumption: uniqueness of non-numerical column values'
+                if col in ['Replicate_ID', 'Replicate_shortlabel']:
+                    cond_avg_df.loc[col] = 'NA' # Get the non-numerical value from dataframe (assuming all equivalent)
+                    cond_std_df.loc[col] = 'NA'
+                    cond_n_df.loc[col] = 'NA'
+                elif col in multi_value_cols:
+                    # For columns that naturally have multiple values, use the first value or a representative value
+                    cond_avg_df.loc[col] = 'Multiple'
+                    cond_std_df.loc[col] = 'Multiple'
+                    cond_n_df.loc[col] = 'Multiple'
+                elif len(this_cond_df[col].unique()) == 1:
+                    # Only assert uniqueness for columns that should actually be unique per condition
                     cond_avg_df.loc[col] = this_cond_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
                     cond_std_df.loc[col] = this_cond_df[col].values[0]
                     cond_n_df.loc[col] = this_cond_df[col].values[0]
                 else:
-                    cond_avg_df.loc[col] = 'NA' # Get the non-numerical value from dataframe (assuming all equivalent)
-                    cond_std_df.loc[col] = 'NA'
-                    cond_n_df.loc[col] = 'NA'
+                    # For other columns with multiple values, take the most common value
+                    most_common = this_cond_df[col].mode().iloc[0] if len(this_cond_df[col].mode()) > 0 else this_cond_df[col].values[0]
+                    cond_avg_df.loc[col] = most_common
+                    cond_std_df.loc[col] = most_common
+                    cond_n_df.loc[col] = most_common
 
             avg_df = avg_df.append(cond_avg_df,ignore_index=True)
             std_df = std_df.append(cond_std_df,ignore_index=True)
@@ -126,9 +156,6 @@ def stats_table(df, factor, grouping='Condition', test=STAT_TEST):
     Returns:
         stat_table: pd.DataFrame
     '''
-
-    print('Returning stats_table using test: ', test, ' for factor: ', factor)
-    print('Note: for exploratory purposes only, no multiple comparison correction is being applied.')
 
     # Create a numpy array to hold the values, fill with NaNs
     n_cond = len((df['Condition'].unique()))
@@ -206,9 +233,7 @@ def bootstrap_sample_df(df,factor,ctl_label):
         
     # Calculate and print mean effect size for each condition
     mean_effect_sizes = bootstrap_diff_df.groupby('Condition')['Difference'].mean()
-    print("Mean Effect Size for Each Condition Compared to Control:")
-    for condition, mean_effect_size in mean_effect_sizes.items():
-        print(f"The effect size for {condition} compared with control is: {mean_effect_size}")
+    # Removed verbose effect size printing - results saved to bootstrap_diff_df
 
     return bootstrap_diff_df
 

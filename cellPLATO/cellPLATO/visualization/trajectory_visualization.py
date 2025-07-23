@@ -2286,6 +2286,9 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
     if scalingmethod == 'minmax': #log2minmax minmax powertransformer
         X = MinMaxScaler().fit_transform(Z)
         correctcolumns = CLUSTERON
+    elif scalingmethod == 'standard': #log2minmax minmax powertransformer
+        X = StandardScaler().fit_transform(Z)
+        correctcolumns = CLUSTERON
     elif scalingmethod == 'log2minmax':
         negative_FACTORS = []
         positive_FACTORS = []
