@@ -675,7 +675,7 @@ def correlation_matrix_heatmap(df_in, factors = ALL_FACTORS): #Function added ne
     # print(sub_set_scaled_df)
     # lab_sub_set_scaled_df = pd.concat([sub_set_scaled_df,df_in_labels], axis=1)
     #Correlation matrix
-    corr = sub_set_scaled_df.corr('pearson') # 'pearson','kendall','spearman' ‘spearman’
+    corr = sub_set_scaled_df.corr('pearson') # 'pearson','kendall','spearman' ‘spearman'
     #Figure set up
     f, ax = plt.subplots(figsize=(24, 20))
     #Make mask to remove duplicates
@@ -2103,16 +2103,33 @@ def plot_cell_metrics_timepoint(cell_df, i_step, scaled_cell_df, XYRange,boxoff,
 
 # Those cells are then used for plotting.
 
-def cell_tracks_from_chosen_cells(df_in, chosen_cells_df):
+def cell_tracks_from_chosen_cells(df_in, chosen_cells_df, verbose=False):
+    """
+    Extract full trajectory tracks for chosen cells from a larger dataframe.
+    
+    Parameters:
+    -----------
+    df_in : pandas.DataFrame
+        Full dataset containing all cell trajectories
+    chosen_cells_df : pandas.DataFrame
+        Dataframe containing chosen cells (must have 'uniq_id' column)
+    verbose : bool
+        Whether to print progress information (default: False)
+        
+    Returns:
+    --------
+    pandas.DataFrame : Dataframe containing full tracks for chosen cells
+    """
 
     particles = chosen_cells_df['uniq_id'].unique()
-    # print(particles)
     # Use this list to filter the tptlabel_dr_df so it only contains rows in which particle = one of the elements in particles
     exemplar_cell_tracks_df = df_in[df_in['uniq_id'].isin(particles)]
-    print("The number of datapoints in the original dataframe was " + str(len(df_in)))
-    print("The number of cells in the original dataframe was " + str(len(df_in['uniq_id'].unique())))
-    print("The number of datapoints in the new dataframe is " + str(len(exemplar_cell_tracks_df)))
-    print("The number of cells in the new dataframe is " + str(len(exemplar_cell_tracks_df['uniq_id'].unique())))
+    
+    if verbose:
+        print(f"The number of datapoints in the original dataframe was {len(df_in)}")
+        print(f"The number of cells in the original dataframe was {len(df_in['uniq_id'].unique())}")
+        print(f"The number of datapoints in the new dataframe is {len(exemplar_cell_tracks_df)}")
+        print(f"The number of cells in the new dataframe is {len(exemplar_cell_tracks_df['uniq_id'].unique())}")
 
     return exemplar_cell_tracks_df
 
@@ -2120,58 +2137,153 @@ def cell_tracks_from_chosen_cells(df_in, chosen_cells_df):
 # This version uses the uniq_id instead of the particle number
 # This is used for the small multiples and for the disambiguations, and it chooses exemplars with a good number of timepoints so as to sample single cells well
 
-def filter_exemplars(whole_df, exemplar_df, numberofdesiredtimepoints = 200, numberofcellspercluster = 40, override = 100):
+def filter_exemplars(whole_df, exemplar_df, numberofdesiredtimepoints=200, numberofcellspercluster=40, 
+                    override=100, verbose=True, show_histograms=False, max_iterations=10):
+    """
+    Filter exemplars so that only those with sufficient timepoints are included.
+    
+    Parameters:
+    -----------
+    whole_df : pandas.DataFrame
+        Full dataset containing all cell trajectories
+    exemplar_df : pandas.DataFrame  
+        Dataframe of exemplar cells to filter
+    numberofdesiredtimepoints : int
+        Minimum number of timepoints required per cell (default: 200)
+    numberofcellspercluster : int
+        Target number of cells per cluster (default: 40)
+    override : int
+        Minimum acceptable total number of cells (default: 100)
+    verbose : bool
+        Whether to print progress information (default: True)
+    show_histograms : bool
+        Whether to show frame distribution histograms (default: False)
+    max_iterations : int
+        Maximum number of sampling iterations to prevent infinite loops (default: 10)
+        
+    Returns:
+    --------
+    tuple : (exemplar_df_filt, exemplar_cell_tracks_df)
+    """
 
-    print('Filtering exemplars so that only those with > ' + str(numberofdesiredtimepoints) + ' timepoints are included')
-
-    print('Aiming for ' + str(numberofcellspercluster) + ' cells per cluster')
+    if verbose:
+        print(f'Filtering exemplars so that only those with > {numberofdesiredtimepoints} timepoints are included')
+        print(f'Aiming for {numberofcellspercluster} cells per cluster')
 
     num_clusters_whole_dataset = len(whole_df['label'].unique())
 
-    print('Which means ' + str(num_clusters_whole_dataset*numberofcellspercluster) + ' cells in total')
+    if verbose:
+        print(f'Which means {num_clusters_whole_dataset * numberofcellspercluster} cells in total')
+        print(f'But we can accept 70 percent! Which means we are only aiming for {(num_clusters_whole_dataset * numberofcellspercluster) * 0.7} cells in total')
+        print(f'Number of unique cells in exemplar_df: {len(exemplar_df["uniq_id"].unique())}')
 
-    print('But we can accept 70 percent! Which means we are only aiming for ' + str((num_clusters_whole_dataset*numberofcellspercluster)*0.7) + ' cells in total')
+    # Filter out cells that don't have enough timepoints
+    exemplar_df_filt = exemplar_df[exemplar_df['ntpts'] > numberofdesiredtimepoints]
 
-    print('Number of unique cells in exemplar_df: ', len(exemplar_df['uniq_id'].unique()))    
-
-    exemplar_df_filt = exemplar_df[exemplar_df['ntpts'] > numberofdesiredtimepoints] # filter out cells that don't have enough timepoints
-
-    print('Number of unique cells in exemplar_df after filtering: ', len(exemplar_df_filt['uniq_id'].unique()))
-    # Draw a histogram of which frames are most common in the exemplar_df
-    exemplar_df['frame'].hist(bins=100)
-    # do the same for the exemplar_df_filt
-    exemplar_df_filt['frame'].hist(bins=100)
-    # Save the exemplar_df_filt
+    if verbose:
+        print(f'Number of unique cells in exemplar_df after filtering: {len(exemplar_df_filt["uniq_id"].unique())}')
+    
+    # Show histograms if requested
+    if show_histograms:
+        exemplar_df['frame'].hist(bins=100, alpha=0.5, label='Original')
+        exemplar_df_filt['frame'].hist(bins=100, alpha=0.5, label='Filtered')
+        plt.legend()
+        plt.title('Frame Distribution Comparison')
+        plt.show()
     
     num_clusters_exemplars = len(exemplar_df_filt['label'].unique())
-    print('The number of clusters in whole dataset is: ' + str(num_clusters_whole_dataset) + ' whereas represented in the filtered and ready exemplar = ' + str(num_clusters_exemplars))
+    if verbose:
+        print(f'The number of clusters in whole dataset is: {num_clusters_whole_dataset} whereas represented in the filtered and ready exemplar = {num_clusters_exemplars}')
 
-    exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(lambda x: x.sample(min(numberofcellspercluster,len(x)))).reset_index(drop=True)
+    # Check if we have enough cells to meet our targets
+    available_cells_per_cluster = exemplar_df_filt.groupby('label').size()
+    total_available_cells = len(exemplar_df_filt['uniq_id'].unique())
+    
+    if verbose:
+        print(f'Available cells per cluster: min={available_cells_per_cluster.min()}, max={available_cells_per_cluster.max()}, mean={available_cells_per_cluster.mean():.1f}')
+        print(f'Total available cells: {total_available_cells}')
+    
+    # Calculate realistic targets
+    max_possible_per_cluster = available_cells_per_cluster.min()
+    realistic_per_cluster = min(numberofcellspercluster, max_possible_per_cluster)
+    
+    if realistic_per_cluster < numberofcellspercluster and verbose:
+        print(f'Warning: Can only get {realistic_per_cluster} cells per cluster (requested {numberofcellspercluster})')
+        print(f'Some clusters have fewer cells than requested.')
+
+    # Sample cells from each cluster
+    exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(
+        lambda x: x.sample(min(numberofcellspercluster, len(x)), random_state=42)
+    ).reset_index(drop=True)
 
     numberofcellsindf = len(exemplar_df_filt_selected['uniq_id'].unique())
+    numberofuniquecells_intended = numberofcellspercluster * num_clusters_whole_dataset
 
-    numberofuniquecells_intended = numberofcellspercluster*num_clusters_whole_dataset
+    if verbose:
+        print(f'Initial sampling: intended={numberofuniquecells_intended}, actual={numberofcellsindf}, override threshold={override}')
 
-    print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
-
-
-    # while numberofuniquecells_intended != numberofcellsindf:
-    while override >= numberofcellsindf:
-
-        print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
+    # Improved loop with iteration limit and better logic
+    iteration_count = 0
+    
+    while override >= numberofcellsindf and iteration_count < max_iterations:
+        if verbose:
+            print(f'Iteration {iteration_count + 1}: Resampling to try to reach override threshold...')
+            print(f'Current cells: {numberofcellsindf}, target: {override}')
         
-        exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(lambda x: x.sample(min(numberofcellspercluster,len(x)))).reset_index(drop=True)
-        numberofcellsindf = len(exemplar_df_filt_selected['uniq_id'].unique())
-        numberofuniquecells_intended = numberofcellspercluster*num_clusters_whole_dataset
-    else:
-        print('Intended number of unique cells in the final df = ' + str(numberofuniquecells_intended) + ' , and the actual number is ' + str(numberofcellsindf))
+        # Check if it's even possible to reach the override threshold
+        if total_available_cells <= numberofcellsindf:
+            if verbose:
+                print(f'Cannot improve beyond {numberofcellsindf} cells - this is the maximum available.')
+            break
+            
+        # Try a different sampling strategy or adjust parameters
+        try:
+            # Use a slightly different random state to get different sampling
+            exemplar_df_filt_selected = exemplar_df_filt.groupby('label').apply(
+                lambda x: x.sample(min(numberofcellspercluster, len(x)), random_state=42 + iteration_count)
+            ).reset_index(drop=True)
+            
+            new_cell_count = len(exemplar_df_filt_selected['uniq_id'].unique())
+            
+            # If we're not making progress, break
+            if new_cell_count == numberofcellsindf:
+                if verbose:
+                    print('No improvement possible with current filtering criteria.')
+                break
+                
+            numberofcellsindf = new_cell_count
+            
+        except Exception as e:
+            if verbose:
+                print(f'Sampling failed: {e}')
+            break
+            
+        iteration_count += 1
+    
+    if iteration_count >= max_iterations and verbose:
+        print(f'Reached maximum iterations ({max_iterations}). Proceeding with current selection.')
+    
+    exemplar_df_filt = exemplar_df_filt_selected
 
-        exemplar_df_filt = exemplar_df_filt_selected
+    if verbose:
+        print(f'Final result: intended={numberofuniquecells_intended}, actual={numberofcellsindf}')
+        print('Creating full trajectory tracks for selected cells...')
 
-    exemplar_cell_tracks_df = cell_tracks_from_chosen_cells(df_in=whole_df, chosen_cells_df=exemplar_df_filt)
+    # Get full trajectory tracks for the selected cells
+    exemplar_cell_tracks_df = cell_tracks_from_chosen_cells(df_in=whole_df, chosen_cells_df=exemplar_df_filt, verbose=verbose)
 
-    exemplar_df_filt.to_csv(SAVED_DATA_PATH + 'exemplar_df_filt.csv', index=False)
-    exemplar_cell_tracks_df.to_csv(SAVED_DATA_PATH + 'exemplar_cell_tracks_df.csv', index=False)
+    # Save results
+    if verbose:
+        print('Saving results...')
+    
+    try:
+        exemplar_df_filt.to_csv(SAVED_DATA_PATH + 'exemplar_df_filt.csv', index=False)
+        exemplar_cell_tracks_df.to_csv(SAVED_DATA_PATH + 'exemplar_cell_tracks_df.csv', index=False)
+        if verbose:
+            print('Files saved successfully.')
+    except Exception as e:
+        if verbose:
+            print(f'Warning: Could not save files: {e}')
 
     return exemplar_df_filt, exemplar_cell_tracks_df
 
@@ -2193,8 +2305,16 @@ def plot_trajectories(df, global_y=True, global_x=True):
     if global_y:
 
         # Find the global minimum and maximum values for the 'y' axis
-        y_min = df['label'].min()
-        y_max = df['label'].max()
+        # Handle categorical labels by getting unique values and their range
+        unique_labels = df['label'].unique()
+        if hasattr(df['label'], 'cat'):
+            # If it's categorical, get the codes (numeric representation)
+            y_min = df['label'].cat.codes.min()
+            y_max = df['label'].cat.codes.max()
+        else:
+            # If it's already numeric, use min/max directly
+            y_min = unique_labels.min()
+            y_max = unique_labels.max()
     else:
         y_min = y_max = None
 
@@ -2256,9 +2376,11 @@ def plot_trajectories(df, global_y=True, global_x=True):
     ######
 
 
-def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, scalingmethod = SCALING_METHOD): #New function 21-14-2022
+def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTORS, howmanyfactors=6, 
+                           scalingmethod=SCALING_METHOD, factors_to_log_transform_clean=None, 
+                           factors_minmax_only_clean=None): #New function 21-14-2022
 
-    ### 10-6-2023 ##### 
+    ### 10-6-2023 - Updated to use precalculated factor lists ##### 
 
     '''
     Steps:
@@ -2269,6 +2391,12 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
     5. Makes a boolean mask of variances based on that threshold value, and a dataframe that contains values if true, and NaN if not
     6. exports a df that can be used to select what metrics you want to show?
 
+    Parameters:
+    -----------
+    factors_to_log_transform_clean : list, optional
+        For 'choice' scaling: factors that should receive log2 + minmax scaling
+    factors_minmax_only_clean : list, optional
+        For 'choice' scaling: factors that should receive only minmax scaling
     '''
 
     # from sklearn.feature_selection import VarianceThreshold
@@ -2320,27 +2448,70 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
 
     elif scalingmethod == 'choice': 
         print('Factors to be scaled using log2 and then minmax:')
-        FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
-        FactorsNottotransform_actual=[]
-        FactorsToTransform_actual=[]
-        for factor in dr_factors:
-            if factor in FactorsNOTtotransform:
-                print('Factor: ' + factor + ' will not be transformed')
-                FactorsNottotransform_actual.append(factor)
-            else:
-                print('Factor: ' + factor + ' will be transformed')
-                FactorsToTransform_actual.append(factor)
-        trans_df = df_in[FactorsToTransform_actual]
-        trans_x=trans_df.values
-        nontrans_df = df_in[FactorsNottotransform_actual]
-        nontrans_x=nontrans_df.values
-        trans_x_constant=trans_x + 0.000001
         
-        trans_x_log = np.log2(trans_x_constant) # This is what it should be.
-        trans_x_=MinMaxScaler().fit_transform(trans_x_log)
-        nontrans_x_=MinMaxScaler().fit_transform(nontrans_x)
-        x_=np.concatenate((trans_x_, nontrans_x_), axis=1)
-        newcols=FactorsToTransform_actual + FactorsNottotransform_actual
+        # Use precalculated factor lists if provided, otherwise fall back to hardcoded defaults
+        if factors_to_log_transform_clean is not None and factors_minmax_only_clean is not None:
+            # Use the precalculated lists
+            FactorsToTransform_actual = [f for f in dr_factors if f in factors_to_log_transform_clean]
+            FactorsNottotransform_actual = [f for f in dr_factors if f in factors_minmax_only_clean]
+            
+            # Check for unassigned factors
+            unassigned_factors = [f for f in dr_factors if f not in factors_to_log_transform_clean and f not in factors_minmax_only_clean]
+            if unassigned_factors:
+                print(f'Warning: Unassigned factors will be log-transformed by default: {unassigned_factors}')
+                FactorsToTransform_actual.extend(unassigned_factors)
+                
+            print('Using precalculated factor lists from analyze_factors_for_choice_scaling()')
+            
+        elif factors_minmax_only_clean is not None:
+            # User only provided factors NOT to transform
+            FactorsNottotransform_actual = [f for f in dr_factors if f in factors_minmax_only_clean]
+            FactorsToTransform_actual = [f for f in dr_factors if f not in factors_minmax_only_clean]
+            
+        elif factors_to_log_transform_clean is not None:
+            # User only provided factors TO transform
+            FactorsToTransform_actual = [f for f in dr_factors if f in factors_to_log_transform_clean]
+            FactorsNottotransform_actual = [f for f in dr_factors if f not in factors_to_log_transform_clean]
+            
+        else:
+            # Fall back to hardcoded defaults (original behavior)
+            FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
+            FactorsNottotransform_actual=[]
+            FactorsToTransform_actual=[]
+            for factor in dr_factors:
+                if factor in FactorsNOTtotransform:
+                    print('Factor: ' + factor + ' will not be transformed')
+                    FactorsNottotransform_actual.append(factor)
+                else:
+                    print('Factor: ' + factor + ' will be transformed')
+                    FactorsToTransform_actual.append(factor)
+        
+        print(f'Factors TO transform (log2+minmax): {len(FactorsToTransform_actual)}')
+        print(f'  {FactorsToTransform_actual}')
+        print(f'Factors NOT to transform (minmax only): {len(FactorsNottotransform_actual)}')
+        print(f'  {FactorsNottotransform_actual}')
+        
+        # Apply transformations - same as variance_threshold function
+        if FactorsToTransform_actual:
+            trans_df = df_in[FactorsToTransform_actual]
+            trans_x = trans_df.values
+            trans_x_constant = trans_x + 0.000001
+            trans_x_log = np.log2(trans_x_constant) # This is what it should be.
+            trans_x_ = MinMaxScaler().fit_transform(trans_x_log)
+        else:
+            trans_x_ = np.empty((len(df_in), 0))
+            
+        if FactorsNottotransform_actual:
+            nontrans_df = df_in[FactorsNottotransform_actual]
+            nontrans_x = nontrans_df.values
+            nontrans_x_ = MinMaxScaler().fit_transform(nontrans_x)
+        else:
+            nontrans_x_ = np.empty((len(df_in), 0))
+            
+        # Combine scaled data
+        x_ = np.concatenate((trans_x_, nontrans_x_), axis=1)
+        newcols = FactorsToTransform_actual + FactorsNottotransform_actual
+        
         scaled_df_here = pd.DataFrame(x_, columns = newcols)
         scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
         plt.tight_layout()
@@ -2404,7 +2575,7 @@ def contribution_to_clusters(df_in, threshold_value=0.0001, dr_factors=DR_FACTOR
             variance_between_clusters = ((clusteraverage_df.iloc[cluster,metric] - metric_means[metric])**2)/(numberofclusters)
             variance_between_clusters_array.append(variance_between_clusters)
         variance_between_clusters_array_total.append(variance_between_clusters_array)
-    variance_df = pd.DataFrame(data = variance_between_clusters_array_total, columns = clusteraverage_df.index, index = CLUSTERON )
+    variance_df = pd.DataFrame(data = variance_between_clusters_array_total, columns = clusteraverage_df.index, index = correctcolumns )
     #############################################################################
 
     # This part then makes the top factors into a dictionary
@@ -2678,8 +2849,13 @@ def create_cluster_averages_table(top_dictionary, df, scaled_df):
 
 
 def fingerprintplot_clusters_per_trajectory(df):
+    # Ensure label column is not categorical to avoid MultiIndex issues
+    df_work = df.copy()
+    if hasattr(df_work['label'], 'cat'):
+        df_work['label'] = df_work['label'].astype(str)
+    
     # Calculate frequencies
-    counts = df.groupby(['trajectory_id', 'label']).size()
+    counts = df_work.groupby(['trajectory_id', 'label']).size()
     fontsize = PLOT_TEXT_SIZE
     plt.rc('font', size=fontsize) 
     plt.rc('axes', titlesize=fontsize) 
@@ -2693,14 +2869,17 @@ def fingerprintplot_clusters_per_trajectory(df):
     percentages = counts.groupby(level=0).apply(lambda x: 100 * x / x.sum())
 
     cluster_colors = []
-    labels = list(set(df['label'].unique()))
+    labels = list(set(df_work['label'].unique()))
     numofcolors = len(labels)
     cmap = cm.get_cmap(CLUSTER_CMAP)
     for i in range(numofcolors):
         cluster_colors.append(cmap(i))
 
-    # Reset the index of the DataFrame and pivot it for the stacked bar plot
-    percentages = percentages.reset_index().pivot(columns='label', index='trajectory_id', values=0)
+    # Convert to DataFrame and reset index properly to avoid MultiIndex issues
+    percentages_df = percentages.to_frame(name='percentage').reset_index()
+    
+    # Now pivot the properly structured DataFrame
+    percentages = percentages_df.pivot(columns='label', index='trajectory_id', values='percentage')
 
     # Create a dictionary mapping labels to colors
     color_dict = dict(zip(labels, cluster_colors))
@@ -2712,7 +2891,7 @@ def fingerprintplot_clusters_per_trajectory(df):
     fig, ax = plt.subplots(figsize=(20, 20))
     percentages.plot(kind='bar', stacked=True, ax=ax, color=colors)
     # Get the number of unique trajectory IDs
-    num_traj = len(df['trajectory_id'].unique())
+    num_traj = len(df_work['trajectory_id'].unique())
     # print(f'num_traj = {num_traj}')
 
     # print(f'The length of the ax patches is {len(ax.patches)}' )

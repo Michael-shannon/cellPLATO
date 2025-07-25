@@ -7,7 +7,7 @@ Fill out this file then run the jupyter notebook to analyze your data
 '''
 Experiment-specific constants to be filled by user
 '''
-
+#
 DATA_PATH = 'D:/HERNANDEZ/CSV_files'# Input the path to the folder containing the data
 OUTPUT_PATH = 'D:/HERNANDEZ/output' # Input the path to the folder where the output will be saved
 CTL_LABEL = 'Condition_1' # Input the name of the control condition here

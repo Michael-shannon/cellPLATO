@@ -2316,100 +2316,70 @@ def count_cluster_changes_with_tavg(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_
     df = df_in.copy() # Make a copy so as not to modify the original input
     df.reset_index(inplace=True, drop=True)
 
-    for rep in df['Replicate_ID'].unique():
-        print("Processing replicate: " + str(rep))
-        for cell_id in tqdm(df[df['Replicate_ID'] == rep]['particle'].unique()):
-            # print("Processing cell number: " + str(cell_id) + ' and replicate: ' + str(rep))
-            cell_df = df[(df['Replicate_ID']==rep) &
-                            (df['particle']==cell_id)]
+    for uniq_id in tqdm(df['uniq_id'].unique()):
+        cell_df = df[df['uniq_id'] == uniq_id]
+        rep = cell_df['Replicate_ID'].unique()[0]  # Get replicate for this cell
 
-            # If you've already attributed a unique id, then use it.
-            if 'uniq_id' in cell_df.columns:
-                assert len(cell_df['uniq_id'].unique()) == 1
-                uniq_id = cell_df['uniq_id'].unique()[0]
+        '''
+        This part (now deprecated) calculated the n_changes and n_labels per cell track non-cumulatively
+        '''
+        # Calculating cluster changes at the per-cell level
+        s = cell_df['label'] # label is the cluster number.
+        label_changes = (np.diff(s)!=0).sum() # Count the number of times it changes
+        n_labels = len(s.unique()) # Count the number of times it changes
+
+        lab_list.append((cell_df['Condition'].unique()[0],rep, uniq_id, label_changes,n_labels))
+
+        # The extra step of doing these calculations cumulatively, per timepoint.
+        for t in cell_df['frame'].unique():
+
+            '''
+            This part calculates the n_changes and n_labels cumulatively per frame (expanding the 'window' by 1 each time)
+            '''
+            # Cumulative measurements
+            # Get the dataframe including all timepoints upto and including t
+            # print('Processing frame ' + str(t))
+            cumulative_df = cell_df[(cell_df['frame']<=t)] #Is this part taking a long time?
+            # Count the label changes and total numbers.
+            s = cumulative_df['label']
+            cum_label_changes = (np.diff(s)!=0).sum() # Count the number of times it changes
+            cum_n_labels = len(s.unique()) # Count the number of times it changes
+
+            # Time-windowed measurements
+            '''
+            This part calculated the time windowed n changes and n labels. It isn't cumulative.
+            '''
+            # Get the dataframe for a window of timepoints centered at t
+
+            t_wind_df = cell_df[(cell_df['frame']>=t - t_window/2) &
+                          (cell_df['frame']<t + t_window/2)]
+
+            # Apply a cutoff for number of frames, make calculations if satisfies
+            # Use a more lenient threshold: require at least 3 frames for meaningful calculations
+            min_frames_flexible = max(3, min_frames // 3)  # At least 3 frames, or 1/3 of desired window
+            
+            if(len(t_wind_df) >= min_frames_flexible):
+#                 print('Length sufficient')
+                # Count the label changes and total numbers for this window
+                tw_s = t_wind_df['label']
+                twind_label_changes = (np.diff(tw_s)!=0).sum() # Count the number of times it changes
+                twind_n_labels = len(tw_s.unique()) # Count the number of times it changes
+
             else:
-                uniq_id = cell_id
-
-            '''
-            This part (now deprecated) calculated the n_changes and n_labels per cell track non-cumulatively
-            '''
-            # Calculating cluster changes at the per-cell level
-            s = cell_df['label'] # label is the cluster number.
-            label_changes = (np.diff(s)!=0).sum() # Count the number of times it changes
-            n_labels = len(s.unique()) # Count the number of times it changes
-
-            g = cell_df['tavg_label']
-            tavg_label_changes = (np.diff(g)!=0).sum() # Count the number of times it changes
-            tavg_n_labels = len(g.unique()) # Count the number of times it changes
-
-            lab_list.append((cell_df['Condition'].unique()[0],rep, uniq_id, label_changes,n_labels, tavg_label_changes, tavg_n_labels))
-
-            # The extra step of doing these calculations cumulatively, per timepoint.
-            for t in cell_df['frame'].unique():
-
-                '''
-                This part calculates the n_changes and n_labels cumulatively per frame (expanding the 'window' by 1 each time)
-                '''
-                # Cumulative measurements
-                # Get the dataframe including all timepoints upto and including t
-                # print('Processing frame ' + str(t))
-                cumulative_df = cell_df[(cell_df['frame']<=t)] #Is this part taking a long time?
-                # Count the label changes and total numbers.
-                s = cumulative_df['label']
-                cum_label_changes = (np.diff(s)!=0).sum() # Count the number of times it changes
-                cum_n_labels = len(s.unique()) # Count the number of times it changes
-
-                g = cumulative_df['tavg_label']
-                tavg_cum_label_changes = (np.diff(g)!=0).sum() # Count the number of times it changes
-                tavg_cum_n_labels = len(g.unique()) # Count the number of times it changes
-
-                # Time-windowed measurements
-                '''
-                This part calculated the time windowed n changes and n labels. It isn't cumulative.
-                '''
-                # Get the dataframe for a window of timepoints centered at t
-
-                t_wind_df = cell_df[(cell_df['frame']>=t - t_window/2) &
-                              (cell_df['frame']<t + t_window/2)]
-
-                # Apply a cutoff for number of frames, make calculations if satisfies
-                # Use a more lenient threshold: require at least 3 frames for meaningful calculations
-                min_frames_flexible = max(3, min_frames // 3)  # At least 3 frames, or 1/3 of desired window
-                
-                if(len(t_wind_df) >= min_frames_flexible):
-#                     print('Length sufficient')
-                    # Count the label changes and total numbers for this window
-                    tw_s = t_wind_df['label']
-                    twind_label_changes = (np.diff(tw_s)!=0).sum() # Count the number of times it changes
-                    twind_n_labels = len(tw_s.unique()) # Count the number of times it changes
-
-                    tw_g = t_wind_df['tavg_label']  # Fixed: was using 'label' instead of 'tavg_label'
-                    tavg_twind_label_changes = (np.diff(tw_g)!=0).sum() # Count the number of times it changes
-                    tavg_twind_n_labels = len(tw_g.unique()) # Count the number of times it changes
-
-                    #
-                    #
-                    #
-
-                else:
-#                     print('Length insufficient')
-                    # Otherwise set the values to NaN
-                    twind_label_changes = np.nan
-                    twind_n_labels = np.nan
-                    tavg_twind_label_changes = np.nan
-                    tavg_twind_n_labels = np.nan
-                # This effectively builds a new dataframe up from the list of lists
-                lab_list_tpt.append((cell_df['Condition'].unique()[0],rep, uniq_id, t, cum_label_changes,cum_n_labels,twind_label_changes,twind_n_labels,
-                tavg_cum_label_changes,tavg_cum_n_labels,tavg_twind_label_changes,tavg_twind_n_labels))
+#                 print('Length insufficient')
+                # Otherwise set the values to NaN
+                twind_label_changes = np.nan
+                twind_n_labels = np.nan
+            # This effectively builds a new dataframe up from the list of lists
+            lab_list_tpt.append((cell_df['Condition'].unique()[0],rep, uniq_id, t, cum_label_changes,cum_n_labels,twind_label_changes,twind_n_labels))
 
 
 
 
 
     # Turn the lists to dataframes
-    lab_list_tpt_df = pd.DataFrame(lab_list_tpt, columns=['Condition','Replicate', 'Cell_ID','frame', 'cum_n_changes', 'cum_n_labels', 'twind_n_changes', 'twind_n_labels',
-    'tavg_cum_n_changes', 'tavg_cum_n_labels', 'tavg_twind_n_changes', 'tavg_twind_n_labels']) # Added the new columns here.
-    lab_list_df = pd.DataFrame(lab_list, columns=['Condition','Replicate', 'Cell_ID', 'n_changes', 'n_labels', 'tavg_n_changes', 'tavg_n_labels'])
+    lab_list_tpt_df = pd.DataFrame(lab_list_tpt, columns=['Condition','Replicate', 'Cell_ID','frame', 'cum_n_changes', 'cum_n_labels', 'twind_n_changes', 'twind_n_labels'])
+    lab_list_df = pd.DataFrame(lab_list, columns=['Condition','Replicate', 'Cell_ID', 'n_changes', 'n_labels'])
     assert len(lab_list_tpt_df.index) == len(df.index), 'Label count list doesnt add up'
 
     # Need to re-sort it by cell_id and frame
@@ -2444,9 +2414,7 @@ def count_cluster_changes_with_tavg(df_in,t_window=MIG_T_WIND, min_frames=MIG_T_
 
 
     # Insert the timepoint label counts back into the input dataframe
-    # new_df = pd.concat([df,lab_list_tpt_df[['cum_n_changes','n_labels', 'twind_n_changes', 'twind_n_labels']]], axis=1)
-    new_df = pd.concat([df,lab_list_tpt_df[['cum_n_changes', 'cum_n_labels', 'twind_n_changes', 'twind_n_labels',
-    'tavg_cum_n_changes', 'tavg_cum_n_labels', 'tavg_twind_n_changes', 'tavg_twind_n_labels']]], axis=1)
+    new_df = pd.concat([df,lab_list_tpt_df[['cum_n_changes', 'cum_n_labels', 'twind_n_changes', 'twind_n_labels']]], axis=1)
 
 
     return new_df
