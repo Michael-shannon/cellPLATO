@@ -84,6 +84,8 @@ EXPERIMENTS_TO_INCLUDE = ['Condition_1', 'Condition_2', 'Condition_n']
 
 Run cellPLATO through Jupyter Notebooks. Choose the master notebook to run all of the analysis step by step.
 
+### CellPLATO uses time windows for analysis - below is an example slide I use to explain why they are important for tracking in general.
+
 ![TWs](https://github.com/Michael-shannon/cellPLATO/blob/main/cellPLATO/images/TimeWindows.png)
 
 
