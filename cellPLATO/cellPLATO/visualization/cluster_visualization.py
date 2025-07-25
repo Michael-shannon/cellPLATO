@@ -801,9 +801,9 @@ def plot_plasticity_changes(df, identifier='\_allcells', miny=None, maxy=None, t
     max1=np.nanmax(df[whattoplot[1]])
     max2=np.nanmax(df[whattoplot[2]])
 
-    
-    tickfrequency1 = int(max1/5)
-    tickfrequency2 = int(max2/5)
+    # ensure tick frequencies are at least 1 to prevent division by zero
+    tickfrequency1 = max(int(max1/5), 1)
+    tickfrequency2 = max(int(max2/5), 1)
 
     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), 1)
     the_yticks = [int(x) for x in the_yticks]
