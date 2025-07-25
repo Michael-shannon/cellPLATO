@@ -194,7 +194,7 @@ def dr_pipeline_dev(df, dr_factors=DR_FACTORS, dr_input='factors', tsne_perp=TSN
 
     return dr_df
 
-def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD, do_tsne = True, factors_to_transform=None, factors_not_to_transform=None): 
+def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP, umap_nn=UMAP_NN,min_dist=UMAP_MIN_DIST, n_components=N_COMPONENTS, scalingmethod=SCALING_METHOD, do_tsne = True, factors_to_transform=None, factors_not_to_transform=None, verbose=False): 
     """
     Dimensionality reduction pipeline with UMAP and optional tSNE.
     
@@ -207,6 +207,9 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     factors_not_to_transform : list, optional
         For 'choice' scaling: List of factors that should receive only minmax scaling.
         If None, uses default hardcoded list.
+        
+    verbose : bool, optional
+        Whether to print detailed progress and debugging information. Default is False.
         
     Notes:
     ------
@@ -237,26 +240,77 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     umap_components=([f'UMAP{i}' for i in component_list])
     # tsne_components=([f'tSNE{i}' for i in component_list])
 
-    print('Running dr_pipeline for multi dimension UMAP and tSNE...')
-    print('tSNE perplexity = ',tsne_perp)
-    print('UMAP nearest neighbors = ', umap_nn, ' min distance = ',min_dist)
-    print('Number of UMAP components = ', n_components)
+    if verbose:
+        print('Running dr_pipeline for multi dimension UMAP and tSNE...')
+        print('tSNE perplexity = ',tsne_perp)
+        print('UMAP nearest neighbors = ', umap_nn, ' min distance = ',min_dist)
+        print('Number of UMAP components = ', n_components)
 
     # Prepare data for dimensionality reduction by extracting the factors of interest from the DR_FACTORS list.
 
     #### DEV part - adding tmeans functionality ####
 
+    def create_histogram_plot(data_df, columns, title, save_path, bins=160):
+        """Create properly formatted histogram plot that fits A4 page."""
+        # Calculate optimal subplot layout
+        n_factors = len(columns)
+        if n_factors <= 4:
+            ncols = 2
+        elif n_factors <= 9:
+            ncols = 3
+        elif n_factors <= 16:
+            ncols = 4
+        elif n_factors <= 25:
+            ncols = 5
+        else:
+            ncols = 6
+        
+        nrows = int(np.ceil(n_factors / ncols))
+        
+        # Set figure size for A4 page (8.27 x 11.69 inches)
+        fig_width = 8.27
+        fig_height = min(11.69, nrows * 1.5 + 1)  # Limit height to A4
+        
+        plt.rcParams.update({'font.size': 10})
+        fig, axes = plt.subplots(nrows, ncols, figsize=(fig_width, fig_height))
+        
+        # Handle single subplot case
+        if n_factors == 1:
+            axes = [axes]
+        elif nrows == 1:
+            axes = axes if hasattr(axes, '__iter__') else [axes]
+        else:
+            axes = axes.flatten()
+        
+        for i, factor in enumerate(columns):
+            if i < len(axes):
+                axes[i].hist(data_df[factor].dropna(), bins=bins, color="black", ec="black", alpha=0.7)
+                axes[i].set_title(factor, fontsize=10, pad=5)
+                axes[i].tick_params(axis='both', which='major', labelsize=8)
+                axes[i].tick_params(axis='both', which='minor', labelsize=8)
+        
+        # Hide empty subplots
+        for j in range(i + 1, len(axes)):
+            axes[j].set_visible(False)
+        
+        plt.suptitle(title, fontsize=12, y=0.98)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])  # Leave space for title
+        plt.savefig(save_path, format='svg', dpi=300, bbox_inches='tight')
+        plt.close()  # Close to free memory
+
     if AVERAGE_TIME_WINDOWS:
         tmeansdrfactors = [f'{i}_tmean' for i in dr_factors]
-        print("DR factors used were" + str(tmeansdrfactors))
+        if verbose:
+            print("DR factors used were" + str(tmeansdrfactors))
+            print("THIS IS THE UNTRANSFORMED DATA ")
         sub_df = df[tmeansdrfactors]
-        print("THIS IS THE UNTRANSFORMED DATA ")
-        sub_df.hist(column=tmeansdrfactors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        create_histogram_plot(sub_df, tmeansdrfactors, 'Untransformed data', savedir + 'UntransformedData.svg')
     else:
-        print("DR factors used were" + str(dr_factors))
+        if verbose:
+            print("DR factors used were" + str(dr_factors))
+            print("THIS IS THE UNTRANSFORMED DATA ")
         sub_df = df[dr_factors]
-        print("THIS IS THE UNTRANSFORMED DATA ")
-        sub_df.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
+        create_histogram_plot(sub_df, dr_factors, 'Untransformed data', savedir + 'UntransformedData.svg')
         
     # x = get_data_matrix(df,dr_factors)
 
@@ -265,26 +319,23 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
     # print("DR factors used were" + str(dr_factors))
     # sub_df = df[dr_factors]
 
-
-    plt.tight_layout()
-    plt.title('Untransformed data')
-    # plt.show()
-    plt.savefig(savedir+ 'UntransformedData.png')
-
     x= sub_df.values
     # rs = RobustScaler(quantile_range=(0,95)) #Check usage of this scalar
     ## THIS IS WHAT YOU HAD ##
     # g = StandardScaler().fit_transform(x)
     if scalingmethod == 'minmax': #log2minmax minmax powertransformer
         x_ = MinMaxScaler().fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (MinMaxScaler)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (MinMaxScaler)")
     elif scalingmethod in ['standardscaler', 'standard']:  # Support both naming conventions
         x_ = StandardScaler().fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (StandardScaler)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (StandardScaler)")
     elif scalingmethod == 'log2minmax':
         negative_FACTORS = []
         positive_FACTORS = []
-        print('Using log2 and then minmax scaling for factors with positive values, and minmax scaling for factors with negative values')
+        if verbose:
+            print('Using log2 and then minmax scaling for factors with positive values, and minmax scaling for factors with negative values')
         for factor in dr_factors:
             if np.min(df[factor]) < 0:
                 # print('factor ' + factor + ' has negative values')
@@ -299,7 +350,8 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         neg_x = neg_df.values
         # neg_x_ = MinMaxScaler().fit_transform(neg_x)
         if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
-            print('No negative factors present at all!')
+            if verbose:
+                print('No negative factors present at all!')
             neg_x_ = neg_x
         else:
             neg_x_ = MinMaxScaler().fit_transform(neg_x) 
@@ -311,14 +363,13 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         newcols=positive_FACTORS + negative_FACTORS
 
         scaled_df_here = pd.DataFrame(x_, columns = newcols)
-        print("THIS IS THE " + str(scalingmethod) + " TRANSFORMED DATA ")
-        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
-        plt.tight_layout()
-        # plt.show()
-        plt.savefig(savedir+ str(scalingmethod) +'.png')
+        if verbose:
+            print("THIS IS THE " + str(scalingmethod) + " TRANSFORMED DATA ")
+        create_histogram_plot(scaled_df_here, newcols, 'Transformed data', savedir + str(scalingmethod) + '.svg')
 
     elif scalingmethod == 'choice':
-        print('Factors to be scaled using log2 and then minmax:')
+        if verbose:
+            print('Factors to be scaled using log2 and then minmax:')
 
         # Use custom factor lists if provided, otherwise fall back to defaults
         if factors_to_transform is not None and factors_not_to_transform is not None:
@@ -328,7 +379,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
             
             # Check for factors that aren't in either list
             unassigned_factors = [f for f in dr_factors if f not in factors_to_transform and f not in factors_not_to_transform]
-            if unassigned_factors:
+            if unassigned_factors and verbose:
                 print(f"Warning: These factors are not assigned to either list and will be log-transformed by default: {unassigned_factors}")
                 FactorsToTransform_actual.extend(unassigned_factors)
                 
@@ -350,10 +401,12 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
                 FactorsToTransform_actual=[]
                 for factor in tmeansdrfactors:
                     if factor in FactorsNOTtotransform:
-                       print('Factor: ' + factor + ' will not be transformed')
+                       if verbose:
+                           print('Factor: ' + factor + ' will not be transformed')
                        FactorsNottotransform_actual.append(factor) 
                     else:
-                        print('Factor: ' + factor + ' will be transformed')
+                        if verbose:
+                            print('Factor: ' + factor + ' will be transformed')
                         FactorsToTransform_actual.append(factor)                   
             else:
                 FactorsNOTtotransform = ['arrest_coefficient', 'rip_L', 'rip_p', 'rip_K', 'eccentricity', 'orientation', 'directedness', 'turn_angle', 'dir_autocorr', 'glob_turn_deg']
@@ -361,15 +414,18 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
                 FactorsToTransform_actual=[]
                 for factor in dr_factors:
                     if factor in FactorsNOTtotransform:
-                        print('Factor: ' + factor + ' will not be transformed')
+                        if verbose:
+                            print('Factor: ' + factor + ' will not be transformed')
                         FactorsNottotransform_actual.append(factor)
                     else:
-                        print('Factor: ' + factor + ' will be transformed')
+                        if verbose:
+                            print('Factor: ' + factor + ' will be transformed')
                         FactorsToTransform_actual.append(factor)
         
         # Print what will be transformed vs not
-        print(f"Factors TO transform (log2 + minmax): {FactorsToTransform_actual}")
-        print(f"Factors NOT to transform (minmax only): {FactorsNottotransform_actual}")
+        if verbose:
+            print(f"Factors TO transform (log2 + minmax): {FactorsToTransform_actual}")
+            print(f"Factors NOT to transform (minmax only): {FactorsNottotransform_actual}")
 
         # Get data for transformation with detailed error checking
         trans_df = df[FactorsToTransform_actual]
@@ -377,141 +433,152 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         nontrans_df = df[FactorsNottotransform_actual]
         nontrans_x = nontrans_df.values
         
-        print("\n=== DETAILED TRANSFORMATION DEBUGGING ===")
-        
-        # Check original data for problems
-        print("Checking original data...")
-        for i, factor in enumerate(FactorsToTransform_actual):
-            factor_data = trans_x[:, i]
-            n_nan = np.isnan(factor_data).sum()
-            n_inf = np.isinf(factor_data).sum()
-            min_val = np.nanmin(factor_data)
-            max_val = np.nanmax(factor_data)
-            n_zero = (factor_data == 0).sum()
-            n_negative = (factor_data < 0).sum()
+        if verbose:
+            print("\n=== DETAILED TRANSFORMATION DEBUGGING ===")
             
-            print(f"  {factor}: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}, Zeros={n_zero}, Negatives={n_negative}")
-            
-            if n_nan > 0 or n_inf > 0:
-                print(f"    ⚠️  {factor} has problematic values before transformation!")
+            # Check original data for problems
+            print("Checking original data...")
+            for i, factor in enumerate(FactorsToTransform_actual):
+                factor_data = trans_x[:, i]
+                n_nan = np.isnan(factor_data).sum()
+                n_inf = np.isinf(factor_data).sum()
+                min_val = np.nanmin(factor_data)
+                max_val = np.nanmax(factor_data)
+                n_zero = (factor_data == 0).sum()
+                n_negative = (factor_data < 0).sum()
+                
+                print(f"  {factor}: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}, Zeros={n_zero}, Negatives={n_negative}")
+                
+                if n_nan > 0 or n_inf > 0:
+                    print(f"    ⚠️  {factor} has problematic values before transformation!")
         
         # Add constant and check
         trans_x_constant = trans_x + 0.000001
-        print(f"\nAfter adding constant 0.000001:")
-        for i, factor in enumerate(FactorsToTransform_actual):
-            factor_data = trans_x_constant[:, i]
-            min_val = np.nanmin(factor_data)
-            max_val = np.nanmax(factor_data)
-            print(f"  {factor}: Min={min_val:.6f}, Max={max_val:.6f}")
+        if verbose:
+            print(f"\nAfter adding constant 0.000001:")
+            for i, factor in enumerate(FactorsToTransform_actual):
+                factor_data = trans_x_constant[:, i]
+                min_val = np.nanmin(factor_data)
+                max_val = np.nanmax(factor_data)
+                print(f"  {factor}: Min={min_val:.6f}, Max={max_val:.6f}")
         
         # Apply log2 transformation with error checking
-        print(f"\nApplying log2 transformation...")
+        if verbose:
+            print(f"\nApplying log2 transformation...")
         try:
             trans_x_log = np.log2(trans_x_constant)
             
             # Check for problems after log transformation
-            for i, factor in enumerate(FactorsToTransform_actual):
-                factor_data = trans_x_log[:, i]
-                n_nan = np.isnan(factor_data).sum()
-                n_inf = np.isinf(factor_data).sum()
-                min_val = np.nanmin(factor_data)
-                max_val = np.nanmax(factor_data)
-                
-                print(f"  {factor} after log2: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
-                
-                if n_nan > 0 or n_inf > 0:
-                    print(f"    ❌ {factor} has NaN/Inf values after log2 transformation!")
-                    # Show some actual values for debugging
-                    print(f"    Original sample values: {trans_x[:5, i]}")
-                    print(f"    After +constant: {trans_x_constant[:5, i]}")
-                    print(f"    After log2: {trans_x_log[:5, i]}")
+            if verbose:
+                for i, factor in enumerate(FactorsToTransform_actual):
+                    factor_data = trans_x_log[:, i]
+                    n_nan = np.isnan(factor_data).sum()
+                    n_inf = np.isinf(factor_data).sum()
+                    min_val = np.nanmin(factor_data)
+                    max_val = np.nanmax(factor_data)
+                    
+                    print(f"  {factor} after log2: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
+                    
+                    if n_nan > 0 or n_inf > 0:
+                        print(f"    ❌ {factor} has NaN/Inf values after log2 transformation!")
+                        # Show some actual values for debugging
+                        print(f"    Original sample values: {trans_x[:5, i]}")
+                        print(f"    After +constant: {trans_x_constant[:5, i]}")
+                        print(f"    After log2: {trans_x_log[:5, i]}")
                     
         except Exception as e:
-            print(f"Error during log2 transformation: {e}")
+            if verbose:
+                print(f"Error during log2 transformation: {e}")
             raise
         
         # Apply MinMaxScaler to log-transformed data
-        print(f"\nApplying MinMaxScaler to log-transformed data...")
+        if verbose:
+            print(f"\nApplying MinMaxScaler to log-transformed data...")
         try:
             trans_x_ = MinMaxScaler().fit_transform(trans_x_log)
             
             # Check for problems after scaling
-            for i, factor in enumerate(FactorsToTransform_actual):
-                factor_data = trans_x_[:, i]
-                n_nan = np.isnan(factor_data).sum()
-                n_inf = np.isinf(factor_data).sum()
-                min_val = np.nanmin(factor_data)
-                max_val = np.nanmax(factor_data)
-                
-                print(f"  {factor} after MinMax: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
-                
-                if n_nan > 0 or n_inf > 0:
-                    print(f"    ❌ {factor} has NaN/Inf values after MinMax scaling!")
+            if verbose:
+                for i, factor in enumerate(FactorsToTransform_actual):
+                    factor_data = trans_x_[:, i]
+                    n_nan = np.isnan(factor_data).sum()
+                    n_inf = np.isinf(factor_data).sum()
+                    min_val = np.nanmin(factor_data)
+                    max_val = np.nanmax(factor_data)
+                    
+                    print(f"  {factor} after MinMax: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
+                    
+                    if n_nan > 0 or n_inf > 0:
+                        print(f"    ❌ {factor} has NaN/Inf values after MinMax scaling!")
                     
         except Exception as e:
-            print(f"Error during MinMax scaling of log-transformed data: {e}")
+            if verbose:
+                print(f"Error during MinMax scaling of log-transformed data: {e}")
             raise
         
         # Apply MinMaxScaler to non-transformed data
-        print(f"\nApplying MinMaxScaler to non-transformed data...")
+        if verbose:
+            print(f"\nApplying MinMaxScaler to non-transformed data...")
         try:
             nontrans_x_ = MinMaxScaler().fit_transform(nontrans_x)
             
             # Check for problems
-            for i, factor in enumerate(FactorsNottotransform_actual):
-                factor_data = nontrans_x_[:, i]
-                n_nan = np.isnan(factor_data).sum()
-                n_inf = np.isinf(factor_data).sum()
-                min_val = np.nanmin(factor_data)
-                max_val = np.nanmax(factor_data)
-                
-                print(f"  {factor} after MinMax: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
-                
-                if n_nan > 0 or n_inf > 0:
-                    print(f"    ❌ {factor} has NaN/Inf values after MinMax scaling!")
+            if verbose:
+                for i, factor in enumerate(FactorsNottotransform_actual):
+                    factor_data = nontrans_x_[:, i]
+                    n_nan = np.isnan(factor_data).sum()
+                    n_inf = np.isinf(factor_data).sum()
+                    min_val = np.nanmin(factor_data)
+                    max_val = np.nanmax(factor_data)
+                    
+                    print(f"  {factor} after MinMax: NaN={n_nan}, Inf={n_inf}, Min={min_val:.6f}, Max={max_val:.6f}")
+                    
+                    if n_nan > 0 or n_inf > 0:
+                        print(f"    ❌ {factor} has NaN/Inf values after MinMax scaling!")
                     
         except Exception as e:
-            print(f"Error during MinMax scaling of non-transformed data: {e}")
+            if verbose:
+                print(f"Error during MinMax scaling of non-transformed data: {e}")
             raise
         
         # Concatenate arrays
-        print(f"\nConcatenating arrays...")
-        print(f"  Log-transformed data shape: {trans_x_.shape}")
-        print(f"  Non-transformed data shape: {nontrans_x_.shape}")
+        if verbose:
+            print(f"\nConcatenating arrays...")
+            print(f"  Log-transformed data shape: {trans_x_.shape}")
+            print(f"  Non-transformed data shape: {nontrans_x_.shape}")
         
         x_ = np.concatenate((trans_x_, nontrans_x_), axis=1)
         newcols = FactorsToTransform_actual + FactorsNottotransform_actual
         
         # Final check on concatenated data
-        print(f"\nFinal concatenated data check:")
-        print(f"  Shape: {x_.shape}")
-        total_nan = np.isnan(x_).sum()
-        total_inf = np.isinf(x_).sum()
-        print(f"  Total NaN values: {total_nan}")
-        print(f"  Total Inf values: {total_inf}")
-        
-        if total_nan > 0 or total_inf > 0:
-            print("  ❌ Final data contains NaN or Inf values!")
-            # Find which columns have problems
-            for i, col in enumerate(newcols):
-                col_data = x_[:, i]
-                col_nan = np.isnan(col_data).sum()
-                col_inf = np.isinf(col_data).sum()
-                if col_nan > 0 or col_inf > 0:
-                    print(f"    Problem column: {col} (NaN={col_nan}, Inf={col_inf})")
-        else:
-            print("  ✅ Final data looks clean!")
-        
-        print("=== END DEBUGGING ===\n")
+        if verbose:
+            print(f"\nFinal concatenated data check:")
+            print(f"  Shape: {x_.shape}")
+            total_nan = np.isnan(x_).sum()
+            total_inf = np.isinf(x_).sum()
+            print(f"  Total NaN values: {total_nan}")
+            print(f"  Total Inf values: {total_inf}")
+            
+            if total_nan > 0 or total_inf > 0:
+                print("  ❌ Final data contains NaN or Inf values!")
+                # Find which columns have problems
+                for i, col in enumerate(newcols):
+                    col_data = x_[:, i]
+                    col_nan = np.isnan(col_data).sum()
+                    col_inf = np.isinf(col_data).sum()
+                    if col_nan > 0 or col_inf > 0:
+                        print(f"    Problem column: {col} (NaN={col_nan}, Inf={col_inf})")
+            else:
+                print("  ✅ Final data looks clean!")
+            
+            print("=== END DEBUGGING ===\n")
+            
         scaled_df_here = pd.DataFrame(x_, columns = newcols)
-        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
-        plt.tight_layout()
-        plt.title('Transformed data')
-        # plt.show()
-        plt.savefig(savedir+ str(scalingmethod) +'.png')
+        create_histogram_plot(scaled_df_here, newcols, 'Transformed data', savedir + str(scalingmethod) + '.svg')
 
     elif scalingmethod == 'edelblum_choice':
-        print('Factors to be scaled using log2 and then minmax:')
+        if verbose:
+            print('Factors to be scaled using log2 and then minmax:')
 
         
         FactorsNOTtotransform = ['Displacement_X','Displacement_Y','Displacement_Z','Velocity_X','Velocity_Y','Velocity_Z',]
@@ -519,10 +586,12 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         FactorsToTransform_actual=[]
         for factor in dr_factors:
             if factor in FactorsNOTtotransform:
-                print('Factor: ' + factor + ' will not be transformed')
+                if verbose:
+                    print('Factor: ' + factor + ' will not be transformed')
                 FactorsNottotransform_actual.append(factor)
             else:
-                print('Factor: ' + factor + ' will be transformed')
+                if verbose:
+                    print('Factor: ' + factor + ' will be transformed')
                 FactorsToTransform_actual.append(factor)
 
         trans_df = df[FactorsToTransform_actual]
@@ -535,58 +604,51 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         trans_x_=MinMaxScaler().fit_transform(trans_x_log)
         nontrans_x_=MinMaxScaler().fit_transform(nontrans_x)
 
-
-
         x_=np.concatenate((trans_x_, nontrans_x_), axis=1)
         newcols=FactorsToTransform_actual + FactorsNottotransform_actual
         scaled_df_here = pd.DataFrame(x_, columns = newcols)
-        scaled_df_here.hist(column=newcols, bins = 160, figsize=(20, 10),color = "black", ec="black")
-        plt.tight_layout()
-        plt.title('Transformed data')
-        # plt.show()
-        plt.savefig(savedir+ str(scalingmethod) +'.png')
-
-
-
-        
+        create_histogram_plot(scaled_df_here, newcols, 'Transformed data', savedir + str(scalingmethod) + '.svg')
 
     elif scalingmethod == 'powertransformer':    
         
         pt = PowerTransformer(method='yeo-johnson')
         x_ = pt.fit_transform(x)
         scaled_df_here = pd.DataFrame(x_, columns = sub_df.columns)
-        print("THIS IS THE " + str(scalingmethod) + " DATA ")
-        scaled_df_here.hist(column=dr_factors, bins = 160, figsize=(20, 10),color = "black", ec="black")
-        plt.tight_layout()
-        plt.show()
-        plt.savefig(savedir+ str(scalingmethod) +'.png')
+        if verbose:
+            print("THIS IS THE " + str(scalingmethod) + " DATA ")
+        create_histogram_plot(scaled_df_here, dr_factors, f'{scalingmethod} data', savedir + str(scalingmethod) + '.svg')
     
     elif scalingmethod in ['robust', 'robustscaler']:
         from sklearn.preprocessing import RobustScaler
         x_ = RobustScaler().fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (RobustScaler)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (RobustScaler)")
         
     elif scalingmethod in ['normalize', 'normalizer']:
         from sklearn.preprocessing import Normalizer
         x_ = Normalizer().fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (Normalizer)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (Normalizer)")
         
     elif scalingmethod in ['quantile', 'quantileuniform']:
         from sklearn.preprocessing import QuantileTransformer
         x_ = QuantileTransformer(output_distribution='uniform').fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (QuantileTransformer)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (QuantileTransformer)")
         
     elif scalingmethod in ['maxabs', 'maxabsscaler']:
         from sklearn.preprocessing import MaxAbsScaler
         x_ = MaxAbsScaler().fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (MaxAbsScaler)")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (MaxAbsScaler)")
         
     elif scalingmethod in ['yeo-johnson', 'box-cox']:
         from sklearn.preprocessing import PowerTransformer
         method = 'yeo-johnson' if scalingmethod == 'yeo-johnson' else 'box-cox'
         pt = PowerTransformer(method=method)
         x_ = pt.fit_transform(x)
-        print(f"Applied {scalingmethod} scaling (PowerTransformer with {method})")
+        if verbose:
+            print(f"Applied {scalingmethod} scaling (PowerTransformer with {method})")
         
     else:
         # Catch-all for unknown scaling methods
@@ -604,7 +666,8 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 
     pca_df, _, _ = do_pca(x_)
 
-    print('Using standardized factors for dimensionality reduction, matrix shape: ', x_.shape)
+    if verbose:
+        print('Using standardized factors for dimensionality reduction, matrix shape: ', x_.shape)
 
 #     elif dr_input == 'PCs':
 
@@ -616,7 +679,8 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         tsne_x, flag = do_open_tsne(x_,perplexity=tsne_perp)
         tsne_df = pd.DataFrame(data = tsne_x, columns = ['tSNE1','tSNE2'])
     else:
-        print('Skipping tSNE')
+        if verbose:
+            print('Skipping tSNE')
         tsne_df = pd.DataFrame()
 
     # Do UMAP and insert into dataframe:
