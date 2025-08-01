@@ -119,7 +119,7 @@ def time_average(df):
                 avg_df.loc[col] = cell_df[col].values[0]
 
         avg_df.loc['uniq_id'] = uid  # Add the unique_id back to the dataframe
-        time_avg_df = time_avg_df.append(avg_df, ignore_index=True)
+        time_avg_df = pd.concat([time_avg_df,pd.DataFrame([avg_df])], ignore_index=True)
 
     time_avg_df['frame'] = 'timeaverage'  # Replace the meaningless average frame values with a string description
 
@@ -157,7 +157,7 @@ def time_average_trackmate(df):
         # A test to ensure there is only one replicate label included.
         assert len(cell_df['Rep_label'].unique()) == 1, 'check reps'
 
-        avg_df = cell_df.mean() # Returns a series that is the mean value for each numerical column. Non-numerical columns are dropped.
+        avg_df = cell_df.mean(numeric_only=True) # Returns a series that is the mean value for each numerical column. Non-numerical columns are dropped.
 
         # Add back non-numeric data
         dropped_cols = list(set(cell_df.columns) - set(avg_df.index))
@@ -166,7 +166,7 @@ def time_average_trackmate(df):
             avg_df.loc[col] = cell_df[col].values[0] # Get the non-numerical value from dataframe (assuming all equivalent)
 
         avg_df.loc['unique_id'] = unique_id # Add Unique cell ID for the analysis
-        time_avg_df = time_avg_df.append(avg_df,ignore_index=True)
+        time_avg_df = pd.concat([time_avg_df, pd.DataFrame([avg_df])], ignore_index=True)
         unique_id += 1
 
     time_avg_df['frame'] = 'timeaverage' # Replace the meaningless average frame values with a string desciption
@@ -227,7 +227,7 @@ def average_per_timepoint(df, t_window=None):
 
                 if(len(rep_df) > MIN_CELLS_PER_TPT):
 
-                    avg_df = rep_df.mean() # Returns a series that is the mean value for each numerical column. Non-numerical columns are dropped.
+                    avg_df = rep_df.mean(numeric_only=True) # Returns a series that is the mean value for each numerical column. Non-numerical columns are dropped.
 
                     # Add back non-numeric data
                     dropped_cols = list(set(frame_df.columns) - set(avg_df.index))
@@ -241,7 +241,7 @@ def average_per_timepoint(df, t_window=None):
                     if t_window is None: # assertion only works when no window is used.
                         assert avg_df.loc['frame'] == frame, 'Frame mismatch'
 
-                    tptavg_df = tptavg_df.append(avg_df,ignore_index=True)
+                    tptavg_df = pd.concat([tptavg_df,pd.DataFrame(avg_df)],ignore_index=True)
                 else:
                     if(DEBUG):
                         print('Skipping: ',rep, ' N = ', len(rep_df))

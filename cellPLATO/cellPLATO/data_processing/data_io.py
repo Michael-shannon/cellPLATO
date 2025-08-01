@@ -173,6 +173,8 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         for cond_dir in os.listdir(DATA_PATH):
             f = os.path.join(DATA_PATH, cond_dir)
+            if not os.path.isdir(f):
+                continue  # Skip if not a directory
             contents = os.listdir(f)
             pattern = '*' + TRACK_FILENAME#"*.h5"
 
@@ -189,6 +191,8 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
 
         for cond_dir in os.listdir(DATA_PATH):
             f = os.path.join(DATA_PATH, cond_dir)
+            if not os.path.isdir(f):
+                continue  # Skip if not a directory
             contents = os.listdir(f)
 
             # print('contents: ', contents)
@@ -202,6 +206,8 @@ def populate_experiment_list(fmt=INPUT_FMT,save=True): #'usiigaci'
             for rep in contents:
                 # print(f'The rep is {rep}')
                 rep_dir = os.path.join(DATA_PATH, cond_dir, rep)
+                if not os.path.isdir(rep_dir):
+                    continue  # Skip if not a directory
                 # print(f'The rep dir is {rep_dir}')
                 rep_contents = os.listdir(rep_dir)
                 # print(f'The rep contents are {rep_contents}')

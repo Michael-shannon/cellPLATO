@@ -343,7 +343,7 @@ def plots_of_differences_sns_saved(df_in,factor='Value', ctl_label=CTL_LABEL,cus
     # Right subplot: differences
     #
 
-    sns.violinplot(ax=axes[1], x="Difference", y="Condition",kind="violin", inner='box', data=bootstrap_diff_df, split=True, ci = 'sd',linewidth=2)
+    sns.violinplot(ax=axes[1], x="Difference", y="Condition",inner='box', data=bootstrap_diff_df, split=True, linewidth=2)
     axes[1].axvline(0, ls='-', color='black')
     axes[1].set(ylabel=None)
     axes[1].set(yticklabels=[])
@@ -442,7 +442,7 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
 
     #### VERSION 2 #####
     gax=axes[0]
-    sns.violinplot(ax=axes[0], x=factor, y="Condition",kind="violin", palette=colors, inner='box', data=df, split=False, ci = 'sd',linewidth=2)
+    sns.violinplot(ax=axes[0], x=factor, y="Condition",palette=colors, inner='box', data=df, split=False, linewidth=2)
     sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, medianprops={'color': 'k', 'ls': '-', 'lw': 2},whiskerprops={'visible': False},
                 showbox=False, notch=True, showcaps=False, showfliers=False,
                 flierprops={"marker": "x", "markeredgecolor": "black","markersize": "3","fillstyle": "none" },)
@@ -461,7 +461,7 @@ def plots_of_differences_sns(df_in,factor='Value', ctl_label=CTL_LABEL,cust_txt=
     # Right subplot: differences
     #
 
-    sns.violinplot(ax=axes[1], x="Difference", y="Condition",kind="violin", palette=colors, inner='box', data=bootstrap_diff_df, split=True, ci = 'sd',linewidth=2)
+    sns.violinplot(ax=axes[1], x="Difference", y="Condition", palette=colors, inner='box', data=bootstrap_diff_df, split=True, linewidth=2)
     axes[1].axvline(0, ls='-', color='black')
     axes[1].set(ylabel=None)
     axes[1].set(yticklabels=[])
@@ -575,7 +575,7 @@ def plots_of_differences_sns_donors(df_in,factor='Value', ctl_label=CTL_LABEL,cu
 
     #### VERSION 2 #####
     gax=axes[0]
-    sns.violinplot(ax=axes[0], x=factor, y="Condition",kind="violin", palette=colors, inner='box', data=df, split=False, ci = 'sd',linewidth=2)
+    sns.violinplot(ax=axes[0], x=factor, y="Condition",palette=colors, inner='box', data=df, split=False, linewidth=2)
     sns.boxplot(ax=axes[0], x=factor, y="Condition_shortlabel", data=df, medianprops={'color': 'k', 'ls': '-', 'lw': 2},whiskerprops={'visible': False},
                 showbox=False, notch=True, showcaps=False, showfliers=False,
                 flierprops={"marker": "x", "markeredgecolor": "black","markersize": "3","fillstyle": "none" },)
@@ -594,7 +594,7 @@ def plots_of_differences_sns_donors(df_in,factor='Value', ctl_label=CTL_LABEL,cu
     # Right subplot: differences
     #
 
-    sns.violinplot(ax=axes[1], x="Difference", y="Condition",kind="violin", palette=colors, inner='box', data=bootstrap_diff_df, split=True, ci = 'sd',linewidth=2)
+    sns.violinplot(ax=axes[1], x="Difference", y="Condition", palette=colors, inner='box', data=bootstrap_diff_df, split=True, linewidth=2)
     axes[1].axvline(0, ls='-', color='black')
     axes[1].set(ylabel=None)
     axes[1].set(yticklabels=[])
