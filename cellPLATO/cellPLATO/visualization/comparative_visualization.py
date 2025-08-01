@@ -313,7 +313,7 @@ def comparative_bar(df_tup, x, y, title='',  height=400, to_plot='avg',error='SE
     # print(df_tup.columns)
 
     widthmultiplier = len(df_tup)
-    print("widthmultiplier: ", widthmultiplier)
+    # print("widthmultiplier: ", widthmultiplier)
 
     '''
     Simple bar plot conveneince function that allows plotting of color-coded conditions either on a per-conditions

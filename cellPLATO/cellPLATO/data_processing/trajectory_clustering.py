@@ -1147,8 +1147,8 @@ def plot_plasticity_changes_trajectories(df, identifier='\_allcells', miny=None,
     # get the max value of the whattoplot[1] column of df
     max1=np.nanmax(df[whattoplot[1]])
     max2=np.nanmax(df[whattoplot[2]])
-    tickfrequency1 = int(max1/5)
-    tickfrequency2 = int(max2/5)
+    tickfrequency1 = max(1, int(max1/5))
+    tickfrequency2 = max(1, int(max2/5))
 
     the_yticks = np.arange(0, len(df[whattoplot[0]].unique()), 1)
     the_yticks = [int(x) for x in the_yticks]

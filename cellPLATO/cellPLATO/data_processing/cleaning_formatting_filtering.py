@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 import itertools
+from tqdm import tqdm
 
 def clean_comb_df(df_in, deduplicate=True):
 
@@ -275,44 +276,25 @@ def apply_filters(df, filter_cell=True, how = 'all', filter_dict=DATA_FILTERS):
 
     '''
 
-    print('Applying filters:')
-    print(filter_dict)
-
-    print('Beginning filtering ...')
-    print(len(df.index), ' data points from ', len(df['uniq_id'].unique()), ' cells')
-
     df.to_csv(os.path.join(DATA_OUTPUT,'dr_df-prefilt.csv'))
 
     filt_counts=[]
 
 
     if(filter_cell is False):
-
-
-        print('Applying data filters to individual timepoints:')
-        print(filter_dict)
-        print('...')
-
+        # Apply data filters to individual timepoints
         for i,factor in enumerate(filter_dict.keys()):
-            print(factor)
-            print(filter_dict[factor][0], filter_dict[factor][1])
-
             '''Consider adding here the export csv summary step, to export along with plots'''
-            filt_df = df[(df[factor] > filter_dict[factor][0]) &#]#)
-                              (df[factor] < filter_dict[factor][1])]
+            filt_df = df[(df[factor] > filter_dict[factor][0]) & (df[factor] < filter_dict[factor][1])]
 
             df.to_csv(os.path.join(DATA_OUTPUT,'filt_'+str(i)+'-'+factor+'.csv'))
-            print(len(df.index), ' data points remaining.')
             assert len(df.index) > 0, 'Filtered out all the data.'
             filt_counts.append((factor, len(filt_df)))
     else:
-
-        # Default filtering of entire cell.
-        print('Applying filters to entire cell trajectory:')
-        print(filter_dict)
-        print('...')
-
-        for cell_id in df['uniq_id'].unique():
+        # Apply filtering to entire cell trajectories
+        unique_cells = df['uniq_id'].unique()
+        
+        for cell_id in tqdm(unique_cells, desc="Filtering cells"):
 
             cell_df = df[df['uniq_id'] == cell_id]
 
@@ -346,9 +328,6 @@ def apply_filters(df, filter_cell=True, how = 'all', filter_dict=DATA_FILTERS):
                 df.loc[df_inds,'included'] = False
 
     filt_df = df[df['included'] == True]
-
-    print(' Finished filtering. Resulting dataframe contains:')
-    print(len(filt_df.index), ' data points from ', len(filt_df['uniq_id'].unique()), ' cells')
 
     sum_counts = [(key, sum(num for _, num in value))
         for key, value in itertools.groupby(sorted(filt_counts), lambda x: x[0])]

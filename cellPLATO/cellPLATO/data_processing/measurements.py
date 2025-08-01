@@ -164,8 +164,7 @@ def t_window_metrics(df_in, t_window=MIG_T_WIND,min_frames=MIG_T_WIND/2,factor_l
         cell_ids = rep_df['particle'].unique() # Particle ids only unique for replicate, not between.
 
         # For each cell, calculate the average value and add to new DataFrame (akin to making the tavg_df)
-        print('Replicate ',  i_rep, ' out of ', len(rep_list))
-        for cid in tqdm(cell_ids):
+        for cid in tqdm(cell_ids, desc=f"Processing cells in replicate {i_rep+1}/{len(rep_list)}"):
 
             cell_df = rep_df[rep_df['particle'] == cid]
 

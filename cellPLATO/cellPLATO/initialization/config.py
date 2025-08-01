@@ -7,38 +7,34 @@ Fill out this file then run the jupyter notebook to analyze your data
 '''
 Experiment-specific constants to be filled by user
 '''
-
-DATA_PATH = 'D:/PATH/' # Input the path to the folder containing the data
-OUTPUT_PATH = 'D:/PATH_OUTPUT/' # Input the path to the folder where the output will be saved
-CTL_LABEL = 'CONTROL_CONDITION' # Input the name of the control condition here
+#
+DATA_PATH = 'D:/HERNANDEZ/CSV_files'# Input the path to the folder containing the data
+OUTPUT_PATH = 'D:/HERNANDEZ/output' # Input the path to the folder where the output will be saved
+CTL_LABEL = 'Condition_1' # Input the name of the control condition here
+DO_CP_METRICS_FOR_TRACKMATE = True
 
 # Input here the folder names of the conditions you want to include in the analysis
 # Note: the order of the conditions here will be the order of the conditions in the plots
 
-CONDITIONS_TO_INCLUDE = ['CONTROL_CONDITION',
-                        'CONDITION_2',
-                         'CONDITION_3',
-                         'CONDITION_4'] 
+CONDITIONS_TO_INCLUDE = ['Condition_1',
+                        'Condition_2',
+                         'Condition_3',] 
 
-CONDITION_SHORTLABELS = ['Ctrl','One','Two','Three',] # Short labels for the conditions, for plotting purposes
+CONDITION_SHORTLABELS = ['Ctrl','One','Two'] # Short labels for the conditions, for plotting purposes
 DATASET_SHORTNAME = 'EXAMPLE_DATASET_NAME' # give the data a nickname
 
-INPUT_FMT = 'btrack' # 'usiigaci'#btrack
-TRACK_FILENAME = '.h5'
+INPUT_FMT = 'trackmate' # 'usiigaci'#btrack
+TRACK_FILENAME = '.csv'
 
 MICRONS_PER_PIXEL = 0.537
-# MICRONS_PER_PIXEL_LIST = [0.537,0.537,0.537, 0.537,] # For mixed spatial scaling
-# MICRONS_PER_PIXEL = MICRONS_PER_PIXEL_LIST[0]
 
-SAMPLING_INTERVAL = 40/60 # time between frames in minutes
-# SAMPLING_INTERVAL_LIST= [40/60,40/60,40/60,40/60,] # For mixed temporal scaling
-# SAMPLING_INTERVAL = SAMPLING_INTERVAL_LIST[0]
+SAMPLING_INTERVAL = 90/60 # time between frames in minutes
 
 IMAGE_HEIGHT = 1024 # pixels
 IMAGE_WIDTH = 1024 # pixels
 Z_SCALE = 1.00
 
-MigrationTimeWindow_minutes = 5 # Here, set the length of the time window in minutes
+MigrationTimeWindow_minutes = 12.0 # Here, set the length of the time window in minutes (reduced from 43.5)
 MIG_T_WIND = round(MigrationTimeWindow_minutes / SAMPLING_INTERVAL)
 T_WINDOW_MULTIPLIER = 1.0 #  6.0 # For plasticity plots, to potentially increase the time window size for those calculations
 
@@ -47,11 +43,12 @@ CONDITION_CMAP = 'Dark2' #'Define colormap used for condition maps. Dark2 is goo
 # Note: use paired for groups of 2
 
 ARREST_THRESHOLD = 3 * SAMPLING_INTERVAL # Here, user can define threshold in MICRONS PER MINUTE, because we multiply by the sampling interval to convert it to microns per frame.
+
 RIP_R = 140 # Radius to search when calculating Ripleys L in pixels. 1.5 * the size of a cell = 12+6=18
 
 DATA_FILTERS = {
-  "area": (50, 10000), # Debris removal
-  "ntpts": (8,1800) # Remove cells that are tracked for less than 8 frames
+  "AREA": (1, 10000), # Debris removal
+  "ntpts": (1,1800) # Remove cells that are tracked for less than 8 frames
 
 }
 
@@ -69,54 +66,40 @@ DRAW_SNS_BARPLOTS = True
 Measurements to make
 '''
 
-# Cell migration factors calculated in migration_calcs()
+# TrackMate morphological and intensity features
+TRACKMATE_FEATURES = [
+    'RADIUS', 'VISIBILITY', 'MEAN_INTENSITY_CH1',
+    'MEDIAN_INTENSITY_CH1', 'MIN_INTENSITY_CH1', 'MAX_INTENSITY_CH1',
+    'TOTAL_INTENSITY_CH1', 'STD_INTENSITY_CH1', 'MEAN_INTENSITY_CH2',
+    'MEDIAN_INTENSITY_CH2', 'MIN_INTENSITY_CH2', 'MAX_INTENSITY_CH2',
+    'TOTAL_INTENSITY_CH2', 'STD_INTENSITY_CH2', 'CONTRAST_CH1', 'SNR_CH1',
+    'CONTRAST_CH2', 'SNR_CH2', 'ELLIPSE_X0', 'ELLIPSE_Y0', 'ELLIPSE_MAJOR',
+    'ELLIPSE_MINOR', 'ELLIPSE_THETA', 'ELLIPSE_ASPECTRATIO', 'AREA',
+    'PERIMETER', 'CIRCULARITY', 'SOLIDITY', 'SHAPE_INDEX'
+]
 
-MIG_FACTORS = ['euclidean_dist',     
-                'cumulative_length', 
-                'speed',
-                'orientedness', 
-                'directedness',
-                'turn_angle',
-                'endpoint_dir_ratio',
-                'dir_autocorr',
-                'outreach_ratio',
-                'MSD',                
-                'max_dist',           
-                'glob_turn_deg',
-                'arrest_coefficient']
+# Migration parameters calculated by cellPLATO
+MIGRATION_FEATURES = [
+    'euclidean_dist', 'segment_length', 'cumulative_length', 'speed',
+    'orientedness', 'directedness', 'turn_angle', 'endpoint_dir_ratio',
+    'dir_autocorr', 'outreach_ratio', 'MSD', 'max_dist', 'glob_turn_deg',
+    'arrest_coefficient', 'rip_p', 'rip_K', 'rip_L'
+]
 
-# Region property factors to be extracted from the cell contours
-# This list must match with props from regionprops
+# Complete list of features for dimensionality reduction
+DR_FACTORS = TRACKMATE_FEATURES + MIGRATION_FEATURES
+ALL_FACTORS = DR_FACTORS
 
-REGIONPROPS_LIST = ['area',
-                    'bbox_area',
-                    'eccentricity',
-                    'equivalent_diameter',
-                    'extent',
-                    'filled_area',
-                    'major_axis_length',
-                    'minor_axis_length',
-                    'orientation',
-                    'perimeter',
-                     'solidity']
+# Legacy factor lists (for backward compatibility)
+MIG_FACTORS = [
+    'euclidean_dist', 'cumulative_length', 'speed', 'orientedness', 
+    'directedness', 'turn_angle', 'endpoint_dir_ratio', 'dir_autocorr',
+    'outreach_ratio', 'MSD', 'max_dist', 'glob_turn_deg', 'arrest_coefficient'
+]
 
-SHAPE_FACTORS = ['area',
-                    'bbox_area',
-                    'eccentricity',
-                    'equivalent_diameter',
-                    'extent',
-                    'filled_area',
-                    'major_axis_length',
-                    'minor_axis_length',
-                    'orientation',
-                    'perimeter',
-                     'solidity']
-
-ADDITIONAL_FACTORS = ['aspect', 'rip_p', 'rip_K', 'rip_L']
-
-DR_FACTORS = REGIONPROPS_LIST + MIG_FACTORS + ADDITIONAL_FACTORS
-ALL_FACTORS = REGIONPROPS_LIST + MIG_FACTORS + ADDITIONAL_FACTORS
-
+REGIONPROPS_LIST = ['AREA', 'PERIMETER', 'RADIUS', 'ELLIPSE_ASPECTRATIO']
+SHAPE_FACTORS = ['AREA', 'PERIMETER']
+ADDITIONAL_FACTORS = ['rip_p', 'rip_K', 'rip_L']
 
 NUM_FACTORS = DR_FACTORS + ['tSNE1', 'tSNE2', 'PC1', 'PC2']
 
@@ -133,7 +116,7 @@ CALIBRATED_POS = False # Does the data need to be calibrated?
 OVERWRITE = True # Overwrite the pre-processed data.
 USE_INPUT_REGIONPROPS = True
 CALCULATE_REGIONPROPS = False
-USE_SHORTLABELS = True
+USE_SHORTLABELS = False
 PERFORM_RIPLEYS = True
 ARCHIVE_CONFIG = True
 
@@ -199,7 +182,7 @@ FACTORS_TO_STANDARDIZE = ['area',
                           'minor_axis_length',
                           'perimeter']
 
-FACTORS_TO_CONVERT = ['area', 'bbox_area', 'equivalent_diameter', 'extent', 'filled_area',
+FACTORS_TO_CONVERT = ['area', 
        'major_axis_length', 'minor_axis_length', 'perimeter']
 
 ###############################################
@@ -213,22 +196,19 @@ PLOT_TEXT_SIZE = 30
 DIFF_PLOT_TYPE = 'violin' # 'swarm', 'violin', 'box'
 
 # Pre-defined pairs of factors for generating comparison plots
-FACTOR_PAIRS = [['tSNE1', 'tSNE2'],
-                ['area', 'speed'],
+FACTOR_PAIRS = [['AREA', 'speed'],
                 ['directedness', 'speed'],
                 ['orientedness', 'speed'],
                 ['endpoint_dir_ratio', 'speed'],
-                ['orientation', 'speed'],
                 ['turn_angle', 'speed'], # These are identical
-                ['major_axis_length', 'speed'],
-                ['major_axis_length', 'minor_axis_length'],
+                ['ELLIPSE_MAJOR', 'speed'],
+                ['ELLIPSE_MAJOR', 'ELLIPSE_MINOR'],
                 ['euclidean_dist','cumulative_length'],
-                ['euclidean_dist','speed'],
-                ['PC1', 'PC2']]
+                ['euclidean_dist','speed']]
 
 # No need to change these #
 
-DIS_REGIONPROPS_LIST = ['area',
+DIS_REGIONPROPS_LIST = ['AREA',
             # 'bbox_area',
             'eccentricity',
             'equivalent_diameter',
