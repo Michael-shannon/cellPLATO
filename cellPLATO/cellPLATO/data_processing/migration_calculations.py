@@ -9,6 +9,135 @@ import pandas as pd
 
 from tqdm import tqdm
 
+def cell_delta_calcs(cell_tarray, t_window=MIG_T_WIND, debug=False):
+    '''
+    Calculate delta x, delta y, delta z, and directionality in radians for a given cell through time.
+    This function uses the same time windowing strategy as cell_calcs().
+    
+    Input:
+        cell_tarray: [T * 4] NumPy array, where T is the number of frames over which this cell was tracked
+                    [frame, x_um, y_um, index] (or [frame, x_um, y_um, z_um, index] for 3D data)
+        t_window: int; width of the time window in # of frames
+        debug: bool; if True, print debugging information
+        
+    Returns:
+        cell_delta_calcs: list of calculations for each timepoint
+    '''
+    
+    cell_calcs = []
+    
+    if cell_tarray.shape[0] > 0:
+        # Check if we have z-coordinate data (should be 5 columns: frame, x, y, z, index)
+        has_z = cell_tarray.shape[1] >= 5
+        
+        # Find the first and last frame in which this cell was tracked
+        init_f = int(np.min(cell_tarray[:, 0]))
+        final_f = int(np.max(cell_tarray[:, 0]))
+        
+        if debug:
+            print(f"    Cell has {cell_tarray.shape[0]} timepoints")
+            print(f"    Frame range: {init_f} to {final_f}")
+            print(f"    Available frames: {sorted(cell_tarray[:, 0])}")
+            print(f"    Required window size: {t_window}")
+        
+        # Enumerate across the range of frames (EXACT SAME AS ORIGINAL)
+        for i, t in enumerate(range(init_f, final_f)):
+            
+            # Extract separate arrays for the timepoints and window of interest (EXACT SAME AS ORIGINAL)
+            prev_frame_arr = np.squeeze(cell_tarray[np.where(cell_tarray[:, 0] == t-1)])
+            this_frame_arr = np.squeeze(cell_tarray[np.where(cell_tarray[:, 0] == t)])
+            
+            # Extract time window array using same strategy as original function (EXACT SAME AS ORIGINAL)
+            t_window_arr = np.squeeze(cell_tarray[np.where((cell_tarray[:, 0] >= t - t_window/2) &
+                                                          (cell_tarray[:, 0] < t + t_window/2))])
+            
+            # Check if t_window_arr is empty (FIX FOR IndexError)
+            if t_window_arr.size == 0:
+                if debug:
+                    print(f"      Frame {t}: Empty time window - skipping")
+                    print(f"        Window range: {t - t_window/2} to {t + t_window/2}")
+                    available_in_range = cell_tarray[:, 0][(cell_tarray[:, 0] >= t - t_window/2) & 
+                                                          (cell_tarray[:, 0] < t + t_window/2)]
+                    print(f"        Available frames in range: {sorted(available_in_range)}")
+                continue  # Skip if time window is empty
+            
+            # Handle both 1D and 2D cases for t_window_arr (EXACT SAME AS ORIGINAL)
+            if t_window_arr.ndim == 1:
+                # If only one frame in window, t_window_arr is 1D
+                init_frame_arr = t_window_arr
+            else:
+                # If multiple frames in window, t_window_arr is 2D
+                init_frame_arr = t_window_arr[0, :]  # Use the first row of the window
+            
+            # Only process calculations for which we have the entire window (EXACT SAME AS ORIGINAL)
+            window_size = t_window_arr.shape[0] if t_window_arr.ndim > 1 else 1
+            if window_size == t_window:
+                
+                # Extract coordinates for delta calculations 
+                # For deltas, we only need initial and final positions in the time window
+                if has_z:
+                    # 3D case: [frame, x_um, y_um, z_um, index]
+                    x0, y0, z0 = init_frame_arr[1:4]
+                    xf, yf, zf = this_frame_arr[1:4]
+                else:
+                    # 2D case: [frame, x_um, y_um, index]
+                    x0, y0 = init_frame_arr[1:3]
+                    xf, yf = this_frame_arr[1:3]
+                    z0, zf = 0, 0  # Set z to 0 for 2D data
+                
+                # Use the index of the row of the subdf to insert value into original df
+                ind = this_frame_arr[-1]  # Last column is always the index
+                
+                # Calculate delta values across the time window (windowed)
+                delta_x = xf - x0
+                delta_y = yf - y0
+                delta_z = zf - z0
+                
+                # Calculate directionality in radians (windowed)
+                # Angle from initial position to final position in the window
+                directionality_radians = np.arctan2(delta_y, delta_x)
+                
+                # Calculate INSTANT delta values (adjacent frames) if prev_frame_arr exists
+                if prev_frame_arr.size > 0 and prev_frame_arr.ndim > 0:
+                    if has_z:
+                        # 3D case for instant calculations
+                        xi, yi, zi = prev_frame_arr[1:4]
+                    else:
+                        # 2D case for instant calculations
+                        xi, yi = prev_frame_arr[1:3]
+                        zi = 0
+                    
+                    # Instant deltas (frame-to-frame)
+                    instant_delta_x = xf - xi
+                    instant_delta_y = yf - yi
+                    instant_delta_z = zf - zi
+                    
+                    # Instant directionality in radians
+                    instant_directionality_radians = np.arctan2(instant_delta_y, instant_delta_x)
+                else:
+                    # No previous frame available, set instant values to NaN
+                    instant_delta_x = np.nan
+                    instant_delta_y = np.nan
+                    instant_delta_z = np.nan
+                    instant_directionality_radians = np.nan
+                
+                # Combine current calculations into a list for the current timepoint
+                delta_calcs = [ind,
+                              delta_x,
+                              delta_y, 
+                              delta_z,
+                              directionality_radians,
+                              instant_delta_x,
+                              instant_delta_y,
+                              instant_delta_z,
+                              instant_directionality_radians]
+                
+                # Add the current timepoint calculations to the cell-specific list
+                cell_calcs.append(delta_calcs)
+    
+    return cell_calcs
+
+
 def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
 
     '''
@@ -369,3 +498,162 @@ def migration_calcs(df_in):#, calibrate=CALIBRATE_MIG):
     df_out = df_out.join(mig_calcs_df) # Add migration calcs to dataframr
 
     return df_out
+
+
+def delta_calcs(df_in, debug_first_cell=False):
+    '''
+    Calculate delta x, delta y, delta z, and directionality in radians for all cells in the dataframe.
+    Uses the same time windowing strategy as migration_calcs().
+    
+    Input:
+        df_in: DataFrame containing cell tracking data
+        debug_first_cell: if True, enables debug output for the first cell processed
+        
+    Returns:
+        df_out: DataFrame with added delta calculations
+    '''
+    
+    df_out = df_in.copy()  # Make a copy so as not to modify the original input
+    df_out.reset_index(inplace=True, drop=True)
+    assert len(df_out.index.unique()) == len(df_out.index), 'Dataframe indexes not unique'
+    
+    # Determine if dataframe contains a single replicate or multiple
+    if 'Replicate_ID' in df_in.columns.values:
+        print('Processing delta calculations of pooled data')
+    else:
+        # Add Replicate_ID with arbitrary values to the dataframe
+        print('Processing single experiment, adding arbitrary Replicate_ID = -1')
+        df_out['Replicate_ID'] = -1
+        df_out['Condition'] = 'unknown'
+    
+    calcs_list = []  # Initialize for the whole dataframe
+    conditions = df_in['Condition'].unique()
+    
+    for cond in conditions:
+        cond_df = df_out[df_out['Condition'] == cond]
+        exp_reps = cond_df['Replicate_ID'].unique()
+        
+        print('Processing delta_calcs() for condition: ', cond)
+        
+        for exp_rep in exp_reps:
+            print('Processing delta_calcs() for experiment: ', exp_rep)
+            
+            # Get subset of dataframe corresponding to this replicate
+            exp_subdf = cond_df[cond_df['Replicate_ID'] == exp_rep]
+            assert len(exp_subdf.index) == len(exp_subdf.index.unique()), 'exp_subdf indexes not unique'
+            
+            # Get the number of frames and cells in this selection
+            n_frames = int(np.max(exp_subdf['frame']))
+            n_cells = len(exp_subdf['particle'].unique())
+            
+            if INPUT_FMT != 'trackmate':
+                thing_to_iterate = 'particle'
+            elif INPUT_FMT == 'trackmate':
+                thing_to_iterate = 'uniq_id'
+            
+            first_cell_processed = False
+            for n in tqdm(exp_subdf[thing_to_iterate].unique()):
+                # For each cell, get another subset of the dataframe
+                cell_subdf = exp_subdf[exp_subdf[thing_to_iterate] == n]
+                assert len(cell_subdf.index) == len(cell_subdf.index.unique()), 'cell_subdf indexes not unique'
+                
+                # Check if we have z-coordinate data
+                if 'z_um' in cell_subdf.columns:
+                    tarray = cell_subdf[['frame', 'x_um', 'y_um', 'z_um']].to_numpy()
+                else:
+                    tarray = cell_subdf[['frame', 'x_um', 'y_um']].to_numpy()
+                
+                inds = cell_subdf.index.values
+                
+                assert tarray.shape[0] == len(inds), 'indexes doesnt match tarray shape'
+                assert len(inds) == len(np.unique(inds)), 'indexes not unique'
+                
+                tarray = np.c_[tarray, inds]  # Append index as last column to the array
+                
+                # Enable debug for first cell if requested
+                debug_this_cell = debug_first_cell and not first_cell_processed
+                if debug_this_cell:
+                    print(f"  DEBUG: Processing first cell (particle {n}):")
+                    first_cell_processed = True
+                
+                delta_calcs_result = cell_delta_calcs(tarray, debug=debug_this_cell)
+                
+                if len(delta_calcs_result) > 0:
+                    calcs_list.append(delta_calcs_result)
+    
+    if calcs_list:  # Only proceed if we have calculations
+        calcs_array = np.vstack(calcs_list)  # Array from the list
+        
+        # Insert back into dataframe
+        delta_calcs_df = pd.DataFrame(data=calcs_array[:, 1:],    # values
+                                     index=calcs_array[:, 0],    # 1st column as index
+                                     columns=['delta_x',
+                                             'delta_y',
+                                             'delta_z',
+                                             'directionality_radians',
+                                             'instant_delta_x',
+                                             'instant_delta_y',
+                                             'instant_delta_z',
+                                             'instant_directionality_radians'])
+        
+        assert len(delta_calcs_df.index.unique()) == len(np.unique(calcs_array[:, 0])), 'Created dataframe indexes dont match values from calcs_array'
+        
+        df_out = df_out.join(delta_calcs_df)  # Add delta calcs to dataframe
+    else:
+        print("Warning: No delta calculations were computed. Check that your data has sufficient timepoints.")
+    
+    return df_out
+
+
+def calculate_and_add_delta_factors(df, debug_first_cell=False):
+    '''
+    Convenience function to calculate and add delta factors to an existing dataframe.
+    This function can be easily called from a notebook cell.
+    
+    Input:
+        df: DataFrame containing cell tracking data
+        debug_first_cell: if True, enables debug output for the first cell processed
+        
+    Returns:
+        df_with_deltas: DataFrame with added delta calculations
+        
+    Example usage in notebook:
+        from data_processing.migration_calculations import calculate_and_add_delta_factors
+        df_with_deltas = calculate_and_add_delta_factors(your_dataframe)
+    '''
+    print("Calculating delta x, delta y, delta z, and directionality in radians...")
+    print(f"Using time window of {MIG_T_WIND} frames")
+    print(f"Input DataFrame shape: {df.shape}")
+    print(f"Available columns: {list(df.columns)}")
+    
+    # Check if required columns exist
+    required_cols = ['frame', 'x_um', 'y_um']
+    missing_cols = [col for col in required_cols if col not in df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing required columns: {missing_cols}")
+    
+    try:
+        df_with_deltas = delta_calcs(df, debug_first_cell=debug_first_cell)
+        print("Delta calculations completed!")
+        
+        # Check what we actually got
+        windowed_columns = ['delta_x', 'delta_y', 'delta_z', 'directionality_radians']
+        instant_columns = ['instant_delta_x', 'instant_delta_y', 'instant_delta_z', 'instant_directionality_radians']
+        new_columns = windowed_columns + instant_columns
+        for col in new_columns:
+            if col in df_with_deltas.columns:
+                non_null_count = df_with_deltas[col].notna().sum()
+                total_count = len(df_with_deltas)
+                print(f"  {col}: {non_null_count}/{total_count} non-null values")
+                if non_null_count > 0:
+                    print(f"    Range: {df_with_deltas[col].min():.3f} to {df_with_deltas[col].max():.3f}")
+            else:
+                print(f"  {col}: NOT FOUND")
+        
+        print("Added windowed columns: 'delta_x', 'delta_y', 'delta_z', 'directionality_radians'")
+        print("Added instant columns: 'instant_delta_x', 'instant_delta_y', 'instant_delta_z', 'instant_directionality_radians'")
+        return df_with_deltas
+    except Exception as e:
+        print(f"Error during delta calculations: {e}")
+        print("This might be due to insufficient data or time window issues.")
+        raise
