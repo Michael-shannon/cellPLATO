@@ -578,7 +578,7 @@ def dbscan_clustering(df_in, eps=EPS, min_samples=MIN_SAMPLES,cluster_by='tsne',
 #
 #     return lab_dr_df, exemplar_df
 ### USE THIS ONE AS OF 12-20-2022 ##### old name hdbscan_clustering__DEV_DEV_SPEEDUP
-def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', doeps = True, epsilon=0.5,plot=False, savedir = CLUSTERING_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS):
+def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMAPNDIM',  metric='manhattan', doeps = True, epsilon=0.5,plot=False, savedir = CLUSTERING_DIR, n_components=N_COMPONENTS, scalingmethod=None, DR_FACTORS=DR_FACTORS, ndim_factors=None, factors_to_transform=None, factors_not_to_transform=None, verbose=False):
 
     print('hdbscan_clustering() with min_cluster_size = ', min_cluster_size)
     from sklearn.preprocessing import MinMaxScaler
@@ -620,64 +620,40 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
         # save_path = CLUST_TSNE_DIR
         print('DBScan clustering by UMAP...')
     elif (cluster_by == 'NDIM' or cluster_by == 'ndim'):
-        CLUSTERON = DR_FACTORS
+        # If a custom list of factors is provided for NDIM, use it; otherwise fall back to defaults
+        if (ndim_factors is not None) and (len(ndim_factors) > 0):
+            CLUSTERON = ndim_factors
+        else:
+            CLUSTERON = DR_FACTORS
     elif (cluster_by == 'UMAPNDIM' or cluster_by == 'umapndim'):
         CLUSTERON = umap_components
 
 
 
-    sub_set = df_in[CLUSTERON] # self.df #here, you don't do 'values' function. Therefore this is a df
-    # X = sub_set.values
-    Z = sub_set.values
-    #####
-
-    if scalingmethod == 'minmax': #log2minmax minmax powertransformer
-        X = MinMaxScaler().fit_transform(Z)
-        correctcolumns = CLUSTERON
-    elif scalingmethod == 'standardscaler':
-        X = StandardScaler().fit_transform(Z)
-        correctcolumns = CLUSTERON
-    elif scalingmethod == 'log2minmax':
-
-        negative_FACTORS = []
-        positive_FACTORS = []
-        for factor in DR_FACTORS:
-            if np.min(df_in[factor]) < 0:
-                print('factor ' + factor + ' has negative values')
-                negative_FACTORS.append(factor)
-                
-            else:
-                print('factor ' + factor + ' has no negative values')
-                positive_FACTORS.append(factor)
-        
-        
-        pos_df = df_in[positive_FACTORS]
-        pos_x = pos_df.values
-        neg_df = df_in[negative_FACTORS]
-        neg_x = neg_df.values
-        # neg_x_ = MinMaxScaler().fit_transform(neg_x)
-
-        if len(neg_x[0]) == 0: #This controls for an edge case in which there are no negative factors - must be implemented in the other transforms as well (pipelines and clustering)
-            print('No negative factors at all!')
-            neg_x_ = neg_x
+    sub_set = df_in[CLUSTERON]
+    # Show histograms BEFORE scaling
+    try:
+        sub_set.hist(figsize=(20, 10), bins=160, color = "black", ec="black")
+        plt.tight_layout()
+        plt.savefig(savedir+'unscaledHISTOGRAMS'+'.png')
+        if PLOTS_IN_BROWSER:
+            plt.show()
         else:
-            neg_x_ = MinMaxScaler().fit_transform(neg_x) 
-        pos_x_constant = pos_x + 0.000001
-        pos_x_log = np.log2(pos_x + pos_x_constant)
-        pos_x_ = MinMaxScaler().fit_transform(pos_x_log)
-        X = np.concatenate((pos_x_, neg_x_), axis=1)
-        correctcolumns=positive_FACTORS + negative_FACTORS
+            plt.close()
+    except Exception as e:
+        print('Warning: failed to generate unscaled histograms:', e)
 
-    elif scalingmethod == 'powertransformer':    
-        
-        pt = PowerTransformer(method='yeo-johnson')
-        X = pt.fit_transform(x)
-        correctcolumns = CLUSTERON
-
-        #########
-    elif scalingmethod == None:
-        X = Z
-        correctcolumns = CLUSTERON
+    # Use shared scaling utility to prepare X and columns
+    from data_processing.scaling import scale_features
+    X, correctcolumns = scale_features(
+        df=df_in,
+        factors=CLUSTERON,
+        method=(scalingmethod if scalingmethod is not None else SCALING_METHOD),
+        average_time_windows=AVERAGE_TIME_WINDOWS,
+        factors_to_transform=factors_to_transform,
+        factors_not_to_transform=factors_not_to_transform,
+        verbose=verbose,
+    )
 
 
     # X = StandardScaler().fit_transform(Z)
@@ -711,8 +687,11 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
     scaled_subset_df.hist(figsize=(20, 10), bins=160, color = "black", ec="black")
     plt.tight_layout()
-    plt.show()
     plt.savefig(savedir+'scaledHISTOGRAMS'+'.png')
+    if PLOTS_IN_BROWSER:
+        plt.show()
+    else:
+        plt.close()
 
 
 

@@ -684,7 +684,7 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
         tsne_df = pd.DataFrame()
 
     # Do UMAP and insert into dataframe:
-    umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=N_COMPONENTS) #aubergine
+    umap_x = do_umap(x_, n_neighbors=umap_nn, min_dist=min_dist, n_components=n_components) #aubergine
     umap_df = pd.DataFrame(data = umap_x, columns = umap_components)
 
     # Create Dimension-reduced dataframe by adding PCA and tSNE columns.
@@ -694,6 +694,63 @@ def dr_pipeline_multiUMAPandTSNE(df, dr_factors=DR_FACTORS, tsne_perp=TSNE_PERP,
 
     return dr_df
 
+
+def dr_pipeline_multiUMAPandTSNE_v2(
+    df,
+    dr_factors=DR_FACTORS,
+    tsne_perp=TSNE_PERP,
+    umap_nn=UMAP_NN,
+    min_dist=UMAP_MIN_DIST,
+    n_components=N_COMPONENTS,
+    scalingmethod=SCALING_METHOD,
+    do_tsne=True,
+    factors_to_transform=None,
+    factors_not_to_transform=None,
+    verbose=False,
+):
+    """
+    New version of the DR pipeline that delegates all scaling to
+    data_processing.scaling.scale_features so scaling is consistent
+    with clustering.
+    """
+    component_list = np.arange(1, n_components + 1, 1).tolist()
+    umap_components = ([f'UMAP{i}' for i in component_list])
+
+    if verbose:
+        print('Running dr_pipeline_multiUMAPandTSNE_v2...')
+        print('tSNE perplexity = ', tsne_perp)
+        print('UMAP nearest neighbors = ', umap_nn, ' min distance = ', min_dist)
+        print('Number of UMAP components = ', n_components)
+
+    # Select factors (respect AVERAGE_TIME_WINDOWS is handled inside scale_features)
+    # Apply shared scaling
+    from data_processing.scaling import scale_features
+    X_scaled, used_cols = scale_features(
+        df=df,
+        factors=dr_factors,
+        method=scalingmethod,
+        average_time_windows=AVERAGE_TIME_WINDOWS,
+        factors_to_transform=factors_to_transform,
+        factors_not_to_transform=factors_not_to_transform,
+        verbose=verbose,
+    )
+
+    # PCA on scaled features (kept for consistency with v1 behavior)
+    pca_df, _, _ = do_pca(X_scaled)
+
+    if do_tsne:
+        tsne_x, flag = do_open_tsne(X_scaled, perplexity=tsne_perp)
+        tsne_df = pd.DataFrame(data=tsne_x, columns=['tSNE1', 'tSNE2'])
+    else:
+        if verbose:
+            print('Skipping tSNE')
+        tsne_df = pd.DataFrame()
+
+    umap_x = do_umap(X_scaled, n_neighbors=umap_nn, min_dist=min_dist, n_components=n_components)
+    umap_df = pd.DataFrame(data=umap_x, columns=umap_components)
+
+    dr_df = pd.concat([df, pca_df, tsne_df, umap_df], axis=1)
+    return dr_df
 
 def analyze_factors_for_choice_scaling(df, factors_list, show_distributions=True):
     """

@@ -273,6 +273,14 @@ def do_pca(x,n_comp=10):
     # Standardizing the features
     # x = StandardScaler().fit_transform(x) # This is done upstream of PCA 2023 in the multiumap function.
 
+    # Ensure n_comp doesn't exceed the number of features
+    n_features = x.shape[1]
+    original_n_comp = n_comp
+    n_comp = min(n_comp, n_features)
+    
+    if n_comp < original_n_comp:
+        print(f"⚠️  Reducing PCA components from {original_n_comp} to {n_comp} (limited by {n_features} features)")
+
     pca = PCA(n_components=n_comp)
 
     principalComponents = pca.fit_transform(x)

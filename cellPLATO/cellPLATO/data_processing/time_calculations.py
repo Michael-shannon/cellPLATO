@@ -788,9 +788,30 @@ def fill_frame_gaps_in_tracks(df, track_id_col='uniq_id', verbose=True):
     filled_tracks = []
     tracks_with_gaps = 0
     total_frames_added = 0
+    tracks_with_duplicates = 0
     
     for track_id in df[track_id_col].unique():
         track_data = df[df[track_id_col] == track_id].sort_values('frame')
+        
+        # Check for duplicate frames within this track
+        frame_counts = track_data['frame'].value_counts()
+        duplicates = frame_counts[frame_counts > 1]
+        
+        if len(duplicates) > 0:
+            tracks_with_duplicates += 1
+            if verbose:
+                print(f"   ⚠️  Track {track_id} has duplicate frames: {duplicates.index.tolist()}")
+            
+            # Handle duplicates by keeping the first occurrence and averaging numeric values
+            track_data_clean = track_data.groupby('frame').agg({
+                **{col: 'first' for col in track_data.select_dtypes(exclude=[np.number]).columns 
+                   if col != 'frame'},
+                **{col: 'mean' for col in track_data.select_dtypes(include=[np.number]).columns}
+            }).reset_index()
+            
+            # Restore the track_id column
+            track_data_clean[track_id_col] = track_id
+            track_data = track_data_clean.sort_values('frame')
         
         # Check if track has gaps
         frames = track_data['frame'].values
@@ -807,7 +828,7 @@ def fill_frame_gaps_in_tracks(df, track_id_col='uniq_id', verbose=True):
             # Create complete frame range
             complete_frames = range(min_frame, max_frame + 1)
             
-            # Reindex to fill gaps
+            # Reindex to fill gaps (now safe because duplicates are handled)
             track_data = track_data.set_index('frame')
             track_data = track_data.reindex(complete_frames)
             
@@ -828,9 +849,152 @@ def fill_frame_gaps_in_tracks(df, track_id_col='uniq_id', verbose=True):
     result_df = pd.concat(filled_tracks, ignore_index=True)
     
     if verbose:
+        if tracks_with_duplicates > 0:
+            print(f"   🔧 Handled duplicate frames in {tracks_with_duplicates} tracks")
         print(f"   ✅ Filled gaps in {tracks_with_gaps} tracks")
         print(f"   ✅ Added {total_frames_added} interpolated frames")
         print(f"   ✅ Result: {len(df)} → {len(result_df)} frames")
+    
+    return result_df
+
+
+def deduplicate_frames_and_interpolate(df, track_id_col='uniq_id', verbose=True):
+    """
+    Remove duplicate frames within tracks and interpolate new values based on 
+    nearest non-duplicate frames.
+    
+    This function handles cases where the original tracking data contains duplicate
+    frame entries within individual tracks. It removes all duplicate frames and
+    then interpolates new values for those frames based on the nearest non-duplicate
+    frames before and after.
+    
+    Examples:
+    - [19, 20, 20, 21, 22] → Remove both 20s, interpolate new frame 20 from frames 19 and 21
+    - [1, 2, 2, 3, 3, 4, 4, 5, 6, 7] → Remove 2,2,3,3,4,4, interpolate frames 2,3,4 from frames 1 and 5
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        Your trajectory data
+    track_id_col : str
+        Column name for track IDs (default: 'uniq_id')
+    verbose : bool
+        Whether to print progress information
+        
+    Returns:
+    --------
+    pandas.DataFrame : Data with duplicates removed and interpolated
+    """
+    import pandas as pd
+    import numpy as np
+    
+    if verbose:
+        print("🧹 Removing duplicate frames and interpolating...")
+    
+    cleaned_tracks = []
+    tracks_with_duplicates = 0
+    total_duplicates_removed = 0
+    total_frames_interpolated = 0
+    
+    for track_id in df[track_id_col].unique():
+        track_data = df[df[track_id_col] == track_id].sort_values('frame').copy()
+        
+        # Check for duplicate frames
+        frame_counts = track_data['frame'].value_counts()
+        duplicates = frame_counts[frame_counts > 1]
+        
+        if len(duplicates) > 0:
+            tracks_with_duplicates += 1
+            duplicate_frames = set(duplicates.index)
+            
+            if verbose:
+                print(f"   🔧 Track {track_id}: Found {len(duplicates)} duplicate frame values")
+                print(f"      Duplicate frames: {sorted(duplicate_frames)}")
+            
+            # Remove ALL rows with duplicate frames
+            mask_non_duplicate = ~track_data['frame'].isin(duplicate_frames)
+            clean_track = track_data[mask_non_duplicate].copy()
+            
+            # Count removed duplicates
+            duplicates_removed = len(track_data) - len(clean_track)
+            total_duplicates_removed += duplicates_removed
+            
+            if verbose:
+                print(f"      Removed {duplicates_removed} duplicate rows")
+            
+            # Now interpolate values for the missing frames
+            if len(clean_track) >= 2:  # Need at least 2 points to interpolate
+                frames_to_interpolate = sorted(duplicate_frames)
+                interpolated_rows = []
+                
+                for missing_frame in frames_to_interpolate:
+                    # Find the nearest non-duplicate frames before and after
+                    before_frames = clean_track[clean_track['frame'] < missing_frame]
+                    after_frames = clean_track[clean_track['frame'] > missing_frame]
+                    
+                    if len(before_frames) > 0 and len(after_frames) > 0:
+                        # Get the closest frames
+                        before_frame = before_frames.iloc[-1]  # Last frame before
+                        after_frame = after_frames.iloc[0]     # First frame after
+                        
+                        # Create interpolated row
+                        new_row = before_frame.copy()
+                        new_row['frame'] = missing_frame
+                        
+                        # Interpolate numeric columns
+                        for col in clean_track.select_dtypes(include=[np.number]).columns:
+                            if col != 'frame':  # Don't interpolate the frame column itself
+                                before_val = before_frame[col]
+                                after_val = after_frame[col]
+                                
+                                # Linear interpolation
+                                frame_diff = after_frame['frame'] - before_frame['frame']
+                                if frame_diff > 0:
+                                    weight = (missing_frame - before_frame['frame']) / frame_diff
+                                    new_row[col] = before_val + weight * (after_val - before_val)
+                                else:
+                                    new_row[col] = before_val  # Fallback
+                        
+                        interpolated_rows.append(new_row)
+                        total_frames_interpolated += 1
+                    
+                    elif len(before_frames) > 0:
+                        # Only before frame available - forward fill
+                        new_row = before_frames.iloc[-1].copy()
+                        new_row['frame'] = missing_frame
+                        interpolated_rows.append(new_row)
+                        total_frames_interpolated += 1
+                        
+                    elif len(after_frames) > 0:
+                        # Only after frame available - backward fill
+                        new_row = after_frames.iloc[0].copy()
+                        new_row['frame'] = missing_frame
+                        interpolated_rows.append(new_row)
+                        total_frames_interpolated += 1
+                
+                # Add interpolated rows to clean track
+                if interpolated_rows:
+                    interpolated_df = pd.DataFrame(interpolated_rows)
+                    clean_track = pd.concat([clean_track, interpolated_df], ignore_index=True)
+                    clean_track = clean_track.sort_values('frame').reset_index(drop=True)
+                
+                if verbose:
+                    print(f"      Interpolated {len(interpolated_rows)} frames")
+            
+            cleaned_tracks.append(clean_track)
+        else:
+            # No duplicates, keep original track
+            cleaned_tracks.append(track_data)
+    
+    # Combine all tracks
+    result_df = pd.concat(cleaned_tracks, ignore_index=True) if cleaned_tracks else pd.DataFrame()
+    
+    if verbose:
+        print(f"\n✅ SUMMARY:")
+        print(f"   Tracks with duplicates: {tracks_with_duplicates}")
+        print(f"   Total duplicate rows removed: {total_duplicates_removed}")
+        print(f"   Total frames interpolated: {total_frames_interpolated}")
+        print(f"   Result: {len(df)} → {len(result_df)} rows")
     
     return result_df
 

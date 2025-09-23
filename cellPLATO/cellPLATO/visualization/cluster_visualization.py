@@ -340,7 +340,13 @@ def plot_3D_scatter_deprecated(df, x, y, z, colorby, ticks=False, identifier='',
              df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
 
     leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
-    for lh in leg.legend_handles:
+    # Handle matplotlib version compatibility for legend handles
+    try:
+        legend_handles = leg.legend_handles  # Modern matplotlib
+    except AttributeError:
+        legend_handles = leg.legendHandles   # Older matplotlib
+    
+    for lh in legend_handles:
         lh.set_alpha(1)
     
     # plt.tight_layout()
@@ -432,7 +438,13 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
              df[df['Condition_shortlabel'] == df['Condition_shortlabel'].unique()[colorselector]][z], '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector], s=dotsize, alpha = alpha)
 
     leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
-    for lh in leg.legend_handles: 
+    # Handle matplotlib version compatibility for legend handles
+    try:
+        legend_handles = leg.legend_handles  # Modern matplotlib
+    except AttributeError:
+        legend_handles = leg.legendHandles   # Older matplotlib
+    
+    for lh in legend_handles: 
         lh.set_alpha(1)
     
     # plt.tight_layout()
@@ -554,7 +566,13 @@ def plot_3D_scatter_dev(df, x, y, z, colorby, ticks=False, identifier='', dotsiz
         # ax.scatter(df[x], df[y], df[z], c=df['uniq_id'], cmap='inferno', s=dotsize, alpha = alpha) #label = df['Condition_shortlabel'].unique()    
 
     leg=plt.legend(loc='upper left', numpoints=1, ncol=1, fontsize=font_size, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
-    for lh in leg.legend_handles: 
+    # Handle matplotlib version compatibility for legend handles
+    try:
+        legend_handles = leg.legend_handles  # Modern matplotlib
+    except AttributeError:
+        legend_handles = leg.legendHandles   # Older matplotlib
+    
+    for lh in legend_handles: 
         lh.set_alpha(1)
     
     # plt.tight_layout()
@@ -2554,17 +2572,23 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
                             '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
             
         leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale2)
-        for lh in leg.legend_handles: 
-            lh.set_alpha(1)
+    # Handle matplotlib version compatibility for legend handles
+    try:
+        legend_handles = leg.legend_handles  # Modern matplotlib
+    except AttributeError:
+        legend_handles = leg.legendHandles   # Older matplotlib
+    
+    for lh in legend_handles: 
+        lh.set_alpha(1)
 
-        ax1.set_xticklabels([])
-        ax1.set_yticklabels([])
-        ax1.set_zticklabels([])
-        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
-        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
-        ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+    ax1.set_xticklabels([])
+    ax1.set_yticklabels([])
+    ax1.set_zticklabels([])
+    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+    ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
-    elif cluster_label == 'trajectory_id':
+    if cluster_label == 'trajectory_id':
 
         ax1 = fig.add_subplot(1, 2, 1)
         x = 'UMAP_traj_1'
@@ -2578,15 +2602,21 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
             # x, y, s=None, c=None, marker=None, cmap=None, norm=None, vmin=None, vmax=None, alpha=None, linewidths=None, *, edgecolors=None, plotnonfinite=False, data=None,
             
         leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
-        for lh in leg.legend_handles: 
-            lh.set_alpha(1)        
+    # Handle matplotlib version compatibility for legend handles
+    try:
+        legend_handles = leg.legend_handles  # Modern matplotlib
+    except AttributeError:
+        legend_handles = leg.legendHandles   # Older matplotlib
+    
+    for lh in legend_handles: 
+        lh.set_alpha(1)        
         
-        ax1.set_xticklabels([])
-        ax1.set_yticklabels([])
-        # ax1.set_zticklabels([])
-        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
-        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
-        # ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+    ax1.set_xticklabels([])
+    ax1.set_yticklabels([])
+    # ax1.set_zticklabels([])
+    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+    # ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
     ##### Making the second axis: Stacked bar plot of cluster purity
 
