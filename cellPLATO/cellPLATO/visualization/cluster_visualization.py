@@ -377,12 +377,41 @@ def plot_3D_scatter_deprecated(df, x, y, z, colorby, ticks=False, identifier='',
 
     return ax    
 
-def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5): #new matplotlib version of scatter plot for umap 1-26-2023
+def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 3, alpha=0.2, markerscale=5, show_axis_values=None): #new matplotlib version of scatter plot for umap 1-26-2023
+    """
+    Create a 3D scatter plot for visualizing dimensionality reduction results (e.g., UMAP).
+    
+    Parameters:
+    -----------
+    df : DataFrame
+        Input dataframe containing the data to plot
+    x, y, z : str
+        Column names for x, y, z axes
+    colorby : str
+        'label' or 'condition' - determines how points are colored
+    ticks : bool, default False
+        If True, show axis tick marks and values (legacy parameter, use show_axis_values instead)
+    identifier : str
+        String to append to saved figure filename
+    dotsize : int, default 3
+        Size of scatter plot markers
+    alpha : float, default 0.2
+        Transparency of markers (0=transparent, 1=opaque)
+    markerscale : float, default 5
+        Scale factor for legend markers
+    show_axis_values : bool, optional
+        If True, display axis tick values. If None, uses the value of 'ticks' parameter.
+    """
     import matplotlib.pyplot as plt
     from numpy.random import random
     from mpl_toolkits.mplot3d import Axes3D
 
+    # If show_axis_values is explicitly set, use it; otherwise use ticks parameter
+    if show_axis_values is None:
+        show_axis_values = ticks
+    
     font_size = 24
+    tick_label_size = 16  # Smaller font size for tick labels
     # df = lab_dr_df
 
     fig = plt.figure(figsize=(15, 15))
@@ -450,19 +479,22 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
     # plt.tight_layout()
     
     # Set the axis labels with or without ticks
-    if ticks == False:
+    if show_axis_values == False:
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.set_zticklabels([])
         ax.set_xlabel(x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
         ax.set_ylabel(y, fontsize=font_size, linespacing=3.2)
         ax.set_zlabel(z, fontsize=font_size, linespacing=3.2)
-    elif ticks == True:
-        # Set the axis labels
+    elif show_axis_values == True:
+        # Set the axis labels with tick values displayed
         ax.set_xlabel('\n ' + x, fontsize=font_size, linespacing=3.2) # gives a new line to make space for the axis label
         ax.set_ylabel('\n ' + y, fontsize=font_size, linespacing=3.2)
         ax.set_zlabel('\n ' + z, fontsize=font_size, linespacing=3.2)
-        ax.tick_params(axis='both', which='major', labelsize=font_size)
+        # Set tick label sizes for each axis in 3D
+        ax.tick_params(axis='x', which='major', labelsize=tick_label_size)
+        ax.tick_params(axis='y', which='major', labelsize=tick_label_size)
+        ax.tick_params(axis='z', which='major', labelsize=tick_label_size)
     
     # set the axis limits to tight
     ax.set_xlim3d(np.min(df[x]), np.max(df[x]))
@@ -471,7 +503,16 @@ def plot_3D_scatter(df, x, y, z, colorby, ticks=False, identifier='', dotsize = 
 
     plt.show()
 
-    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.png', dpi=300, bbox_inches='tight')
+    # Save as SVG with transparent background (primary format)
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.svg', 
+                dpi=300, 
+                bbox_inches='tight', 
+                transparent=True,
+                format='svg')
+    # Also save PNG version for compatibility
+    fig.savefig(CLUST_DISAMBIG_DIR+identifier+'3D_scatter.png', 
+                dpi=300, 
+                bbox_inches='tight')
 
     return ax    
 
@@ -2572,21 +2613,21 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
                             '.', color=colors[colorselector], label = df['Condition_shortlabel'].unique()[colorselector],s=dotsize, alpha = alpha)
             
         leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale2)
-    # Handle matplotlib version compatibility for legend handles
-    try:
-        legend_handles = leg.legend_handles  # Modern matplotlib
-    except AttributeError:
-        legend_handles = leg.legendHandles   # Older matplotlib
-    
-    for lh in legend_handles: 
-        lh.set_alpha(1)
+        # Handle matplotlib version compatibility for legend handles
+        try:
+            legend_handles = leg.legend_handles  # Modern matplotlib
+        except AttributeError:
+            legend_handles = leg.legendHandles   # Older matplotlib
+        
+        for lh in legend_handles: 
+            lh.set_alpha(1)
 
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    ax1.set_zticklabels([])
-    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
-    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
-    ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        ax1.set_zticklabels([])
+        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+        ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
     if cluster_label == 'trajectory_id':
 
@@ -2602,21 +2643,21 @@ def purityplot_percentcluspercondition(df, df2, cluster_by=CLUSTER_BY, save_path
             # x, y, s=None, c=None, marker=None, cmap=None, norm=None, vmin=None, vmax=None, alpha=None, linewidths=None, *, edgecolors=None, plotnonfinite=False, data=None,
             
         leg=ax1.legend(loc='upper left', numpoints=1, ncol=1, fontsize=fontsize, bbox_to_anchor=(1.05, 1.0), markerscale=markerscale)
-    # Handle matplotlib version compatibility for legend handles
-    try:
-        legend_handles = leg.legend_handles  # Modern matplotlib
-    except AttributeError:
-        legend_handles = leg.legendHandles   # Older matplotlib
-    
-    for lh in legend_handles: 
-        lh.set_alpha(1)        
+        # Handle matplotlib version compatibility for legend handles
+        try:
+            legend_handles = leg.legend_handles  # Modern matplotlib
+        except AttributeError:
+            legend_handles = leg.legendHandles   # Older matplotlib
         
-    ax1.set_xticklabels([])
-    ax1.set_yticklabels([])
-    # ax1.set_zticklabels([])
-    ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
-    ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
-    # ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
+        for lh in legend_handles: 
+            lh.set_alpha(1)        
+            
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        # ax1.set_zticklabels([])
+        ax1.set_xlabel(x, fontsize=fontsize, linespacing=3.2) # gives a new line to make space for the axis label
+        ax1.set_ylabel(y, fontsize=fontsize, linespacing=3.2)
+        # ax1.set_zlabel(z, fontsize=fontsize, linespacing=3.2)
 
     ##### Making the second axis: Stacked bar plot of cluster purity
 

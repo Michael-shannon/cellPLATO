@@ -585,6 +585,15 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
     from pandas.plotting import scatter_matrix
     from numpy import inf
 
+    # Sort by unique_id and frame to ensure consistent ordering with DR pipeline
+    df_sorted = df_in.copy()
+    if 'unique_id' in df_sorted.columns and 'frame' in df_sorted.columns:
+        df_sorted = df_sorted.sort_values(by=['unique_id', 'frame']).reset_index(drop=True)
+        if verbose:
+            print('Sorted data by unique_id and frame for consistent ordering')
+    elif verbose:
+        print('Warning: unique_id or frame column not found, skipping sort')
+
     component_list=np.arange(1, n_components+1,1).tolist()
     umap_components=([f'UMAP{i}' for i in component_list])
 
@@ -630,7 +639,7 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
 
 
-    sub_set = df_in[CLUSTERON]
+    sub_set = df_sorted[CLUSTERON]
     # Show histograms BEFORE scaling
     try:
         sub_set.hist(figsize=(20, 10), bins=160, color = "black", ec="black")
@@ -645,15 +654,44 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
 
     # Use shared scaling utility to prepare X and columns
     from data_processing.scaling import scale_features
-    X, correctcolumns = scale_features(
-        df=df_in,
-        factors=CLUSTERON,
-        method=(scalingmethod if scalingmethod is not None else SCALING_METHOD),
-        average_time_windows=AVERAGE_TIME_WINDOWS,
-        factors_to_transform=factors_to_transform,
-        factors_not_to_transform=factors_not_to_transform,
-        verbose=verbose,
-    )
+    
+    # Determine appropriate scaling method based on what we're clustering on
+    # If scalingmethod=None is explicitly passed, skip scaling entirely
+    if scalingmethod is None:
+        # No scaling - use raw data
+        X = sub_set.values
+        correctcolumns = CLUSTERON
+        if verbose:
+            print(f"Clustering on {cluster_by} - NO SCALING (using raw values)")
+    elif cluster_by in ['UMAPNDIM', 'umapndim', 'UMAP', 'umap', 'tSNE', 'tsne', 'PCA', 'pca', 'PCs']:
+        # For already-transformed dimensions (UMAP/tSNE/PCA), use simple scaling only
+        # These can have negative values, so no log transforms
+        effective_scaling = 'minmax'
+        if verbose:
+            print(f"Clustering on {cluster_by} - using 'minmax' scaling (no log transforms)")
+        X, correctcolumns = scale_features(
+            df=df_sorted,
+            factors=CLUSTERON,
+            method=effective_scaling,
+            average_time_windows=AVERAGE_TIME_WINDOWS,
+            factors_to_transform=factors_to_transform,
+            factors_not_to_transform=factors_not_to_transform,
+            verbose=verbose,
+        )
+    else:
+        # For raw factors (NDIM), use the config's default scaling method
+        effective_scaling = SCALING_METHOD
+        if verbose:
+            print(f"Clustering on {cluster_by} - using '{effective_scaling}' scaling")
+        X, correctcolumns = scale_features(
+            df=df_sorted,
+            factors=CLUSTERON,
+            method=effective_scaling,
+            average_time_windows=AVERAGE_TIME_WINDOWS,
+            factors_to_transform=factors_to_transform,
+            factors_not_to_transform=factors_not_to_transform,
+            verbose=verbose,
+        )
 
 
     # X = StandardScaler().fit_transform(Z)
@@ -673,8 +711,10 @@ def hdbscan_clustering(df_in, min_cluster_size=20,min_samples=10,cluster_by='UMA
     labels = clusterer.fit_predict(X)
 
     # Assemble a dataframe from the results
-    lab_df = pd.DataFrame(data = labels, columns = ['label'])
-    lab_dr_df = pd.concat([df_in,lab_df], axis=1)
+    # Important: Reset index to avoid misalignment when concatenating
+    # df_sorted has already been sorted and reset_index, so indices should align
+    lab_df = pd.DataFrame(data = labels, columns = ['label'], index=df_sorted.index)
+    lab_dr_df = pd.concat([df_sorted, lab_df], axis=1)
 
     # summarize
 

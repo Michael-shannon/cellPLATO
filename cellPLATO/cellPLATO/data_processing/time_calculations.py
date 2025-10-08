@@ -908,7 +908,7 @@ def deduplicate_frames_and_interpolate(df, track_id_col='uniq_id', verbose=True)
             duplicate_frames = set(duplicates.index)
             
             if verbose:
-                print(f"   🔧 Track {track_id}: Found {len(duplicates)} duplicate frame values")
+                print(f"   Track {track_id}: Found {len(duplicates)} duplicate frame values")
                 print(f"      Duplicate frames: {sorted(duplicate_frames)}")
             
             # Remove ALL rows with duplicate frames

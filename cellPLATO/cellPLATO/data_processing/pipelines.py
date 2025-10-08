@@ -713,6 +713,15 @@ def dr_pipeline_multiUMAPandTSNE_v2(
     data_processing.scaling.scale_features so scaling is consistent
     with clustering.
     """
+    # Sort by unique_id and frame to ensure consistent ordering
+    df_sorted = df.copy()
+    if 'unique_id' in df_sorted.columns and 'frame' in df_sorted.columns:
+        df_sorted = df_sorted.sort_values(by=['unique_id', 'frame']).reset_index(drop=True)
+        if verbose:
+            print('Sorted data by unique_id and frame for consistent ordering')
+    elif verbose:
+        print('Warning: unique_id or frame column not found, skipping sort')
+    
     component_list = np.arange(1, n_components + 1, 1).tolist()
     umap_components = ([f'UMAP{i}' for i in component_list])
 
@@ -726,7 +735,7 @@ def dr_pipeline_multiUMAPandTSNE_v2(
     # Apply shared scaling
     from data_processing.scaling import scale_features
     X_scaled, used_cols = scale_features(
-        df=df,
+        df=df_sorted,
         factors=dr_factors,
         method=scalingmethod,
         average_time_windows=AVERAGE_TIME_WINDOWS,
@@ -749,7 +758,7 @@ def dr_pipeline_multiUMAPandTSNE_v2(
     umap_x = do_umap(X_scaled, n_neighbors=umap_nn, min_dist=min_dist, n_components=n_components)
     umap_df = pd.DataFrame(data=umap_x, columns=umap_components)
 
-    dr_df = pd.concat([df, pca_df, tsne_df, umap_df], axis=1)
+    dr_df = pd.concat([df_sorted, pca_df, tsne_df, umap_df], axis=1)
     return dr_df
 
 def analyze_factors_for_choice_scaling(df, factors_list, show_distributions=True):

@@ -368,3 +368,207 @@ def stc2df(stc_0d):
     out_df = pd.DataFrame(out_arr,columns=['cell', 'X0', 'Y0', 't'])
 
     return out_df
+
+
+def load_and_combine_surfaces(cp):
+    """
+    Walk cp.DATA_PATH/<Condition>/<Rep>/ for *_surfaces.csv, load each
+    (skipping junk row1, using row2 as header), rename, and concatenate.
+    Returns the combined DataFrame and also writes comb_df.csv to cp.OUTPUT_PATH.
+    
+    Updated to properly handle Experiment and Replicate_ID following cellPLATO conventions:
+    - Experiment = replicate folder name (rep)
+    - Replicate_ID = replicate folder name (rep) 
+    This follows the pattern used in load_trackmate.py and data_io.py
+    """
+    save_dir = os.path.join(cp.OUTPUT_PATH, cp.DATASET_SHORTNAME, 'saved_data')
+    os.makedirs(save_dir, exist_ok=True)
+
+    combined = []
+    cond2short = dict(zip(cp.CONDITIONS_TO_INCLUDE, cp.CONDITION_SHORTLABELS))
+    
+    # Create file_id mapping based on conditions
+    file_id_map = {
+        cond.replace("Condition_", ""): idx
+        for idx, cond in enumerate(cp.CONDITIONS_TO_INCLUDE)
+    }
+
+    for cond in os.listdir(cp.DATA_PATH):
+        if cond not in cp.CONDITIONS_TO_INCLUDE:
+            continue
+        cond_path = os.path.join(cp.DATA_PATH, cond)
+        
+        for rep in os.listdir(cond_path):
+            rep_path = os.path.join(cond_path, rep)
+            if not os.path.isdir(rep_path):
+                continue
+
+            for fn in os.listdir(rep_path):
+                if not fn.lower().endswith('_surfaces.csv'):
+                    continue
+
+                path = os.path.join(rep_path, fn)
+                # 1) skip row1, use row2 as header
+                df = pd.read_csv(path, header=0)
+                # 2) drop stray unnamed cols
+                df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+                print(f'The columns in the df natively are now: {df.columns.tolist()}')
+                
+                # 3) rename exactly the fields you want
+                df = df.rename(columns={
+                    'Time':        'frame',
+                    # 'Time (s)':    'time',
+                    'TrackID':     'particle',
+                    'Position X':  'x_um',
+                    'Position Y':  'y_um',
+                    'Position Z':  'z_um'
+                })
+                
+                # Convert frame to time in seconds using SAMPLING_INTERVAL
+                df['time'] = df['frame'] * cp.SAMPLING_INTERVAL  # Convert minutes to seconds
+                print(f'The columns in the df are now: {df.columns.tolist()}')
+
+                # 4) make sure they exist
+                needed = ['frame', 'time', 'particle', 'x_um', 'y_um', 'z_um']
+                missing = set(needed) - set(df.columns)
+                if missing:
+                    raise ValueError(f"Missing columns {missing} in {path}")
+
+                # 5) optionally convert types (or leave as float if preferred)
+                # df['frame'] = df['frame'].astype(int)
+                # df['particle'] = df['particle'].astype(int)
+                df['time'] = df['time'].astype(float)
+
+                # 6) annotate coordinates in pixels
+                df['x_pix'] = df['x_um']
+                df['y_pix'] = df['y_um']
+                df['z_pix'] = df['z_um']
+
+                # 7) annotate condition/experiment - CORRECTED VERSION
+                df['Condition'] = cond
+                # Use the replicate folder name (rep) as both Experiment and Replicate_ID
+                # This follows the pattern used in load_trackmate.py and data_io.py
+                df['Experiment'] = rep  # Use rep folder name, not derived from condition
+                df['Replicate_ID'] = rep  # Use rep folder name consistently
+                
+                # file_id should map to condition, not experiment
+                cond_key = cond.replace("Condition_", "")
+                df['file_id'] = file_id_map.get(cond_key, 0)
+
+                df['included'] = True
+                df['Condition_shortlabel'] = cond2short.get(cond, cond)
+
+                # 8) build unique ID and counts
+                # Use file_id (condition-based) + particle for uniqueness across conditions
+                df['uniq_id'] = df['file_id'].astype(str) + "_" + df['particle'].astype(str)
+                df['ntpts'] = df.groupby('uniq_id')['uniq_id'].transform('size')
+
+                combined.append(df)
+
+    if not combined:
+        raise RuntimeError("No '*_surfaces.csv' files found in DATA_PATH.")
+
+    comb_df = pd.concat(combined, ignore_index=True)
+    comb_df.columns = comb_df.columns.str.replace(' ', '_', regex=False) 
+
+    # Create a mapping of unique Replicate_IDs to integers
+    unique_reps = comb_df['Replicate_ID'].unique()
+    rep_to_int_map = {rep: i for i, rep in enumerate(unique_reps)}
+    comb_df['repID_int'] = comb_df['Replicate_ID'].map(rep_to_int_map)
+    print(comb_df['repID_int'])
+    # Add repID_int as a prefix to the existing uniq_id
+    comb_df['uniq_id'] = comb_df['repID_int'].astype(str) + "_" + comb_df['uniq_id']
+
+    comb_df.to_csv(os.path.join(save_dir, 'comb_df.csv'), index=False)
+    return comb_df
+
+
+def load_and_combine_tracks(cp):
+    """
+    Walk cp.DATA_PATH/<Condition>/<Rep>/ for *_tracks.csv, load each
+    (skipping junk row1, using row2 as header), rename, annotate, and
+    concatenate into a single DataFrame. Writes tavg_df.csv to cp.OUTPUT_PATH.
+    
+    Updated to properly handle Experiment and Replicate_ID following cellPLATO conventions:
+    - Experiment = replicate folder name (rep)
+    - Replicate_ID = replicate folder name (rep) 
+    This follows the pattern used in load_trackmate.py and data_io.py
+    """
+    # prepare save directory
+    save_dir = os.path.join(cp.OUTPUT_PATH, cp.DATASET_SHORTNAME, 'saved_data')
+    os.makedirs(save_dir, exist_ok=True)
+
+    combined = []
+    # maps full condition names → short labels and file IDs
+    cond2short = dict(zip(cp.CONDITIONS_TO_INCLUDE, cp.CONDITION_SHORTLABELS))
+    
+    # Create file_id mapping based on conditions
+    file_id_map = {
+        cond.replace("Condition_", ""): idx
+        for idx, cond in enumerate(cp.CONDITIONS_TO_INCLUDE)
+    }
+
+    for cond in os.listdir(cp.DATA_PATH):
+        if cond not in cp.CONDITIONS_TO_INCLUDE:
+            continue
+        cond_path = os.path.join(cp.DATA_PATH, cond)
+
+        for rep in os.listdir(cond_path):
+            rep_path = os.path.join(cond_path, rep)
+            if not os.path.isdir(rep_path):
+                continue
+
+            for fn in os.listdir(rep_path):
+                if not fn.lower().endswith('_tracks.csv'):
+                    continue
+
+                path = os.path.join(rep_path, fn)
+                # 1) skip the junk first row, use row 2 as header
+                df = pd.read_csv(path, header=0)
+                # 2) drop any stray 'Unnamed:' columns
+                df = df.loc[:, ~df.columns.str.contains(r'^Unnamed')]
+                for col in df.columns:
+                    print(col)
+                # 3) rename 'ID' → 'particle'
+                if 'ID' in df.columns:
+                    df = df.rename(columns={'ID': 'particle'})
+                else:
+                    raise ValueError(f"No 'ID' column found in {path}")
+
+                # 4) annotate metadata - CORRECTED VERSION
+                df['Condition'] = cond
+                # Use the replicate folder name (rep) as both Experiment and Replicate_ID
+                # This follows the pattern used in load_trackmate.py and data_io.py
+                df['Experiment'] = rep  # Use rep folder name, not derived from condition
+                df['Replicate_ID'] = rep  # Use rep folder name consistently
+                
+                # file_id should map to condition, not experiment
+                cond_key = cond.replace("Condition_", "")
+                df['file_id'] = file_id_map.get(cond_key, 0)
+                df['Condition_shortlabel'] = cond2short.get(cond, cond)
+
+                # 5) build unique particle ID & count points per track
+                # Use file_id (condition-based) + particle for uniqueness across conditions
+                df['uniq_id'] = df['file_id'].astype(str) + "_" + df['particle'].astype(str)
+                df['ntpts'] = df.groupby('uniq_id')['uniq_id'].transform('size')
+
+                combined.append(df)
+
+    if not combined:
+        raise RuntimeError("No '*_tracks.csv' files found in DATA_PATH.")
+
+    tavg_df = pd.concat(combined, ignore_index=True)
+    # please replace the spaces in the column names with underscores
+    tavg_df.columns = tavg_df.columns.str.replace(' ', '_', regex=False) 
+
+    # Create a mapping of unique Replicate_IDs to integers
+    unique_reps = tavg_df['Replicate_ID'].unique()
+    rep_to_int_map = {rep: i for i, rep in enumerate(unique_reps)}
+    tavg_df['repID_int'] = tavg_df['Replicate_ID'].map(rep_to_int_map)
+    # Add repID_int as a prefix to the existing uniq_id
+    # Note: This uses comb_df which should be passed in or generated separately
+    # For now, using tavg_df's own uniq_id
+    tavg_df['uniq_id'] = tavg_df['repID_int'].astype(str) + "_" + tavg_df['uniq_id']
+
+    tavg_df.to_csv(os.path.join(save_dir, 'tavg_df.csv'), index=False)
+    return tavg_df
