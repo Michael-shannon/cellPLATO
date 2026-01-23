@@ -220,6 +220,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                 else:
                     # If multiple frames in window, t_window_arr is 2D
                     init_frame_arr = t_window_arr[0,:] # Use the first row of the window
+                    end_frame_arr  = t_window_arr[-1,:] # Use the last row of the window
 
 #                 segment_length = np.nan # default value
 
@@ -233,6 +234,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                     x0, y0 = init_frame_arr[1:3]
                     xi, yi = prev_frame_arr[1:3]
                     xf, yf = this_frame_arr[1:3]
+                    x1, y1 = end_frame_arr[1:3]
 
                     # Extract the xy-track across the window
                     if t_window_arr.ndim == 1:
@@ -250,7 +252,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
 #                     dist =  np.sqrt((xf-xi)**2 + (yf-yi)**2) # Redundant, equivalent to segment_length
 
                     '''Decide which one to keep'''
-                    euc_dist = np.sqrt((xf-x0)**2 + (yf-y0)**2)
+                    euc_dist = np.sqrt((x1-x0)**2 + (y1-y0)**2)
 #                     net_dist = np.sqrt((xf-x0)**2 + (yf-y0)**2) # Redundant, equivalent to euc_dist
 
                     speed = segment_length / SAMPLING_INTERVAL # Units will be in microns per unit of time of T_INC
@@ -273,6 +275,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                     cumulative_dist_sqrd  = 0 # reset for each window
                     dist_list = []
                     turn_list = []
+                    dist_from_start = []
 
                     for n in range(1,len(window_traj)):
 
@@ -280,6 +283,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
                         x__, y__ =  window_traj[n,:]
                         dist = np.sqrt((x__-x_)**2 + (y__-y_)**2)
                         dist_list.append(dist)
+                        dist_from_start.append(np.sqrt((x__-x0)**2 + (y__-y0)**2))
 
                         # Global turn (relative to previous frame)
                         glob_turn = np.arctan((y__ - y_) / (x__ - x_)) # Equivalent to turn_angle_radians
@@ -295,7 +299,7 @@ def cell_calcs(cell_tarray, t_window=MIG_T_WIND):#, calibrate):
 
                     # Summary measurements across the time window
                     cumulative_length = np.sum(dist_list)
-                    max_dist = np.max(dist_list)
+                    max_dist = np.max(dist_from_start)
 
                     # Mean-squared displacement (MSD)
                     msd = np.sum(np.power(dist_list,2)) / t_window
